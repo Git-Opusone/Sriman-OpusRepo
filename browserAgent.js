@@ -37,7 +37,7 @@ const AGENT_TOOLS = [
         selector: {
           type: 'string',
           description:
-            'CSS selector for the input (e.g. "#ownerName", "input[name=\\'search\\']", ".search-input")',
+            'CSS selector for the input (e.g. "#ownerName", "input[name=\'search\']", ".search-input")',
         },
         value: {
           type: 'string',
