@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mortgage Title &amp; Tax Search</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:       #1a56db;
+      --blue-light: #ebf3ff;
+      --blue-dark:  #1040b0;
+      --green:      #057a55;
+      --green-light:#f0fdf4;
+      --red:        #c81e1e;
+      --red-light:  #fff5f5;
+      --gray-50:    #f9fafb;
+      --gray-100:   #f3f4f6;
+      --gray-200:   #e5e7eb;
+      --gray-400:   #9ca3af;
+      --gray-600:   #4b5563;
+      --gray-700:   #374151;
+      --gray-900:   #111827;
+      --radius:     10px;
+      --shadow:     0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
+      --shadow-md:  0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06);
+    }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-900);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1a56db 100%);
+      color: #fff;
+      padding: 28px 24px;
+      text-align: center;
+    }
+    header .badge {
+      display: inline-block;
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.3);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: .75rem;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -.02em; }
+    header p  { margin-top: 6px; font-size: .95rem; opacity: .85; }
+
+    /* ── Main layout ── */
+    main { max-width: 860px; margin: 32px auto; padding: 0 16px 60px; }
+
+    /* ── Card ── */
+    .card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--gray-700);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .icon {
+      width: 28px; height: 28px;
+      background: var(--blue-light);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .9rem;
+    }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 16px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media(max-width:560px) { .form-row { grid-template-columns: 1fr; } }
+
+    label {
+      display: block;
+      font-size: .83rem;
+      font-weight: 600;
+      color: var(--gray-600);
+      margin-bottom: 6px;
+      letter-spacing: .01em;
+      text-transform: uppercase;
+    }
+    label .req { color: var(--red); margin-left: 2px; }
+    .hint { font-size: .77rem; color: var(--gray-400); margin-top: 4px; }
+
+    input[type="text"], input[type="url"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 7px;
+      font-size: .95rem;
+      color: var(--gray-900);
+      background: #fff;
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+    }
+    input[type="text"]:focus, input[type="url"]:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(26,86,219,.12);
+    }
+    input::placeholder { color: var(--gray-400); }
+
+    .divider {
+      display: flex; align-items: center; gap: 10px;
+      margin: 4px 0 16px;
+      color: var(--gray-400); font-size: .8rem;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1;
+      height: 1px; background: var(--gray-200);
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 11px 28px;
+      border: none; border-radius: 7px;
+      font-size: .95rem; font-weight: 600;
+      cursor: pointer; transition: background .15s, transform .1s;
+    }
+    .btn-primary {
+      background: var(--blue); color: #fff; width: 100%;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--blue-dark); }
+    .btn-primary:active:not(:disabled) { transform: scale(.98); }
+    .btn-primary:disabled { background: var(--gray-400); cursor: not-allowed; }
+
+    .btn-clear {
+      background: var(--gray-100); color: var(--gray-700);
+      font-size: .85rem; padding: 8px 16px;
+      border: 1px solid var(--gray-200);
+      margin-top: 10px; width: 100%;
+    }
+    .btn-clear:hover { background: var(--gray-200); }
+
+    /* ── Status / Progress ── */
+    #statusBox {
+      display: none;
+      background: var(--blue-light);
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 24px;
+    }
+    .status-header {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 600; color: var(--blue);
+      margin-bottom: 10px;
+    }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(26,86,219,.25);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #progressLog {
+      font-size: .82rem; color: var(--gray-600);
+      max-height: 120px; overflow-y: auto;
+      background: rgba(255,255,255,.6);
+      border-radius: 6px; padding: 8px 10px;
+    }
+    #progressLog p { padding: 1px 0; }
+    #progressLog p:last-child { color: var(--blue); font-weight: 500; }
+
+    /* ── Error ── */
+    #errorBox {
+      display: none;
+      background: var(--red-light);
+      border: 1px solid #fecaca;
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      color: var(--red);
+      font-size: .9rem;
+    }
+
+    /* ── Results ── */
+    #resultsSection { display: none; }
+
+    .results-summary {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 8px;
+      margin-bottom: 16px;
+    }
+    .badge-count {
+      background: var(--green-light);
+      color: var(--green);
+      border: 1px solid #a7f3d0;
+      border-radius: 20px;
+      padding: 4px 12px; font-size: .82rem; font-weight: 600;
+    }
+    .badge-url {
+      font-size: .78rem; color: var(--gray-400);
+      word-break: break-all;
+    }
+
+    /* Property record card */
+    .record-card {
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+    .record-header {
+      background: linear-gradient(90deg, #1e3a8a, #1a56db);
+      color: #fff;
+      padding: 12px 18px;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+    }
+    .record-owner { font-size: 1rem; font-weight: 700; }
+    .record-parcel { font-size: .8rem; opacity: .85; }
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: .75rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .status-paid    { background: #d1fae5; color: #065f46; }
+    .status-unpaid  { background: #fee2e2; color: #991b1b; }
+    .status-partial { background: #fef3c7; color: #92400e; }
+    .status-default { background: #e5e7eb; color: #374151; }
+
+    .record-body { padding: 16px 18px; }
+    .fields-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .field-item {}
+    .field-label {
+      font-size: .72rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--gray-400); margin-bottom: 2px;
+    }
+    .field-value { font-size: .9rem; color: var(--gray-900); font-weight: 500; }
+    .field-value.large { font-size: 1.1rem; color: var(--blue); font-weight: 700; }
+    .field-value.addr  { font-size: .88rem; color: var(--gray-700); }
+    .field-value.empty { color: var(--gray-400); font-style: italic; }
+
+    .additional-details {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--gray-100);
+    }
+    .additional-details summary {
+      font-size: .82rem; font-weight: 600;
+      color: var(--gray-600); cursor: pointer;
+      list-style: none; display: flex; align-items: center; gap: 6px;
+    }
+    .additional-details summary::before { content: '▶'; font-size: .6rem; }
+    details[open] summary::before { content: '▼'; }
+    .additional-details table {
+      width: 100%; border-collapse: collapse;
+      margin-top: 8px; font-size: .82rem;
+    }
+    .additional-details td {
+      padding: 5px 8px; border: 1px solid var(--gray-100);
+      vertical-align: top;
+    }
+    .additional-details td:first-child {
+      font-weight: 600; color: var(--gray-600);
+      width: 40%; background: var(--gray-50);
+    }
+
+    /* No results */
+    .no-results {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--gray-400);
+    }
+    .no-results .icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .no-results p { font-size: .95rem; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      font-size: .78rem;
+      color: var(--gray-400);
+      padding-top: 24px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="badge">AI-Powered</div>
+  <h1>Mortgage Title &amp; Tax Search</h1>
+  <p>Intelligent county property &amp; tax record lookup via browser automation</p>
+</header>
+
+<main>
+
+  <!-- ── Search Form ── -->
+  <div class="card">
+    <div class="card-title">
+      <span class="icon">🔍</span> Search Parameters
+    </div>
+
+    <!-- County URL -->
+    <div class="form-group">
+      <label for="countyUrl">County Search URL <span class="req">*</span></label>
+      <input type="url" id="countyUrl"
+        placeholder="https://esearch.andrewscad.org/"
+        value="https://esearch.andrewscad.org/" />
+      <p class="hint">Paste the county CAD / tax assessor search URL. Find county URLs at publicrecords.netronline.com</p>
+    </div>
+
+    <div class="divider">Owner / Taxpayer Name</div>
+
+    <!-- Name fields -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="firstName">First Name</label>
+        <input type="text" id="firstName" placeholder="John" />
+      </div>
+      <div class="form-group">
+        <label for="lastName">Last Name</label>
+        <input type="text" id="lastName" placeholder="Smith" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="fullName">Full Name <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional — overrides first/last)</span></label>
+      <input type="text" id="fullName" placeholder="John Smith" />
+      <p class="hint">Leave blank to use First + Last Name above</p>
+    </div>
+
+    <div class="divider">Property Identifier</div>
+
+    <div class="form-group">
+      <label for="accountNumber">Account Number / Property ID / Parcel ID</label>
+      <input type="text" id="accountNumber" placeholder="e.g. 12345-678-0001" />
+      <p class="hint">Optional — enter if you know the exact parcel or account number</p>
+    </div>
+
+    <button class="btn btn-primary" id="searchBtn" onclick="startSearch()">
+      <span>&#128269;</span> Search County Records
+    </button>
+    <button class="btn btn-clear" onclick="clearAll()">Clear Form &amp; Results</button>
+  </div>
+
+  <!-- ── Progress / Status ── -->
+  <div id="statusBox">
+    <div class="status-header">
+      <div class="spinner"></div>
+      <span>AI Agent Searching...</span>
+    </div>
+    <div id="progressLog"></div>
+  </div>
+
+  <!-- ── Error ── -->
+  <div id="errorBox"></div>
+
+  <!-- ── Results ── -->
+  <section id="resultsSection">
+    <div class="card-title" style="margin-bottom:12px;">
+      <span class="icon">📋</span> Search Results
+    </div>
+    <div class="results-summary">
+      <span id="countBadge" class="badge-count"></span>
+      <span id="sourceUrl" class="badge-url"></span>
+    </div>
+    <div id="summaryText" style="font-size:.88rem;color:var(--gray-600);margin-bottom:16px;"></div>
+    <div id="recordsContainer"></div>
+  </section>
+
+</main>
+
+<footer>
+  <p>Mortgage Title &amp; Tax Search &mdash; Powered by Claude claude-opus-4-6 + Playwright</p>
+</footer>
+
+<script>
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  function val(id) {
+    return document.getElementById(id).value.trim();
+  }
+
+  function show(id)    { document.getElementById(id).style.display = 'block'; }
+  function hide(id)    { document.getElementById(id).style.display = 'none'; }
+
+  function log(message) {
+    const log = document.getElementById('progressLog');
+    const p = document.createElement('p');
+    p.textContent = message;
+    log.appendChild(p);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function statusPill(status) {
+    if (!status) return '<span class="status-badge status-default">Unknown</span>';
+    const s = status.toLowerCase();
+    if (s.includes('paid') && !s.includes('unpaid') && !s.includes('over')) {
+      return `<span class="status-badge status-paid">${status}</span>`;
+    }
+    if (s.includes('unpaid') || s.includes('due') || s.includes('delinquent')) {
+      return `<span class="status-badge status-unpaid">${status}</span>`;
+    }
+    if (s.includes('partial')) {
+      return `<span class="status-badge status-partial">${status}</span>`;
+    }
+    return `<span class="status-badge status-default">${status}</span>`;
+  }
+
+  function fieldHtml(label, value, cls = '') {
+    const display = value
+      ? `<div class="field-value ${cls}">${escHtml(String(value))}</div>`
+      : `<div class="field-value empty">—</div>`;
+    return `<div class="field-item"><div class="field-label">${label}</div>${display}</div>`;
+  }
+
+  function escHtml(str) {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function renderAdditional(details) {
+    if (!details || typeof details !== 'object') return '';
+    const entries = Object.entries(details).filter(([, v]) => v != null && v !== '');
+    if (entries.length === 0) return '';
+    const rows = entries
+      .map(([k, v]) => `<tr><td>${escHtml(k)}</td><td>${escHtml(String(v))}</td></tr>`)
+      .join('');
+    return `
+      <details class="additional-details">
+        <summary>Additional Details (${entries.length})</summary>
+        <table>${rows}</table>
+      </details>`;
+  }
+
+  function renderRecord(rec, index) {
+    return `
+      <div class="record-card">
+        <div class="record-header">
+          <div>
+            <div class="record-owner">${escHtml(rec.ownerName || 'Unknown Owner')}</div>
+            ${rec.parcelId ? `<div class="record-parcel">Parcel / Account: ${escHtml(rec.parcelId)}</div>` : ''}
+          </div>
+          ${statusPill(rec.paymentStatus)}
+        </div>
+        <div class="record-body">
+          <div class="fields-grid">
+            ${fieldHtml('Property Address', rec.propertyAddress, 'addr')}
+            ${fieldHtml('Tax Amount Due', rec.taxAmountDue, 'large')}
+            ${fieldHtml('Tax Year', rec.taxYear)}
+            ${fieldHtml('Payment Status', rec.paymentStatus)}
+            ${fieldHtml('County', rec.county)}
+            ${fieldHtml('State', rec.state)}
+            ${rec.legalDescription ? fieldHtml('Legal Description', rec.legalDescription) : ''}
+          </div>
+          ${renderAdditional(rec.additionalDetails)}
+        </div>
+      </div>`;
+  }
+
+  // ── Main search ──────────────────────────────────────────────────────────
+
+  function startSearch() {
+    const url         = val('countyUrl');
+    const firstName   = val('firstName');
+    const lastName    = val('lastName');
+    const fullName    = val('fullName');
+    const accountNumber = val('accountNumber');
+
+    // Validate
+    if (!url) {
+      alert('Please enter the County Search URL.');
+      document.getElementById('countyUrl').focus();
+      return;
+    }
+    if (!firstName && !lastName && !fullName && !accountNumber) {
+      alert('Please enter at least a name or account number to search.');
+      document.getElementById('firstName').focus();
+      return;
+    }
+
+    // Reset UI
+    hide('errorBox');
+    hide('resultsSection');
+    document.getElementById('progressLog').innerHTML = '';
+    show('statusBox');
+    document.getElementById('searchBtn').disabled = true;
+
+    // Build query string
+    const params = new URLSearchParams();
+    params.set('url', url);
+    if (firstName)     params.set('firstName', firstName);
+    if (lastName)      params.set('lastName', lastName);
+    if (fullName)      params.set('fullName', fullName);
+    if (accountNumber) params.set('accountNumber', accountNumber);
+
+    const evtSource = new EventSource(`/api/search/stream?${params.toString()}`);
+
+    evtSource.addEventListener('status', (e) => {
+      const d = JSON.parse(e.data);
+      log(d.message);
+    });
+
+    evtSource.addEventListener('progress', (e) => {
+      const d = JSON.parse(e.data);
+      log(d.message);
+    });
+
+    evtSource.addEventListener('results', (e) => {
+      const data = JSON.parse(e.data);
+      renderResults(data, url);
+    });
+
+    evtSource.addEventListener('done', () => {
+      evtSource.close();
+      hide('statusBox');
+      document.getElementById('searchBtn').disabled = false;
+    });
+
+    evtSource.addEventListener('error', (e) => {
+      evtSource.close();
+      hide('statusBox');
+      document.getElementById('searchBtn').disabled = false;
+      let msg = 'An error occurred during the search.';
+      try { msg = JSON.parse(e.data).message || msg; } catch (_) {}
+      const box = document.getElementById('errorBox');
+      box.textContent = '⚠ ' + msg;
+      show('errorBox');
+    });
+
+    // Fallback if SSE itself errors (network issue)
+    evtSource.onerror = () => {
+      if (evtSource.readyState === EventSource.CLOSED) return;
+      evtSource.close();
+      hide('statusBox');
+      document.getElementById('searchBtn').disabled = false;
+      const box = document.getElementById('errorBox');
+      box.textContent = '⚠ Connection lost. Please try again.';
+      show('errorBox');
+    };
+  }
+
+  function renderResults(data, sourceUrl) {
+    const records = data.records || [];
+    const total   = data.totalFound ?? records.length;
+    const summary = data.summary || '';
+
+    document.getElementById('countBadge').textContent =
+      total === 0 ? 'No records found' : `${total} record${total !== 1 ? 's' : ''} found`;
+
+    document.getElementById('sourceUrl').textContent = data.searchedUrl || sourceUrl;
+    document.getElementById('summaryText').textContent = summary;
+
+    const container = document.getElementById('recordsContainer');
+    if (records.length === 0) {
+      container.innerHTML = `
+        <div class="no-results">
+          <div class="icon">📭</div>
+          <p>No property or tax records were found for the given search criteria.</p>
+          <p style="margin-top:8px;font-size:.82rem;">Try a different name format or check the county URL.</p>
+        </div>`;
+    } else {
+      container.innerHTML = records.map(renderRecord).join('');
+    }
+
+    show('resultsSection');
+  }
+
+  function clearAll() {
+    ['countyUrl', 'firstName', 'lastName', 'fullName', 'accountNumber'].forEach((id) => {
+      document.getElementById(id).value = id === 'countyUrl' ? 'https://esearch.andrewscad.org/' : '';
+    });
+    hide('statusBox');
+    hide('errorBox');
+    hide('resultsSection');
+    document.getElementById('progressLog').innerHTML = '';
+    document.getElementById('searchBtn').disabled = false;
+  }
+
+  // Allow Enter key on inputs to trigger search
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT') startSearch();
+  });
+</script>
+</body>
+</html>

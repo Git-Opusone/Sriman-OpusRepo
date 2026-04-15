@@ -1,0 +1,21 @@
+{
+  "name": "mortgage-search-service",
+  "version": "1.0.0",
+  "description": "AI-powered Mortgage Title & Tax Search microservice using browser automation",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "setup": "npm install && npx playwright install chromium"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "playwright": "^1.44.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
