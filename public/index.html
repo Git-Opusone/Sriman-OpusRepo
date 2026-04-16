@@ -288,34 +288,6 @@
     .no-results .icon { font-size: 2.5rem; margin-bottom: 12px; }
     .no-results p { font-size: .95rem; }
 
-    /* Raw text fallback */
-    .raw-text-banner {
-      background: #fffbeb;
-      border: 1px solid #fcd34d;
-      border-radius: var(--radius);
-      padding: 12px 16px;
-      margin-bottom: 12px;
-      font-size: .85rem;
-      color: #92400e;
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-    }
-    .raw-text-box {
-      background: var(--gray-50);
-      border: 1px solid var(--gray-200);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      font-family: 'Courier New', Courier, monospace;
-      font-size: .8rem;
-      color: var(--gray-700);
-      white-space: pre-wrap;
-      word-break: break-word;
-      max-height: 420px;
-      overflow-y: auto;
-      line-height: 1.5;
-    }
-
     /* ── Footer ── */
     footer {
       text-align: center;
@@ -596,22 +568,20 @@
     document.getElementById('summaryText').textContent = summary;
 
     const container = document.getElementById('recordsContainer');
-    if (records.length === 0) {
-      if (data.rawText) {
-        container.innerHTML = `
-          <div class="raw-text-banner">
-            <span>&#9432;</span>
-            <span>The agent reached the county website but could not parse structured records. Raw page content is shown below — all ${data.totalFound || '25+'} results may be visible.</span>
-          </div>
-          <div class="raw-text-box">${escHtml(data.rawText)}</div>`;
-      } else {
-        container.innerHTML = `
-          <div class="no-results">
-            <div class="icon">📭</div>
-            <p>No property or tax records were found for the given search criteria.</p>
-            <p style="margin-top:8px;font-size:.82rem;">Try a different name format or check the county URL.</p>
-          </div>`;
-      }
+    if (records.length === 0 && data.rawText) {
+      container.innerHTML = `
+        <div style="margin-bottom:10px;padding:8px 12px;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;font-size:.82rem;color:#5d4037;">
+          ℹ️ The AI agent reached the results page but could not parse structured records.
+          Raw page content is shown below — all the county data is here.
+        </div>
+        <pre style="white-space:pre-wrap;word-break:break-word;font-family:monospace;font-size:.8rem;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;padding:16px;max-height:600px;overflow-y:auto;">${escHtml(data.rawText)}</pre>`;
+    } else if (records.length === 0) {
+      container.innerHTML = `
+        <div class="no-results">
+          <div class="icon">📭</div>
+          <p>No property or tax records were found for the given search criteria.</p>
+          <p style="margin-top:8px;font-size:.82rem;">Try a different name format or check the county URL.</p>
+        </div>`;
     } else {
       container.innerHTML = records.map(renderRecord).join('');
     }

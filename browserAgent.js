@@ -2,165 +2,195 @@
 
 /**
  * AI Browser Agent
- * Uses Playwright for browser automation and Claude claude-opus-4-6 (vision) to intelligently
+ * Uses Playwright for browser automation and Groq (Llama vision) to intelligently
  * navigate county property tax websites, fill search forms, and extract results.
+ *
+ * Groq API is OpenAI-compatible — tool definitions and messages follow OpenAI format.
  */
 
 const { chromium } = require('playwright');
-const Anthropic = require('@anthropic-ai/sdk');
+const Groq = require('groq-sdk');
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+// Model to use — must support both vision and tool/function calling on Groq.
+// Default : meta-llama/llama-4-scout-17b-16e-instruct  (Llama 4 Scout — vision + tools, replaces decommissioned llama-3.2 vision models)
+// Check all available models at: https://console.groq.com/docs/models
+const MODEL = process.env.GROQ_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct';
 
 // ---------------------------------------------------------------------------
-// Tool definitions for the AI agent
+// Tool definitions — OpenAI / Groq format  ({ type: "function", function: {...} })
 // ---------------------------------------------------------------------------
 
 const AGENT_TOOLS = [
   {
-    name: 'take_screenshot',
-    description:
-      'Capture a screenshot of the current browser page. Use this to visually inspect the page layout, find form fields, and verify results.',
-    input_schema: { type: 'object', properties: {}, required: [] },
-  },
-  {
-    name: 'get_page_content',
-    description:
-      'Get the current page URL, title, visible text content, all input fields, and all clickable buttons/links. Use this to understand page structure and available form fields.',
-    input_schema: { type: 'object', properties: {}, required: [] },
-  },
-  {
-    name: 'fill_input',
-    description: 'Fill a form input field with a value. Clears the field first before typing.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        selector: {
-          type: 'string',
-          description:
-            'CSS selector for the input (e.g. "#ownerName", "input[name=\\'search\\']", ".search-input")',
-        },
-        value: {
-          type: 'string',
-          description: 'The text value to enter into the field',
-        },
-      },
-      required: ['selector', 'value'],
+    type: 'function',
+    function: {
+      name: 'take_screenshot',
+      description:
+        'Capture a screenshot of the current browser page. Use this to visually inspect the page layout, find form fields, and verify results.',
+      parameters: { type: 'object', properties: {}, required: [] },
     },
   },
   {
-    name: 'click_element',
-    description:
-      'Click on a page element such as a button, link, or tab. Waits for the page to settle after clicking.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        selector: {
-          type: 'string',
-          description: 'CSS selector for the element to click',
+    type: 'function',
+    function: {
+      name: 'get_page_content',
+      description:
+        'Get the current page URL, title, visible text content, all input fields, and all clickable buttons/links. Use this to understand page structure and available form fields.',
+      parameters: { type: 'object', properties: {}, required: [] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'fill_input',
+      description: 'Fill a form input field with a value. Clears the field first before typing.',
+      parameters: {
+        type: 'object',
+        properties: {
+          selector: {
+            type: 'string',
+            description:
+              "CSS selector for the input (e.g. \"#ownerName\", \"input[name='search']\", \".search-input\")",
+          },
+          value: {
+            type: 'string',
+            description: 'The text value to enter into the field',
+          },
         },
-        text: {
-          type: ['string', 'null'],
-          description:
-            'Visible text of the element to click (used when selector is unknown). E.g. "Search", "Submit"',
-        },
+        required: ['selector', 'value'],
       },
     },
   },
   {
-    name: 'select_option',
-    description: 'Select a value from a <select> dropdown element.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        selector: { type: 'string', description: 'CSS selector for the <select> element' },
-        value: { type: 'string', description: 'The option value or visible text to select' },
-      },
-      required: ['selector', 'value'],
-    },
-  },
-  {
-    name: 'press_key',
-    description: 'Press a keyboard key. Common uses: "Enter" to submit a form, "Tab" to move focus.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        key: { type: 'string', description: 'Key name: "Enter", "Tab", "Escape", etc.' },
-      },
-      required: ['key'],
-    },
-  },
-  {
-    name: 'wait',
-    description: 'Wait for the page to finish loading, or add extra delay for slow pages.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        milliseconds: {
-          type: 'number',
-          description: 'Extra milliseconds to wait after network is idle (default 0)',
+    type: 'function',
+    function: {
+      name: 'click_element',
+      description:
+        'Click on a page element such as a button, link, or tab. Waits for the page to settle after clicking.',
+      parameters: {
+        type: 'object',
+        properties: {
+          selector: {
+            type: 'string',
+            description: 'CSS selector for the element to click',
+          },
+          text: {
+            type: ['string', 'null'],
+            description:
+              'Visible text of the element to click (used when selector is unknown). E.g. "Search", "Submit"',
+          },
         },
       },
     },
   },
   {
-    name: 'navigate',
-    description: 'Navigate the browser to a different URL.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        url: { type: 'string', description: 'Full URL to navigate to' },
+    type: 'function',
+    function: {
+      name: 'select_option',
+      description: 'Select a value from a <select> dropdown element.',
+      parameters: {
+        type: 'object',
+        properties: {
+          selector: { type: 'string', description: 'CSS selector for the <select> element' },
+          value: { type: 'string', description: 'The option value or visible text to select' },
+        },
+        required: ['selector', 'value'],
       },
-      required: ['url'],
     },
   },
   {
-    name: 'extract_results',
-    description:
-      'Call this ONLY when you have successfully found and read all property/tax records. This finalizes the agent run and returns the structured results.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        records: {
-          type: 'array',
-          description: 'All property/tax records found on the page',
-          items: {
-            type: 'object',
-            properties: {
-              ownerName: { type: 'string', description: 'Full name of the property owner/taxpayer' },
-              propertyAddress: { type: 'string', description: 'Full property/mailing address' },
-              parcelId: { type: 'string', description: 'Parcel ID, account number, or property ID' },
-              taxYear: { type: 'string', description: 'Tax year (e.g. "2025")' },
-              taxAmountDue: { type: 'string', description: 'Total tax amount due (e.g. "$1,234.56")' },
-              paymentStatus: {
-                type: 'string',
-                description: 'Payment status: Paid, Unpaid, Partial, Delinquent, etc.',
-              },
-              county: { type: 'string', description: 'County name' },
-              state: { type: 'string', description: 'State abbreviation (e.g. "TX")' },
-              legalDescription: { type: 'string', description: 'Legal description of the property' },
-              additionalDetails: {
-                type: 'object',
-                description: 'Any other relevant details (appraised value, exemptions, due dates, etc.)',
+    type: 'function',
+    function: {
+      name: 'press_key',
+      description:
+        'Press a keyboard key. Common uses: "Enter" to submit a form, "Tab" to move focus.',
+      parameters: {
+        type: 'object',
+        properties: {
+          key: { type: 'string', description: 'Key name: "Enter", "Tab", "Escape", etc.' },
+        },
+        required: ['key'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'wait',
+      description: 'Wait for the page to finish loading, or add extra delay for slow pages.',
+      parameters: {
+        type: 'object',
+        properties: {
+          milliseconds: {
+            type: 'number',
+            description: 'Extra milliseconds to wait after network is idle (default 0)',
+          },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'navigate',
+      description: 'Navigate the browser to a different URL.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'Full URL to navigate to' },
+        },
+        required: ['url'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'extract_results',
+      description:
+        'Call this ONLY when you have successfully found and read all property/tax records. This finalizes the agent run and returns the structured results.',
+      parameters: {
+        type: 'object',
+        properties: {
+          records: {
+            type: 'array',
+            description: 'All property/tax records found on the page',
+            items: {
+              type: 'object',
+              properties: {
+                ownerName: { type: 'string', description: 'Full name of the property owner/taxpayer' },
+                propertyAddress: { type: 'string', description: 'Full property/mailing address' },
+                parcelId: { type: 'string', description: 'Parcel ID, account number, or property ID' },
+                taxYear: { type: 'string', description: 'Tax year (e.g. "2025")' },
+                taxAmountDue: { type: 'string', description: 'Total tax amount due (e.g. "$1,234.56")' },
+                paymentStatus: {
+                  type: 'string',
+                  description: 'Payment status: Paid, Unpaid, Partial, Delinquent, etc.',
+                },
+                county: { type: 'string', description: 'County name' },
+                state: { type: 'string', description: 'State abbreviation (e.g. "TX")' },
+                legalDescription: { type: 'string', description: 'Legal description of the property' },
+                additionalDetails: {
+                  type: 'object',
+                  description: 'Any other relevant details (appraised value, exemptions, due dates, etc.)',
+                },
               },
             },
           },
+          totalFound: { type: 'number', description: 'Total count of matching records found' },
+          summary: {
+            type: 'string',
+            description: 'One-sentence summary of what was found (e.g. "Found 2 records for John Smith")',
+          },
+          searchedUrl: { type: 'string', description: 'The URL where results were found' },
         },
-        totalFound: { type: 'number', description: 'Total count of matching records found' },
-        summary: {
-          type: 'string',
-          description: 'One-sentence summary of what was found (e.g. "Found 2 records for John Smith")',
-        },
-        searchedUrl: { type: 'string', description: 'The URL where results were found' },
+        required: ['records', 'totalFound', 'summary'],
       },
-      required: ['records', 'totalFound', 'summary'],
     },
   },
 ];
-
-// Mark the last tool for prompt caching (tools list is static)
-const CACHED_TOOLS = AGENT_TOOLS.map((tool, i) =>
-  i === AGENT_TOOLS.length - 1 ? { ...tool, cache_control: { type: 'ephemeral' } } : tool
-);
 
 // ---------------------------------------------------------------------------
 // Tool executor
@@ -169,8 +199,12 @@ const CACHED_TOOLS = AGENT_TOOLS.map((tool, i) =>
 async function executeTool(page, toolName, input) {
   switch (toolName) {
     case 'take_screenshot': {
-      const data = await page.screenshot({ encoding: 'base64', fullPage: false });
-      return { _type: 'image', data, mimeType: 'image/png' };
+      // Get raw Buffer and convert to base64 manually — avoids potential whitespace/line-break
+      // issues that occur when using Playwright's encoding:'base64' option directly.
+      // JPEG at quality 40 keeps the payload well under Groq's 4 MB limit.
+      const buf = await page.screenshot({ fullPage: false, type: 'jpeg', quality: 40 });
+      const data = buf.toString('base64').replace(/\s/g, '');
+      return { _type: 'image', data, mimeType: 'image/jpeg' };
     }
 
     case 'get_page_content': {
@@ -210,7 +244,7 @@ async function executeTool(page, toolName, input) {
 
     case 'fill_input': {
       try {
-        await page.fill(input.selector, input.value, { timeout: 5000 });
+        await page.fill(input.selector, input.value, { timeout: 15000 });
         return { success: true, message: `Filled "${input.value}" into ${input.selector}` };
       } catch (err) {
         return { success: false, message: err.message };
@@ -220,16 +254,13 @@ async function executeTool(page, toolName, input) {
     case 'click_element': {
       try {
         if (input.selector) {
-          await page.click(input.selector, { timeout: 5000 });
+          await page.click(input.selector, { timeout: 15000 });
         } else if (input.text != null && input.text !== '') {
-          await page
-            .getByText(input.text, { exact: false })
-            .first()
-            .click({ timeout: 5000 });
+          await page.getByText(input.text, { exact: false }).first().click({ timeout: 15000 });
         } else {
           return { success: false, message: 'Provide either selector or text' };
         }
-        await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+        await page.waitForLoadState('networkidle', { timeout: 45000 }).catch(() => {});
         return { success: true, message: 'Clicked and page settled' };
       } catch (err) {
         return { success: false, message: err.message };
@@ -238,9 +269,11 @@ async function executeTool(page, toolName, input) {
 
     case 'select_option': {
       try {
-        await page.selectOption(input.selector, { label: input.value }, { timeout: 5000 }).catch(async () => {
-          await page.selectOption(input.selector, { value: input.value }, { timeout: 5000 });
-        });
+        await page
+          .selectOption(input.selector, { label: input.value }, { timeout: 15000 })
+          .catch(async () => {
+            await page.selectOption(input.selector, { value: input.value }, { timeout: 15000 });
+          });
         return { success: true, message: `Selected "${input.value}"` };
       } catch (err) {
         return { success: false, message: err.message };
@@ -249,21 +282,23 @@ async function executeTool(page, toolName, input) {
 
     case 'press_key': {
       await page.keyboard.press(input.key);
-      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+      await page.waitForLoadState('networkidle', { timeout: 45000 }).catch(() => {});
       return { success: true, message: `Pressed ${input.key}` };
     }
 
     case 'wait': {
-      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
-      if (input.milliseconds > 0) {
-        await page.waitForTimeout(input.milliseconds);
-      }
+      await page.waitForLoadState('networkidle', { timeout: 45000 }).catch(() => {});
+      if (input.milliseconds > 0) await page.waitForTimeout(input.milliseconds);
       return { success: true, message: 'Page settled' };
     }
 
     case 'navigate': {
-      await page.goto(input.url, { waitUntil: 'networkidle', timeout: 30000 });
-      return { success: true, message: `Navigated to ${input.url}` };
+      try {
+        await page.goto(input.url, { waitUntil: 'networkidle', timeout: 90000 });
+        return { success: true, message: `Navigated to ${input.url}` };
+      } catch (err) {
+        return { success: false, message: `Navigation failed: ${err.message}. Stay on the current page and try a different approach.` };
+      }
     }
 
     case 'extract_results':
@@ -272,32 +307,6 @@ async function executeTool(page, toolName, input) {
     default:
       return { success: false, message: `Unknown tool: ${toolName}` };
   }
-}
-
-// ---------------------------------------------------------------------------
-// Build tool-result message content (handles image vs text)
-// ---------------------------------------------------------------------------
-
-function buildToolResult(toolUseId, result) {
-  if (result && result._type === 'image') {
-    return {
-      type: 'tool_result',
-      tool_use_id: toolUseId,
-      content: [
-        {
-          type: 'image',
-          source: { type: 'base64', media_type: result.mimeType, data: result.data },
-        },
-        { type: 'text', text: 'Screenshot captured. Analyze the page and decide next action.' },
-      ],
-    };
-  }
-
-  return {
-    type: 'tool_result',
-    tool_use_id: toolUseId,
-    content: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -313,7 +322,14 @@ function buildToolResult(toolUseId, result) {
  * @param {string} [params.accountNumber]
  * @param {function} [params.onProgress] - Optional callback(message: string)
  */
-async function runBrowserAgent({ url, firstName, lastName, fullName, accountNumber, onProgress = () => {} }) {
+async function runBrowserAgent({
+  url,
+  firstName,
+  lastName,
+  fullName,
+  accountNumber,
+  onProgress = () => {},
+}) {
   const headless = process.env.BROWSER_HEADLESS !== 'false';
 
   const browser = await chromium.launch({
@@ -331,7 +347,7 @@ async function runBrowserAgent({ url, firstName, lastName, fullName, accountNumb
 
   try {
     onProgress('Launching browser and navigating to county website...');
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(url, { waitUntil: 'networkidle', timeout: 90000 });
 
     // Build search criteria list
     const criteria = [];
@@ -340,16 +356,12 @@ async function runBrowserAgent({ url, firstName, lastName, fullName, accountNumb
     if (fullName) criteria.push(`Full Name: "${fullName}"`);
     if (accountNumber) criteria.push(`Account / Property ID: "${accountNumber}"`);
 
-    // Construct the name string that will most likely appear on county sites
     const nameForSearch =
       fullName ||
       (lastName && firstName ? `${lastName} ${firstName}` : lastName || firstName || '');
 
-    // System prompt (cached — static for all iterations)
-    const systemContent = [
-      {
-        type: 'text',
-        text: `You are an expert AI agent that navigates US county property tax and title search websites using browser automation tools.
+    // System prompt
+    const systemPrompt = `You are an expert AI agent that navigates US county property tax and title search websites using browser automation tools.
 
 Your goal: Search for property and tax records using the criteria provided, then return ALL found records via the extract_results tool.
 
@@ -369,14 +381,12 @@ Your goal: Search for property and tax records using the criteria provided, then
 
 ## Key rules
 - Always start with take_screenshot.
+- NEVER navigate to a different domain. Only use the navigate tool to follow links within the same county website. Do not invent or guess alternative URLs.
 - If a search attempt returns no results, try an alternative format (e.g., swap first/last name order, try just the last name).
 - If the page has a keyword search box, try syntax like: OwnerName:"SMITH JOHN" Year:2025
 - Collect these fields for each record: ownerName, propertyAddress, parcelId, taxYear, taxAmountDue, paymentStatus, county, state, legalDescription, additionalDetails.
-- Do NOT loop forever — after 3 failed search attempts call extract_results with empty records and explain in the summary.
-- IMPORTANT: Call extract_results as soon as you see any results on screen — partial data is fine. Do not wait to have every field filled in perfectly.`,
-        cache_control: { type: 'ephemeral' },
-      },
-    ];
+- As soon as you can see results on the page (even a table or list of names), call extract_results immediately. Do not wait until you have every field — partial data is better than nothing.
+- Do NOT loop forever — after 3 failed search attempts call extract_results with empty records and explain in the summary.`;
 
     const userMessage = `Please search the county property tax website for the following:
 
@@ -386,9 +396,14 @@ Search Criteria:
 ${criteria.length > 0 ? criteria.join('\n') : 'No specific criteria provided'}
 ${nameForSearch ? `\nName string to use in search: "${nameForSearch}"` : ''}
 
-Start by taking a screenshot to see the page, then proceed with the search. Return all found property/tax records.`;
+Start by taking a screenshot to see the page, then proceed with the search. Stay on this domain only — do not navigate to any other website. Return all found property/tax records.`;
 
-    const messages = [{ role: 'user', content: userMessage }];
+    // Groq / OpenAI-style messages array.
+    // System prompt goes as the first message with role "system".
+    const messages = [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMessage },
+    ];
 
     let finalResults = null;
     const MAX_ITERATIONS = 18;
@@ -396,79 +411,153 @@ Start by taking a screenshot to see the page, then proceed with the search. Retu
     for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
       onProgress(`AI agent working... (step ${iteration}/${MAX_ITERATIONS})`);
 
-      const response = await client.messages.create({
-        model: 'claude-opus-4-6',
-        max_tokens: 4096,
-        system: systemContent,
-        tools: CACHED_TOOLS,
-        messages,
-      });
-
-      messages.push({ role: 'assistant', content: response.content });
-
-      // Log any text blocks from the model
-      for (const block of response.content) {
-        if (block.type === 'text' && block.text.trim()) {
-          onProgress(`Agent: ${block.text.trim().substring(0, 200)}`);
+      // Call the model; if Groq rejects an image payload, strip images and retry once.
+      let response;
+      try {
+        response = await client.chat.completions.create({
+          model: MODEL,
+          max_tokens: 4096,
+          messages,
+          tools: AGENT_TOOLS,
+          tool_choice: 'auto',
+        });
+      } catch (apiErr) {
+        const msg = apiErr?.message || '';
+        if (msg.includes('invalid base64') || msg.includes('image')) {
+          onProgress('Vision rejected by API — retrying without images...');
+          const textOnlyMessages = messages.map((m) => {
+            if (!Array.isArray(m.content)) return m;
+            const textParts = m.content.filter((c) => c.type !== 'image_url');
+            return { ...m, content: textParts.length ? textParts : 'Screenshot taken — use get_page_content to read the page.' };
+          });
+          response = await client.chat.completions.create({
+            model: MODEL,
+            max_tokens: 4096,
+            messages: textOnlyMessages,
+            tools: AGENT_TOOLS,
+            tool_choice: 'auto',
+          });
+        } else {
+          throw apiErr;
         }
       }
 
-      if (response.stop_reason === 'end_turn') {
+      const assistantMessage = response.choices[0].message;
+      // Push the assistant message as-is (includes tool_calls if present)
+      messages.push(assistantMessage);
+
+      // Log any text the model produced
+      if (assistantMessage.content && assistantMessage.content.trim()) {
+        onProgress(`Agent: ${assistantMessage.content.trim().substring(0, 200)}`);
+      }
+
+      const finishReason = response.choices[0].finish_reason;
+
+      if (finishReason === 'stop') {
         onProgress('Agent finished reasoning.');
         break;
       }
 
-      if (response.stop_reason !== 'tool_use') {
+      if (finishReason !== 'tool_calls') {
         break;
       }
 
+      // -----------------------------------------------------------------------
       // Process tool calls
-      const toolResults = [];
+      // Groq uses OpenAI-style tool_calls array in the assistant message.
+      // Screenshots cannot be returned inline in a "tool" role message, so we
+      // collect them and inject them as a follow-up "user" role message with
+      // image_url content — which the vision model can see.
+      // -----------------------------------------------------------------------
+      const toolCalls = assistantMessage.tool_calls || [];
+      const toolMessages = [];      // {role:"tool"} responses
+      const pendingScreenshots = []; // { data, mimeType } to attach after tool results
       let done = false;
 
-      for (const block of response.content) {
-        if (block.type !== 'tool_use') continue;
+      for (const toolCall of toolCalls) {
+        const toolName = toolCall.function.name;
+        let input = {};
+        try {
+          input = JSON.parse(toolCall.function.arguments || '{}');
+        } catch (_) {
+          // leave input as {}
+        }
 
-        onProgress(`Running: ${block.name}...`);
+        onProgress(`Running: ${toolName}...`);
 
-        if (block.name === 'extract_results') {
-          finalResults = {
-            ...block.input,
-            searchedUrl: page.url(),
-          };
-          toolResults.push({
-            type: 'tool_result',
-            tool_use_id: block.id,
+        if (toolName === 'extract_results') {
+          finalResults = { ...input, searchedUrl: page.url() };
+          toolMessages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
             content: 'Results extracted successfully. Task complete.',
           });
           done = true;
           break;
         }
 
-        const result = await executeTool(page, block.name, block.input);
-        toolResults.push(buildToolResult(block.id, result));
+        const result = await executeTool(page, toolName, input);
+
+        if (result && result._type === 'image') {
+          // Screenshot: collect for vision injection; confirm via tool message
+          pendingScreenshots.push({ data: result.data, mimeType: result.mimeType });
+          toolMessages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: 'Screenshot captured. See the image in the next message for visual analysis.',
+          });
+        } else {
+          toolMessages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+          });
+        }
       }
 
-      messages.push({ role: 'user', content: toolResults });
+      // Add tool-result messages first
+      messages.push(...toolMessages);
+
+      // Then inject screenshots as a user message so the vision model can see them.
+      // This follows the OpenAI multi-modal pattern: image_url inside a user message.
+      if (pendingScreenshots.length > 0) {
+        const imageContent = pendingScreenshots.map(({ data, mimeType }) => ({
+          type: 'image_url',
+          image_url: { url: `data:${mimeType};base64,${data}` },
+        }));
+        messages.push({
+          role: 'user',
+          content: [
+            ...imageContent,
+            {
+              type: 'text',
+              text: 'Above is the current browser page screenshot. Analyze it and decide your next action.',
+            },
+          ],
+        });
+      }
 
       if (done) break;
     }
 
     onProgress('Search complete.');
 
-    if (finalResults) {
-      return finalResults;
-    }
+    if (finalResults) return finalResults;
 
-    // Fallback: agent exhausted iterations without calling extract_results — capture raw page text
-    onProgress('Capturing raw page text as fallback...');
-    const rawText = await page.evaluate(() => document.body.innerText).catch(() => '');
+    // Agent exhausted iterations without calling extract_results.
+    // Grab the raw page text so the user still sees whatever the county site returned.
+    onProgress('Capturing raw page content as fallback...');
+    let rawText = '';
+    try {
+      rawText = await page.evaluate(() => document.body.innerText.trim());
+    } catch (_) {}
+
     return {
       records: [],
       totalFound: 0,
-      summary: 'The agent could not extract structured records. Raw page content is shown below.',
+      summary: 'Structured extraction incomplete — raw page content shown below.',
+      rawText: rawText.substring(0, 15000),
       searchedUrl: page.url(),
-      rawText: rawText.trim() || null,
     };
   } finally {
     await browser.close();
