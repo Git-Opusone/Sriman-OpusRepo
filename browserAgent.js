@@ -241,7 +241,7 @@ async function executeTool(page, toolName, input) {
 
     case 'fill_input': {
       try {
-        await page.fill(input.selector, input.value, { timeout: 5000 });
+        await page.fill(input.selector, input.value, { timeout: 15000 });
         return { success: true, message: `Filled "${input.value}" into ${input.selector}` };
       } catch (err) {
         return { success: false, message: err.message };
@@ -251,13 +251,13 @@ async function executeTool(page, toolName, input) {
     case 'click_element': {
       try {
         if (input.selector) {
-          await page.click(input.selector, { timeout: 5000 });
+          await page.click(input.selector, { timeout: 15000 });
         } else if (input.text) {
-          await page.getByText(input.text, { exact: false }).first().click({ timeout: 5000 });
+          await page.getByText(input.text, { exact: false }).first().click({ timeout: 15000 });
         } else {
           return { success: false, message: 'Provide either selector or text' };
         }
-        await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+        await page.waitForLoadState('networkidle', { timeout: 45000 }).catch(() => {});
         return { success: true, message: 'Clicked and page settled' };
       } catch (err) {
         return { success: false, message: err.message };
@@ -267,9 +267,9 @@ async function executeTool(page, toolName, input) {
     case 'select_option': {
       try {
         await page
-          .selectOption(input.selector, { label: input.value }, { timeout: 5000 })
+          .selectOption(input.selector, { label: input.value }, { timeout: 15000 })
           .catch(async () => {
-            await page.selectOption(input.selector, { value: input.value }, { timeout: 5000 });
+            await page.selectOption(input.selector, { value: input.value }, { timeout: 15000 });
           });
         return { success: true, message: `Selected "${input.value}"` };
       } catch (err) {
@@ -279,18 +279,18 @@ async function executeTool(page, toolName, input) {
 
     case 'press_key': {
       await page.keyboard.press(input.key);
-      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+      await page.waitForLoadState('networkidle', { timeout: 45000 }).catch(() => {});
       return { success: true, message: `Pressed ${input.key}` };
     }
 
     case 'wait': {
-      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+      await page.waitForLoadState('networkidle', { timeout: 45000 }).catch(() => {});
       if (input.milliseconds > 0) await page.waitForTimeout(input.milliseconds);
       return { success: true, message: 'Page settled' };
     }
 
     case 'navigate': {
-      await page.goto(input.url, { waitUntil: 'networkidle', timeout: 30000 });
+      await page.goto(input.url, { waitUntil: 'networkidle', timeout: 90000 });
       return { success: true, message: `Navigated to ${input.url}` };
     }
 
@@ -340,7 +340,7 @@ async function runBrowserAgent({
 
   try {
     onProgress('Launching browser and navigating to county website...');
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(url, { waitUntil: 'networkidle', timeout: 90000 });
 
     // Build search criteria list
     const criteria = [];
