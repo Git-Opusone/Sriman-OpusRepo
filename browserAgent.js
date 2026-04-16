@@ -2,17 +2,33 @@
 
 /**
  * AI Browser Agent
- * Uses Playwright for browser automation and Claude claude-opus-4-6 (vision) to intelligently
- * navigate county property tax websites, fill search forms, and extract results.
+ * Uses Playwright for browser automation and a configurable LLM (Anthropic or Ollama)
+ * to intelligently navigate county property tax websites, fill search forms, and
+ * extract results.
+ *
+ * Set LLM_PROVIDER=anthropic (default) or LLM_PROVIDER=ollama in your environment.
+ * For Ollama, the model must support tool/function calling (e.g. llama3.1, qwen2.5).
  */
 
 const { chromium } = require('playwright');
-const Anthropic = require('@anthropic-ai/sdk');
-
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ---------------------------------------------------------------------------
-// Tool definitions for the AI agent
+// Provider configuration
+// ---------------------------------------------------------------------------
+
+const LLM_PROVIDER = process.env.LLM_PROVIDER || 'anthropic';
+const LLM_MODEL =
+  process.env.LLM_MODEL || (LLM_PROVIDER === 'anthropic' ? 'claude-opus-4-6' : 'llama3.1');
+const OLLAMA_BASE_URL = (process.env.OLLAMA_BASE_URL || 'http://localhost:11434').replace(/\/$/, '');
+
+let anthropicClient = null;
+if (LLM_PROVIDER === 'anthropic') {
+  const Anthropic = require('@anthropic-ai/sdk');
+  anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+}
+
+// ---------------------------------------------------------------------------
+// Tool definitions for the AI agent (provider-agnostic Anthropic schema format)
 // ---------------------------------------------------------------------------
 
 const AGENT_TOOLS = [
@@ -157,10 +173,163 @@ const AGENT_TOOLS = [
   },
 ];
 
-// Mark the last tool for prompt caching (tools list is static)
-const CACHED_TOOLS = AGENT_TOOLS.map((tool, i) =>
-  i === AGENT_TOOLS.length - 1 ? { ...tool, cache_control: { type: 'ephemeral' } } : tool
-);
+// ---------------------------------------------------------------------------
+// Ollama / OpenAI-format helpers
+// ---------------------------------------------------------------------------
+
+/** Convert Anthropic-schema tool definitions to OpenAI function-calling format. */
+function toOpenAITools(tools) {
+  return tools.map((t) => ({
+    type: 'function',
+    function: {
+      name: t.name,
+      description: t.description,
+      parameters: t.input_schema,
+    },
+  }));
+}
+
+/**
+ * Convert a conversation stored in Anthropic message format into the
+ * OpenAI-compatible message array expected by Ollama.
+ *
+ * systemContent – the Anthropic-style system array (or plain string)
+ * messages      – array of { role, content } in Anthropic format
+ */
+function toOpenAIMessages(systemContent, messages) {
+  const result = [];
+
+  // System prompt
+  if (systemContent) {
+    const text = Array.isArray(systemContent)
+      ? systemContent.map((s) => s.text || '').join('\n')
+      : systemContent;
+    result.push({ role: 'system', content: text });
+  }
+
+  for (const msg of messages) {
+    if (msg.role === 'user') {
+      if (typeof msg.content === 'string') {
+        result.push({ role: 'user', content: msg.content });
+      } else if (Array.isArray(msg.content)) {
+        // Array of tool_result objects → one 'tool' message each
+        for (const item of msg.content) {
+          if (item.type !== 'tool_result') continue;
+          let content;
+          if (Array.isArray(item.content)) {
+            // Drop image blocks; keep only text
+            content = item.content
+              .filter((c) => c.type === 'text')
+              .map((c) => c.text)
+              .join('\n') || 'Tool executed successfully.';
+          } else {
+            content =
+              typeof item.content === 'string'
+                ? item.content
+                : JSON.stringify(item.content);
+          }
+          result.push({ role: 'tool', tool_call_id: item.tool_use_id, content });
+        }
+      }
+    } else if (msg.role === 'assistant') {
+      if (typeof msg.content === 'string') {
+        result.push({ role: 'assistant', content: msg.content });
+      } else if (Array.isArray(msg.content)) {
+        const text = msg.content
+          .filter((b) => b.type === 'text')
+          .map((b) => b.text)
+          .join('') || null;
+        const toolCalls = msg.content
+          .filter((b) => b.type === 'tool_use')
+          .map((b) => ({
+            id: b.id,
+            type: 'function',
+            function: { name: b.name, arguments: JSON.stringify(b.input) },
+          }));
+        result.push({
+          role: 'assistant',
+          content: text,
+          ...(toolCalls.length > 0 && { tool_calls: toolCalls }),
+        });
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Normalize an Ollama (OpenAI-compatible) chat completion response into the
+ * Anthropic-like shape used throughout the agent loop.
+ */
+function normalizeOllamaResponse(data) {
+  const choice = data.choices[0];
+  const msg = choice.message;
+  const content = [];
+
+  if (msg.content) {
+    content.push({ type: 'text', text: msg.content });
+  }
+
+  if (msg.tool_calls) {
+    for (const tc of msg.tool_calls) {
+      let input;
+      try {
+        input = JSON.parse(tc.function.arguments);
+      } catch {
+        input = {};
+      }
+      content.push({ type: 'tool_use', id: tc.id, name: tc.function.name, input });
+    }
+  }
+
+  return {
+    content,
+    stop_reason: choice.finish_reason === 'tool_calls' ? 'tool_use' : 'end_turn',
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Unified LLM call (Anthropic or Ollama)
+// ---------------------------------------------------------------------------
+
+async function callLLM(systemContent, messages) {
+  if (LLM_PROVIDER === 'anthropic') {
+    // Apply prompt caching to the last tool definition (static list)
+    const cachedTools = AGENT_TOOLS.map((tool, i) =>
+      i === AGENT_TOOLS.length - 1 ? { ...tool, cache_control: { type: 'ephemeral' } } : tool
+    );
+    return await anthropicClient.messages.create({
+      model: LLM_MODEL,
+      max_tokens: 4096,
+      system: systemContent,
+      tools: cachedTools,
+      messages,
+    });
+  }
+
+  // Ollama via OpenAI-compatible endpoint
+  const openaiMessages = toOpenAIMessages(systemContent, messages);
+  const openaiTools = toOpenAITools(AGENT_TOOLS);
+
+  const response = await fetch(`${OLLAMA_BASE_URL}/v1/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: LLM_MODEL, messages: openaiMessages, tools: openaiTools, stream: false }),
+  });
+
+  if (!response.ok) {
+    let errMsg = `Ollama API error ${response.status}`;
+    try {
+      const err = await response.json();
+      errMsg = err.error?.message || errMsg;
+    } catch { /* ignore parse errors */ }
+    throw new Error(errMsg);
+  }
+
+  const data = await response.json();
+  return normalizeOllamaResponse(data);
+}
 
 // ---------------------------------------------------------------------------
 // Tool executor
@@ -275,21 +444,30 @@ async function executeTool(page, toolName, input) {
 }
 
 // ---------------------------------------------------------------------------
-// Build tool-result message content (handles image vs text)
+// Build tool-result message content (handles image vs text, and provider)
 // ---------------------------------------------------------------------------
 
 function buildToolResult(toolUseId, result) {
   if (result && result._type === 'image') {
+    if (LLM_PROVIDER === 'anthropic') {
+      return {
+        type: 'tool_result',
+        tool_use_id: toolUseId,
+        content: [
+          {
+            type: 'image',
+            source: { type: 'base64', media_type: result.mimeType, data: result.data },
+          },
+          { type: 'text', text: 'Screenshot captured. Analyze the page and decide next action.' },
+        ],
+      };
+    }
+    // Non-vision Ollama model: return a text fallback
     return {
       type: 'tool_result',
       tool_use_id: toolUseId,
-      content: [
-        {
-          type: 'image',
-          source: { type: 'base64', media_type: result.mimeType, data: result.data },
-        },
-        { type: 'text', text: 'Screenshot captured. Analyze the page and decide next action.' },
-      ],
+      content:
+        'Screenshot taken (vision not available with this model). Use get_page_content to inspect the page structure instead.',
     };
   }
 
@@ -345,7 +523,7 @@ async function runBrowserAgent({ url, firstName, lastName, fullName, accountNumb
       fullName ||
       (lastName && firstName ? `${lastName} ${firstName}` : lastName || firstName || '');
 
-    // System prompt (cached — static for all iterations)
+    // System prompt (Anthropic-style array; cache_control is stripped for Ollama)
     const systemContent = [
       {
         type: 'text',
@@ -354,7 +532,7 @@ async function runBrowserAgent({ url, firstName, lastName, fullName, accountNumb
 Your goal: Search for property and tax records using the criteria provided, then return ALL found records via the extract_results tool.
 
 ## Step-by-step process
-1. Take a screenshot to see the current page.
+1. Take a screenshot to see the current page (or use get_page_content if vision is unavailable).
 2. Call get_page_content to understand the form fields and buttons available.
 3. Fill in the search form using the criteria provided:
    - Owner name fields: try "LASTNAME FIRSTNAME" or "FIRSTNAME LASTNAME"
@@ -363,12 +541,12 @@ Your goal: Search for property and tax records using the criteria provided, then
    - Account/parcel ID fields: enter the account number directly
 4. Submit the form (click Search button or press Enter).
 5. Wait for results to load.
-6. Take a screenshot of the results page.
+6. Take a screenshot of the results page (or use get_page_content).
 7. Call get_page_content to read the results text.
 8. Extract ALL records using extract_results.
 
 ## Key rules
-- Always start with take_screenshot.
+- Always start with take_screenshot or get_page_content.
 - If a search attempt returns no results, try an alternative format (e.g., swap first/last name order, try just the last name).
 - If the page has a keyword search box, try syntax like: OwnerName:"SMITH JOHN" Year:2025
 - Collect these fields for each record: ownerName, propertyAddress, parcelId, taxYear, taxAmountDue, paymentStatus, county, state, legalDescription, additionalDetails.
@@ -395,13 +573,7 @@ Start by taking a screenshot to see the page, then proceed with the search. Retu
     for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
       onProgress(`AI agent working... (step ${iteration}/${MAX_ITERATIONS})`);
 
-      const response = await client.messages.create({
-        model: 'claude-opus-4-6',
-        max_tokens: 4096,
-        system: systemContent,
-        tools: CACHED_TOOLS,
-        messages,
-      });
+      const response = await callLLM(systemContent, messages);
 
       messages.push({ role: 'assistant', content: response.content });
 
