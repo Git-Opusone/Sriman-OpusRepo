@@ -257,7 +257,7 @@ async function executeTool(page, toolName, input) {
     }
 
     case 'navigate': {
-      await page.goto(input.url, { waitUntil: 'load', timeout: 60000 });
+      await page.goto(input.url, { waitUntil: 'domcontentloaded', timeout: 60000 });
       return { success: true, message: `Navigated to ${input.url}` };
     }
 
@@ -342,7 +342,7 @@ async function runBrowserAgentAnthropic({ url, firstName, lastName, fullName, ac
 
   try {
     onProgress('Launching browser and navigating to county website...');
-    await page.goto(url, { waitUntil: 'load', timeout: 60000 });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
     const criteria = [];
     if (firstName)     criteria.push(`First Name: "${firstName}"`);
@@ -467,7 +467,7 @@ async function runBrowserAgentOllama({ url, firstName, lastName, fullName, accou
 
   try {
     onProgress('Launching browser and navigating to county website...');
-    await page.goto(url, { waitUntil: 'load', timeout: 60000 });
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
     const criteria = [];
     if (firstName)     criteria.push(`First Name: "${firstName}"`);
