@@ -18,7 +18,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Health check
 // ---------------------------------------------------------------------------
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'mortgage-search-service', timestamp: new Date().toISOString() });
+  res.json({ status: 'ok', service: 'Orchestrate mortgage-search-service || Sriman ||', timestamp: new Date().toISOString() });
 });
 
 // ---------------------------------------------------------------------------
