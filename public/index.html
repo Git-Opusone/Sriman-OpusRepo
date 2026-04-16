@@ -568,7 +568,16 @@
     document.getElementById('summaryText').textContent = summary;
 
     const container = document.getElementById('recordsContainer');
-    if (records.length === 0) {
+    if (records.length === 0 && data.rawText) {
+      // Agent found the results page but couldn't parse structured fields —
+      // display the raw page text so the user can see what the county site returned.
+      container.innerHTML = `
+        <div style="margin-bottom:10px;padding:8px 12px;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;font-size:.82rem;color:#5d4037;">
+          ℹ️ The AI agent reached the results page but could not parse structured records.
+          Raw page content is shown below — all the county data is here.
+        </div>
+        <pre style="white-space:pre-wrap;word-break:break-word;font-family:monospace;font-size:.8rem;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;padding:16px;max-height:600px;overflow-y:auto;">${escHtml(data.rawText)}</pre>`;
+    } else if (records.length === 0) {
       container.innerHTML = `
         <div class="no-results">
           <div class="icon">📭</div>

@@ -385,6 +385,7 @@ Your goal: Search for property and tax records using the criteria provided, then
 - If a search attempt returns no results, try an alternative format (e.g., swap first/last name order, try just the last name).
 - If the page has a keyword search box, try syntax like: OwnerName:"SMITH JOHN" Year:2025
 - Collect these fields for each record: ownerName, propertyAddress, parcelId, taxYear, taxAmountDue, paymentStatus, county, state, legalDescription, additionalDetails.
+- As soon as you can see results on the page (even a table or list of names), call extract_results immediately. Do not wait until you have every field — partial data is better than nothing.
 - Do NOT loop forever — after 3 failed search attempts call extract_results with empty records and explain in the summary.`;
 
     const userMessage = `Please search the county property tax website for the following:
@@ -541,15 +542,23 @@ Start by taking a screenshot to see the page, then proceed with the search. Stay
 
     onProgress('Search complete.');
 
-    return (
-      finalResults || {
-        records: [],
-        totalFound: 0,
-        summary:
-          'The agent was unable to extract structured results. The county website may have an unsupported layout.',
-        searchedUrl: page.url(),
-      }
-    );
+    if (finalResults) return finalResults;
+
+    // Agent exhausted iterations without calling extract_results.
+    // Grab the raw page text so the user still sees whatever the county site returned.
+    onProgress('Capturing raw page content as fallback...');
+    let rawText = '';
+    try {
+      rawText = await page.evaluate(() => document.body.innerText.trim());
+    } catch (_) {}
+
+    return {
+      records: [],
+      totalFound: 0,
+      summary: 'Structured extraction incomplete — raw page content shown below.',
+      rawText: rawText.substring(0, 15000),
+      searchedUrl: page.url(),
+    };
   } finally {
     await browser.close();
   }
