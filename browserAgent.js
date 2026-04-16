@@ -14,10 +14,9 @@ const Groq = require('groq-sdk');
 const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 // Model to use — must support both vision and tool/function calling on Groq.
-// Default : llama-3.2-90b-vision-preview  (accurate, supports vision + tools)
-// Lighter : llama-3.2-11b-vision-preview  (faster, slightly less accurate)
+// Default : meta-llama/llama-4-scout-17b-16e-instruct  (Llama 4 Scout — vision + tools, replaces decommissioned llama-3.2 vision models)
 // Check all available models at: https://console.groq.com/docs/models
-const MODEL = process.env.GROQ_MODEL || 'llama-3.2-90b-vision-preview';
+const MODEL = process.env.GROQ_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct';
 
 // ---------------------------------------------------------------------------
 // Tool definitions — OpenAI / Groq format  ({ type: "function", function: {...} })
