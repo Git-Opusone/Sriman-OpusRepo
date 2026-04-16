@@ -313,7 +313,7 @@ async function callLLM(systemContent, messages) {
   const openaiTools = toOpenAITools(AGENT_TOOLS);
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 120_000); // 2-minute timeout
+  const timeoutId = setTimeout(() => controller.abort(), 300_000); // 5-minute timeout (CPU inference is slow)
 
   let response;
   try {
@@ -325,7 +325,7 @@ async function callLLM(systemContent, messages) {
     });
   } catch (err) {
     if (err.name === 'AbortError') {
-      throw new Error(`Ollama request timed out after 120s. The model may be overloaded or not running.`);
+      throw new Error(`Ollama request timed out after 300s. CPU-only inference is slow — consider using a smaller model like llama3.2:3b.`);
     }
     throw new Error(`Cannot reach Ollama at ${OLLAMA_BASE_URL}. Make sure Ollama is running: run "ollama serve" in a terminal. (${err.message})`);
   } finally {
