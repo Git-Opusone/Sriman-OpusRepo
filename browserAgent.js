@@ -199,8 +199,9 @@ const AGENT_TOOLS = [
 async function executeTool(page, toolName, input) {
   switch (toolName) {
     case 'take_screenshot': {
-      const data = await page.screenshot({ encoding: 'base64', fullPage: false });
-      return { _type: 'image', data, mimeType: 'image/png' };
+      // Use JPEG at 60% quality — Groq rejects large base64 PNGs ("invalid base64 url")
+      const data = await page.screenshot({ encoding: 'base64', fullPage: false, type: 'jpeg', quality: 60 });
+      return { _type: 'image', data, mimeType: 'image/jpeg' };
     }
 
     case 'get_page_content': {
@@ -438,7 +439,7 @@ Start by taking a screenshot to see the page, then proceed with the search. Retu
       // -----------------------------------------------------------------------
       const toolCalls = assistantMessage.tool_calls || [];
       const toolMessages = [];      // {role:"tool"} responses
-      const pendingScreenshots = []; // base64 PNGs to attach after tool results
+      const pendingScreenshots = []; // { data, mimeType } to attach after tool results
       let done = false;
 
       for (const toolCall of toolCalls) {
@@ -467,7 +468,7 @@ Start by taking a screenshot to see the page, then proceed with the search. Retu
 
         if (result && result._type === 'image') {
           // Screenshot: collect for vision injection; confirm via tool message
-          pendingScreenshots.push(result.data);
+          pendingScreenshots.push({ data: result.data, mimeType: result.mimeType });
           toolMessages.push({
             role: 'tool',
             tool_call_id: toolCall.id,
@@ -488,9 +489,9 @@ Start by taking a screenshot to see the page, then proceed with the search. Retu
       // Then inject screenshots as a user message so the vision model can see them.
       // This follows the OpenAI multi-modal pattern: image_url inside a user message.
       if (pendingScreenshots.length > 0) {
-        const imageContent = pendingScreenshots.map((data) => ({
+        const imageContent = pendingScreenshots.map(({ data, mimeType }) => ({
           type: 'image_url',
-          image_url: { url: `data:image/png;base64,${data}` },
+          image_url: { url: `data:${mimeType};base64,${data}` },
         }));
         messages.push({
           role: 'user',
