@@ -312,11 +312,25 @@ async function callLLM(systemContent, messages) {
   const openaiMessages = toOpenAIMessages(systemContent, messages);
   const openaiTools = toOpenAITools(AGENT_TOOLS);
 
-  const response = await fetch(`${OLLAMA_BASE_URL}/v1/chat/completions`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ model: LLM_MODEL, messages: openaiMessages, tools: openaiTools, stream: false }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 120_000); // 2-minute timeout
+
+  let response;
+  try {
+    response = await fetch(`${OLLAMA_BASE_URL}/v1/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: LLM_MODEL, messages: openaiMessages, tools: openaiTools, stream: false }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error(`Ollama request timed out after 120s. The model may be overloaded or not running.`);
+    }
+    throw new Error(`Cannot reach Ollama at ${OLLAMA_BASE_URL}. Make sure Ollama is running: run "ollama serve" in a terminal. (${err.message})`);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     let errMsg = `Ollama API error ${response.status}`;
