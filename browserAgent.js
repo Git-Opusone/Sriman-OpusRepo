@@ -2,17 +2,36 @@
 
 /**
  * AI Browser Agent
- * Uses Playwright for browser automation and Claude claude-opus-4-6 (vision) to intelligently
- * navigate county property tax websites, fill search forms, and extract results.
+ * Supports two LLM backends via env vars:
+ *   LLM_PROVIDER=anthropic  (default) — uses @anthropic-ai/sdk + claude-opus-4-6
+ *   LLM_PROVIDER=ollama               — uses Ollama's OpenAI-compatible API (llama3.2-vision)
+ *
+ * Relevant env vars:
+ *   LLM_PROVIDER     anthropic | ollama        (default: anthropic)
+ *   LLM_MODEL        model name override        (default: provider-specific)
+ *   LLM_API_KEY      API key (Anthropic) or
+ *                    "ollama" / omit for Ollama  (default: ANTHROPIC_API_KEY)
+ *   OLLAMA_BASE_URL  Ollama server base URL      (default: http://localhost:11434)
  */
 
 const { chromium } = require('playwright');
-const Anthropic = require('@anthropic-ai/sdk');
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const PROVIDER       = (process.env.LLM_PROVIDER || 'anthropic').toLowerCase();
+const OLLAMA_BASE    = (process.env.OLLAMA_BASE_URL || 'http://localhost:11434').replace(/\/$/, '');
+const DEFAULT_MODEL  = PROVIDER === 'ollama' ? 'llama3.2-vision' : 'claude-opus-4-6';
+const MODEL          = process.env.LLM_MODEL || DEFAULT_MODEL;
+
+// Anthropic client — only initialised when needed
+let anthropicClient;
+if (PROVIDER === 'anthropic') {
+  const Anthropic = require('@anthropic-ai/sdk');
+  anthropicClient = new Anthropic({
+    apiKey: process.env.LLM_API_KEY || process.env.ANTHROPIC_API_KEY,
+  });
+}
 
 // ---------------------------------------------------------------------------
-// Tool definitions for the AI agent
+// Tool definitions (neutral / Anthropic input_schema format)
 // ---------------------------------------------------------------------------
 
 const AGENT_TOOLS = [
@@ -37,12 +56,9 @@ const AGENT_TOOLS = [
         selector: {
           type: 'string',
           description:
-            'CSS selector for the input (e.g. "#ownerName", "input[name=\\'search\\']", ".search-input")',
+            'CSS selector for the input (e.g. "#ownerName", "input[name=\'search\']", ".search-input")',
         },
-        value: {
-          type: 'string',
-          description: 'The text value to enter into the field',
-        },
+        value: { type: 'string', description: 'The text value to enter into the field' },
       },
       required: ['selector', 'value'],
     },
@@ -54,14 +70,10 @@ const AGENT_TOOLS = [
     input_schema: {
       type: 'object',
       properties: {
-        selector: {
-          type: 'string',
-          description: 'CSS selector for the element to click',
-        },
+        selector: { type: 'string', description: 'CSS selector for the element to click' },
         text: {
           type: 'string',
-          description:
-            'Visible text of the element to click (used when selector is unknown). E.g. "Search", "Submit"',
+          description: 'Visible text of the element to click (used when selector is unknown). E.g. "Search", "Submit"',
         },
       },
     },
@@ -126,44 +138,30 @@ const AGENT_TOOLS = [
           items: {
             type: 'object',
             properties: {
-              ownerName: { type: 'string', description: 'Full name of the property owner/taxpayer' },
-              propertyAddress: { type: 'string', description: 'Full property/mailing address' },
-              parcelId: { type: 'string', description: 'Parcel ID, account number, or property ID' },
-              taxYear: { type: 'string', description: 'Tax year (e.g. "2025")' },
-              taxAmountDue: { type: 'string', description: 'Total tax amount due (e.g. "$1,234.56")' },
-              paymentStatus: {
-                type: 'string',
-                description: 'Payment status: Paid, Unpaid, Partial, Delinquent, etc.',
-              },
-              county: { type: 'string', description: 'County name' },
-              state: { type: 'string', description: 'State abbreviation (e.g. "TX")' },
-              legalDescription: { type: 'string', description: 'Legal description of the property' },
-              additionalDetails: {
-                type: 'object',
-                description: 'Any other relevant details (appraised value, exemptions, due dates, etc.)',
-              },
+              ownerName:         { type: 'string', description: 'Full name of the property owner/taxpayer' },
+              propertyAddress:   { type: 'string', description: 'Full property/mailing address' },
+              parcelId:          { type: 'string', description: 'Parcel ID, account number, or property ID' },
+              taxYear:           { type: 'string', description: 'Tax year (e.g. "2025")' },
+              taxAmountDue:      { type: 'string', description: 'Total tax amount due (e.g. "$1,234.56")' },
+              paymentStatus:     { type: 'string', description: 'Payment status: Paid, Unpaid, Partial, Delinquent, etc.' },
+              county:            { type: 'string', description: 'County name' },
+              state:             { type: 'string', description: 'State abbreviation (e.g. "TX")' },
+              legalDescription:  { type: 'string', description: 'Legal description of the property' },
+              additionalDetails: { type: 'object', description: 'Any other relevant details' },
             },
           },
         },
         totalFound: { type: 'number', description: 'Total count of matching records found' },
-        summary: {
-          type: 'string',
-          description: 'One-sentence summary of what was found (e.g. "Found 2 records for John Smith")',
-        },
-        searchedUrl: { type: 'string', description: 'The URL where results were found' },
+        summary:    { type: 'string', description: 'One-sentence summary of what was found' },
+        searchedUrl:{ type: 'string', description: 'The URL where results were found' },
       },
       required: ['records', 'totalFound', 'summary'],
     },
   },
 ];
 
-// Mark the last tool for prompt caching (tools list is static)
-const CACHED_TOOLS = AGENT_TOOLS.map((tool, i) =>
-  i === AGENT_TOOLS.length - 1 ? { ...tool, cache_control: { type: 'ephemeral' } } : tool
-);
-
 // ---------------------------------------------------------------------------
-// Tool executor
+// Tool executor (shared by both providers)
 // ---------------------------------------------------------------------------
 
 async function executeTool(page, toolName, input) {
@@ -222,10 +220,7 @@ async function executeTool(page, toolName, input) {
         if (input.selector) {
           await page.click(input.selector, { timeout: 5000 });
         } else if (input.text) {
-          await page
-            .getByText(input.text, { exact: false })
-            .first()
-            .click({ timeout: 5000 });
+          await page.getByText(input.text, { exact: false }).first().click({ timeout: 5000 });
         } else {
           return { success: false, message: 'Provide either selector or text' };
         }
@@ -238,9 +233,11 @@ async function executeTool(page, toolName, input) {
 
     case 'select_option': {
       try {
-        await page.selectOption(input.selector, { label: input.value }, { timeout: 5000 }).catch(async () => {
-          await page.selectOption(input.selector, { value: input.value }, { timeout: 5000 });
-        });
+        await page
+          .selectOption(input.selector, { label: input.value }, { timeout: 5000 })
+          .catch(async () => {
+            await page.selectOption(input.selector, { value: input.value }, { timeout: 5000 });
+          });
         return { success: true, message: `Selected "${input.value}"` };
       } catch (err) {
         return { success: false, message: err.message };
@@ -255,9 +252,7 @@ async function executeTool(page, toolName, input) {
 
     case 'wait': {
       await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
-      if (input.milliseconds > 0) {
-        await page.waitForTimeout(input.milliseconds);
-      }
+      if (input.milliseconds > 0) await page.waitForTimeout(input.milliseconds);
       return { success: true, message: 'Page settled' };
     }
 
@@ -275,81 +270,10 @@ async function executeTool(page, toolName, input) {
 }
 
 // ---------------------------------------------------------------------------
-// Build tool-result message content (handles image vs text)
+// Shared system prompt text
 // ---------------------------------------------------------------------------
 
-function buildToolResult(toolUseId, result) {
-  if (result && result._type === 'image') {
-    return {
-      type: 'tool_result',
-      tool_use_id: toolUseId,
-      content: [
-        {
-          type: 'image',
-          source: { type: 'base64', media_type: result.mimeType, data: result.data },
-        },
-        { type: 'text', text: 'Screenshot captured. Analyze the page and decide next action.' },
-      ],
-    };
-  }
-
-  return {
-    type: 'tool_result',
-    tool_use_id: toolUseId,
-    content: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Main agent runner
-// ---------------------------------------------------------------------------
-
-/**
- * @param {object} params
- * @param {string} params.url          - County search website URL
- * @param {string} [params.firstName]
- * @param {string} [params.lastName]
- * @param {string} [params.fullName]
- * @param {string} [params.accountNumber]
- * @param {function} [params.onProgress] - Optional callback(message: string)
- */
-async function runBrowserAgent({ url, firstName, lastName, fullName, accountNumber, onProgress = () => {} }) {
-  const headless = process.env.BROWSER_HEADLESS !== 'false';
-
-  const browser = await chromium.launch({
-    headless,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-  });
-
-  const context = await browser.newContext({
-    viewport: { width: 1280, height: 900 },
-    userAgent:
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-  });
-
-  const page = await context.newPage();
-
-  try {
-    onProgress('Launching browser and navigating to county website...');
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
-
-    // Build search criteria list
-    const criteria = [];
-    if (firstName) criteria.push(`First Name: "${firstName}"`);
-    if (lastName) criteria.push(`Last Name: "${lastName}"`);
-    if (fullName) criteria.push(`Full Name: "${fullName}"`);
-    if (accountNumber) criteria.push(`Account / Property ID: "${accountNumber}"`);
-
-    // Construct the name string that will most likely appear on county sites
-    const nameForSearch =
-      fullName ||
-      (lastName && firstName ? `${lastName} ${firstName}` : lastName || firstName || '');
-
-    // System prompt (cached — static for all iterations)
-    const systemContent = [
-      {
-        type: 'text',
-        text: `You are an expert AI agent that navigates US county property tax and title search websites using browser automation tools.
+const SYSTEM_PROMPT = `You are an expert AI agent that navigates US county property tax and title search websites using browser automation tools.
 
 Your goal: Search for property and tax records using the criteria provided, then return ALL found records via the extract_results tool.
 
@@ -372,21 +296,68 @@ Your goal: Search for property and tax records using the criteria provided, then
 - If a search attempt returns no results, try an alternative format (e.g., swap first/last name order, try just the last name).
 - If the page has a keyword search box, try syntax like: OwnerName:"SMITH JOHN" Year:2025
 - Collect these fields for each record: ownerName, propertyAddress, parcelId, taxYear, taxAmountDue, paymentStatus, county, state, legalDescription, additionalDetails.
-- Do NOT loop forever — after 3 failed search attempts call extract_results with empty records and explain in the summary.`,
-        cache_control: { type: 'ephemeral' },
-      },
+- Do NOT loop forever — after 3 failed search attempts call extract_results with empty records and explain in the summary.`;
+
+// ---------------------------------------------------------------------------
+// ANTHROPIC provider
+// ---------------------------------------------------------------------------
+
+// Anthropic-format tool list with cache_control on the last entry
+const ANTHROPIC_TOOLS = AGENT_TOOLS.map((tool, i) =>
+  i === AGENT_TOOLS.length - 1 ? { ...tool, cache_control: { type: 'ephemeral' } } : tool
+);
+
+function buildAnthropicToolResult(toolUseId, result) {
+  if (result && result._type === 'image') {
+    return {
+      type: 'tool_result',
+      tool_use_id: toolUseId,
+      content: [
+        {
+          type: 'image',
+          source: { type: 'base64', media_type: result.mimeType, data: result.data },
+        },
+        { type: 'text', text: 'Screenshot captured. Analyze the page and decide next action.' },
+      ],
+    };
+  }
+  return {
+    type: 'tool_result',
+    tool_use_id: toolUseId,
+    content: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+  };
+}
+
+async function runBrowserAgentAnthropic({ url, firstName, lastName, fullName, accountNumber, onProgress }) {
+  const headless = process.env.BROWSER_HEADLESS !== 'false';
+  const browser  = await chromium.launch({
+    headless,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+  });
+  const context  = await browser.newContext({
+    viewport:  { width: 1280, height: 900 },
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  });
+  const page = await context.newPage();
+
+  try {
+    onProgress('Launching browser and navigating to county website...');
+    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+
+    const criteria = [];
+    if (firstName)     criteria.push(`First Name: "${firstName}"`);
+    if (lastName)      criteria.push(`Last Name: "${lastName}"`);
+    if (fullName)      criteria.push(`Full Name: "${fullName}"`);
+    if (accountNumber) criteria.push(`Account / Property ID: "${accountNumber}"`);
+
+    const nameForSearch =
+      fullName || (lastName && firstName ? `${lastName} ${firstName}` : lastName || firstName || '');
+
+    const systemContent = [
+      { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
     ];
 
-    const userMessage = `Please search the county property tax website for the following:
-
-County URL: ${url}
-
-Search Criteria:
-${criteria.length > 0 ? criteria.join('\n') : 'No specific criteria provided'}
-${nameForSearch ? `\nName string to use in search: "${nameForSearch}"` : ''}
-
-Start by taking a screenshot to see the page, then proceed with the search. Return all found property/tax records.`;
-
+    const userMessage = buildUserMessage({ url, criteria, nameForSearch });
     const messages = [{ role: 'user', content: userMessage }];
 
     let finalResults = null;
@@ -395,17 +366,16 @@ Start by taking a screenshot to see the page, then proceed with the search. Retu
     for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
       onProgress(`AI agent working... (step ${iteration}/${MAX_ITERATIONS})`);
 
-      const response = await client.messages.create({
-        model: 'claude-opus-4-6',
+      const response = await anthropicClient.messages.create({
+        model: MODEL,
         max_tokens: 4096,
         system: systemContent,
-        tools: CACHED_TOOLS,
+        tools: ANTHROPIC_TOOLS,
         messages,
       });
 
       messages.push({ role: 'assistant', content: response.content });
 
-      // Log any text blocks from the model
       for (const block of response.content) {
         if (block.type === 'text' && block.text.trim()) {
           onProgress(`Agent: ${block.text.trim().substring(0, 200)}`);
@@ -416,25 +386,17 @@ Start by taking a screenshot to see the page, then proceed with the search. Retu
         onProgress('Agent finished reasoning.');
         break;
       }
+      if (response.stop_reason !== 'tool_use') break;
 
-      if (response.stop_reason !== 'tool_use') {
-        break;
-      }
-
-      // Process tool calls
       const toolResults = [];
       let done = false;
 
       for (const block of response.content) {
         if (block.type !== 'tool_use') continue;
-
         onProgress(`Running: ${block.name}...`);
 
         if (block.name === 'extract_results') {
-          finalResults = {
-            ...block.input,
-            searchedUrl: page.url(),
-          };
+          finalResults = { ...block.input, searchedUrl: page.url() };
           toolResults.push({
             type: 'tool_result',
             tool_use_id: block.id,
@@ -445,27 +407,213 @@ Start by taking a screenshot to see the page, then proceed with the search. Retu
         }
 
         const result = await executeTool(page, block.name, block.input);
-        toolResults.push(buildToolResult(block.id, result));
+        toolResults.push(buildAnthropicToolResult(block.id, result));
       }
 
       messages.push({ role: 'user', content: toolResults });
+      if (done) break;
+    }
+
+    onProgress('Search complete.');
+    return finalResults || emptyResults(page.url());
+  } finally {
+    await browser.close();
+  }
+}
+
+// ---------------------------------------------------------------------------
+// OLLAMA provider (OpenAI-compatible API)
+// ---------------------------------------------------------------------------
+
+// Convert Anthropic input_schema tool defs → OpenAI function format
+function toOpenAITools(tools) {
+  return tools.map(({ name, description, input_schema }) => ({
+    type: 'function',
+    function: { name, description, parameters: input_schema },
+  }));
+}
+
+const OLLAMA_TOOLS = toOpenAITools(AGENT_TOOLS);
+
+async function ollamaChat(messages) {
+  const apiKey = process.env.LLM_API_KEY;
+  const headers = { 'Content-Type': 'application/json' };
+  if (apiKey && apiKey !== 'ollama') headers['Authorization'] = `Bearer ${apiKey}`;
+
+  const resp = await fetch(`${OLLAMA_BASE}/v1/chat/completions`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ model: MODEL, messages, tools: OLLAMA_TOOLS, stream: false }),
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`Ollama API error ${resp.status}: ${text}`);
+  }
+  return resp.json();
+}
+
+async function runBrowserAgentOllama({ url, firstName, lastName, fullName, accountNumber, onProgress }) {
+  const headless = process.env.BROWSER_HEADLESS !== 'false';
+  const browser  = await chromium.launch({
+    headless,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+  });
+  const context  = await browser.newContext({
+    viewport:  { width: 1280, height: 900 },
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  });
+  const page = await context.newPage();
+
+  try {
+    onProgress('Launching browser and navigating to county website...');
+    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+
+    const criteria = [];
+    if (firstName)     criteria.push(`First Name: "${firstName}"`);
+    if (lastName)      criteria.push(`Last Name: "${lastName}"`);
+    if (fullName)      criteria.push(`Full Name: "${fullName}"`);
+    if (accountNumber) criteria.push(`Account / Property ID: "${accountNumber}"`);
+
+    const nameForSearch =
+      fullName || (lastName && firstName ? `${lastName} ${firstName}` : lastName || firstName || '');
+
+    // Messages in OpenAI format — system prompt as first message
+    const messages = [
+      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'user',   content: buildUserMessage({ url, criteria, nameForSearch }) },
+    ];
+
+    let finalResults  = null;
+    let pendingImages = []; // screenshots queued to inject as user messages
+    const MAX_ITERATIONS = 18;
+
+    for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
+      onProgress(`AI agent working... (step ${iteration}/${MAX_ITERATIONS})`);
+
+      // Inject queued screenshots as a user message before the API call
+      if (pendingImages.length > 0) {
+        messages.push({
+          role: 'user',
+          content: [
+            { type: 'text', text: 'Here is the current page screenshot. Analyze it and continue.' },
+            ...pendingImages.map((img) => ({
+              type: 'image_url',
+              image_url: { url: `data:${img.mimeType};base64,${img.data}` },
+            })),
+          ],
+        });
+        pendingImages = [];
+      }
+
+      const response     = await ollamaChat(messages);
+      const choice       = response.choices[0];
+      const assistantMsg = choice.message;
+
+      messages.push(assistantMsg);
+
+      if (assistantMsg.content) {
+        onProgress(`Agent: ${String(assistantMsg.content).substring(0, 200)}`);
+      }
+
+      const finishReason = choice.finish_reason;
+      if (finishReason === 'stop' || !assistantMsg.tool_calls?.length) {
+        onProgress('Agent finished reasoning.');
+        break;
+      }
+      if (finishReason !== 'tool_calls') break;
+
+      let done = false;
+
+      for (const toolCall of assistantMsg.tool_calls) {
+        const { name, arguments: argsStr } = toolCall.function;
+        let input = {};
+        try { input = JSON.parse(argsStr); } catch { /* malformed JSON — use empty */ }
+
+        onProgress(`Running: ${name}...`);
+
+        if (name === 'extract_results') {
+          finalResults = { ...input, searchedUrl: page.url() };
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: 'Results extracted successfully. Task complete.',
+          });
+          done = true;
+          break;
+        }
+
+        const result = await executeTool(page, name, input);
+
+        if (result && result._type === 'image') {
+          // Ollama tool results are text-only; queue image for the next user turn
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: 'Screenshot captured.',
+          });
+          pendingImages.push(result);
+        } else {
+          messages.push({
+            role: 'tool',
+            tool_call_id: toolCall.id,
+            content: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+          });
+        }
+      }
 
       if (done) break;
     }
 
     onProgress('Search complete.');
-
-    return (
-      finalResults || {
-        records: [],
-        totalFound: 0,
-        summary: 'The agent was unable to extract structured results. The county website may have an unsupported layout.',
-        searchedUrl: page.url(),
-      }
-    );
+    return finalResults || emptyResults(page.url());
   } finally {
     await browser.close();
   }
+}
+
+// ---------------------------------------------------------------------------
+// Shared helpers
+// ---------------------------------------------------------------------------
+
+function buildUserMessage({ url, criteria, nameForSearch }) {
+  return `Please search the county property tax website for the following:
+
+County URL: ${url}
+
+Search Criteria:
+${criteria.length > 0 ? criteria.join('\n') : 'No specific criteria provided'}
+${nameForSearch ? `\nName string to use in search: "${nameForSearch}"` : ''}
+
+Start by taking a screenshot to see the page, then proceed with the search. Return all found property/tax records.`;
+}
+
+function emptyResults(searchedUrl) {
+  return {
+    records: [],
+    totalFound: 0,
+    summary: 'The agent was unable to extract structured results. The county website may have an unsupported layout.',
+    searchedUrl,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Public API — dispatches to the active provider
+// ---------------------------------------------------------------------------
+
+/**
+ * @param {object}   params
+ * @param {string}   params.url
+ * @param {string}   [params.firstName]
+ * @param {string}   [params.lastName]
+ * @param {string}   [params.fullName]
+ * @param {string}   [params.accountNumber]
+ * @param {function} [params.onProgress]
+ */
+async function runBrowserAgent(params) {
+  const opts = { onProgress: () => {}, ...params };
+  if (PROVIDER === 'ollama') return runBrowserAgentOllama(opts);
+  return runBrowserAgentAnthropic(opts);
 }
 
 module.exports = { runBrowserAgent };
