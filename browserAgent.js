@@ -199,8 +199,11 @@ const AGENT_TOOLS = [
 async function executeTool(page, toolName, input) {
   switch (toolName) {
     case 'take_screenshot': {
-      // Use JPEG at 60% quality — Groq rejects large base64 PNGs ("invalid base64 url")
-      const data = await page.screenshot({ encoding: 'base64', fullPage: false, type: 'jpeg', quality: 60 });
+      // Get raw Buffer and convert to base64 manually — avoids potential whitespace/line-break
+      // issues that occur when using Playwright's encoding:'base64' option directly.
+      // JPEG at quality 40 keeps the payload well under Groq's 4 MB limit.
+      const buf = await page.screenshot({ fullPage: false, type: 'jpeg', quality: 40 });
+      const data = buf.toString('base64').replace(/\s/g, '');
       return { _type: 'image', data, mimeType: 'image/jpeg' };
     }
 
@@ -402,13 +405,36 @@ Start by taking a screenshot to see the page, then proceed with the search. Retu
     for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
       onProgress(`AI agent working... (step ${iteration}/${MAX_ITERATIONS})`);
 
-      const response = await client.chat.completions.create({
-        model: MODEL,
-        max_tokens: 4096,
-        messages,
-        tools: AGENT_TOOLS,
-        tool_choice: 'auto',
-      });
+      // Call the model; if Groq rejects an image payload, strip images and retry once.
+      let response;
+      try {
+        response = await client.chat.completions.create({
+          model: MODEL,
+          max_tokens: 4096,
+          messages,
+          tools: AGENT_TOOLS,
+          tool_choice: 'auto',
+        });
+      } catch (apiErr) {
+        const msg = apiErr?.message || '';
+        if (msg.includes('invalid base64') || msg.includes('image')) {
+          onProgress('Vision rejected by API — retrying without images...');
+          const textOnlyMessages = messages.map((m) => {
+            if (!Array.isArray(m.content)) return m;
+            const textParts = m.content.filter((c) => c.type !== 'image_url');
+            return { ...m, content: textParts.length ? textParts : 'Screenshot taken — use get_page_content to read the page.' };
+          });
+          response = await client.chat.completions.create({
+            model: MODEL,
+            max_tokens: 4096,
+            messages: textOnlyMessages,
+            tools: AGENT_TOOLS,
+            tool_choice: 'auto',
+          });
+        } else {
+          throw apiErr;
+        }
+      }
 
       const assistantMessage = response.choices[0].message;
       // Push the assistant message as-is (includes tool_calls if present)
