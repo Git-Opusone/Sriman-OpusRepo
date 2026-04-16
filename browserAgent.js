@@ -9,7 +9,16 @@
 const { chromium } = require('playwright');
 const Anthropic = require('@anthropic-ai/sdk');
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error('ERROR: ANTHROPIC_API_KEY is not set. Please add it to your .env file.');
+  process.exit(1);
+}
+
+const client = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  timeout: 5 * 60 * 1000, // 5 minutes per API call
+  maxRetries: 2,
+});
 
 // ---------------------------------------------------------------------------
 // Tool definitions for the AI agent
@@ -210,7 +219,7 @@ async function executeTool(page, toolName, input) {
 
     case 'fill_input': {
       try {
-        await page.fill(input.selector, input.value, { timeout: 5000 });
+        await page.fill(input.selector, input.value, { timeout: 30000 });
         return { success: true, message: `Filled "${input.value}" into ${input.selector}` };
       } catch (err) {
         return { success: false, message: err.message };
@@ -220,16 +229,16 @@ async function executeTool(page, toolName, input) {
     case 'click_element': {
       try {
         if (input.selector) {
-          await page.click(input.selector, { timeout: 5000 });
+          await page.click(input.selector, { timeout: 30000 });
         } else if (input.text) {
           await page
             .getByText(input.text, { exact: false })
             .first()
-            .click({ timeout: 5000 });
+            .click({ timeout: 30000 });
         } else {
           return { success: false, message: 'Provide either selector or text' };
         }
-        await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+        await page.waitForLoadState('networkidle', { timeout: 90000 }).catch(() => {});
         return { success: true, message: 'Clicked and page settled' };
       } catch (err) {
         return { success: false, message: err.message };
@@ -238,8 +247,8 @@ async function executeTool(page, toolName, input) {
 
     case 'select_option': {
       try {
-        await page.selectOption(input.selector, { label: input.value }, { timeout: 5000 }).catch(async () => {
-          await page.selectOption(input.selector, { value: input.value }, { timeout: 5000 });
+        await page.selectOption(input.selector, { label: input.value }, { timeout: 30000 }).catch(async () => {
+          await page.selectOption(input.selector, { value: input.value }, { timeout: 30000 });
         });
         return { success: true, message: `Selected "${input.value}"` };
       } catch (err) {
@@ -249,12 +258,12 @@ async function executeTool(page, toolName, input) {
 
     case 'press_key': {
       await page.keyboard.press(input.key);
-      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+      await page.waitForLoadState('networkidle', { timeout: 90000 }).catch(() => {});
       return { success: true, message: `Pressed ${input.key}` };
     }
 
     case 'wait': {
-      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+      await page.waitForLoadState('networkidle', { timeout: 90000 }).catch(() => {});
       if (input.milliseconds > 0) {
         await page.waitForTimeout(input.milliseconds);
       }
@@ -262,7 +271,7 @@ async function executeTool(page, toolName, input) {
     }
 
     case 'navigate': {
-      await page.goto(input.url, { waitUntil: 'networkidle', timeout: 30000 });
+      await page.goto(input.url, { waitUntil: 'networkidle', timeout: 90000 });
       return { success: true, message: `Navigated to ${input.url}` };
     }
 
@@ -327,11 +336,15 @@ async function runBrowserAgent({ url, firstName, lastName, fullName, accountNumb
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
   });
 
+  // Set generous default timeouts for all Playwright actions
+  context.setDefaultTimeout(30000);
+  context.setDefaultNavigationTimeout(90000);
+
   const page = await context.newPage();
 
   try {
     onProgress('Launching browser and navigating to county website...');
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(url, { waitUntil: 'networkidle', timeout: 90000 });
 
     // Build search criteria list
     const criteria = [];

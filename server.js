@@ -46,10 +46,11 @@ app.get('/api/search/stream', async (req, res) => {
     if (typeof res.flush === 'function') res.flush();
   };
 
-  // Keep connection alive with heartbeats
+  // Keep connection alive with heartbeats every 10 seconds
   const heartbeat = setInterval(() => {
     res.write(': heartbeat\n\n');
-  }, 15000);
+    if (typeof res.flush === 'function') res.flush();
+  }, 10000);
 
   req.on('close', () => clearInterval(heartbeat));
 
@@ -108,8 +109,13 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`\n🏠 Mortgage Title & Tax Search Service`);
   console.log(`   Running at: http://localhost:${PORT}`);
   console.log(`   Health:     http://localhost:${PORT}/api/health\n`);
 });
+
+// Allow long-running AI searches (up to 20 minutes)
+server.setTimeout(20 * 60 * 1000);
+server.keepAliveTimeout = 65 * 1000;
+server.headersTimeout   = 66 * 1000;
