@@ -59,7 +59,7 @@ const AGENT_TOOLS = [
           description: 'CSS selector for the element to click',
         },
         text: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'Visible text of the element to click (used when selector is unknown). E.g. "Search", "Submit"',
         },
@@ -221,7 +221,7 @@ async function executeTool(page, toolName, input) {
       try {
         if (input.selector) {
           await page.click(input.selector, { timeout: 5000 });
-        } else if (input.text) {
+        } else if (input.text != null && input.text !== '') {
           await page
             .getByText(input.text, { exact: false })
             .first()
@@ -372,7 +372,8 @@ Your goal: Search for property and tax records using the criteria provided, then
 - If a search attempt returns no results, try an alternative format (e.g., swap first/last name order, try just the last name).
 - If the page has a keyword search box, try syntax like: OwnerName:"SMITH JOHN" Year:2025
 - Collect these fields for each record: ownerName, propertyAddress, parcelId, taxYear, taxAmountDue, paymentStatus, county, state, legalDescription, additionalDetails.
-- Do NOT loop forever — after 3 failed search attempts call extract_results with empty records and explain in the summary.`,
+- Do NOT loop forever — after 3 failed search attempts call extract_results with empty records and explain in the summary.
+- IMPORTANT: Call extract_results as soon as you see any results on screen — partial data is fine. Do not wait to have every field filled in perfectly.`,
         cache_control: { type: 'ephemeral' },
       },
     ];
@@ -455,14 +456,20 @@ Start by taking a screenshot to see the page, then proceed with the search. Retu
 
     onProgress('Search complete.');
 
-    return (
-      finalResults || {
-        records: [],
-        totalFound: 0,
-        summary: 'The agent was unable to extract structured results. The county website may have an unsupported layout.',
-        searchedUrl: page.url(),
-      }
-    );
+    if (finalResults) {
+      return finalResults;
+    }
+
+    // Fallback: agent exhausted iterations without calling extract_results — capture raw page text
+    onProgress('Capturing raw page text as fallback...');
+    const rawText = await page.evaluate(() => document.body.innerText).catch(() => '');
+    return {
+      records: [],
+      totalFound: 0,
+      summary: 'The agent could not extract structured records. Raw page content is shown below.',
+      searchedUrl: page.url(),
+      rawText: rawText.trim() || null,
+    };
   } finally {
     await browser.close();
   }
