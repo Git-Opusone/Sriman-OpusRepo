@@ -293,8 +293,12 @@ async function executeTool(page, toolName, input) {
     }
 
     case 'navigate': {
-      await page.goto(input.url, { waitUntil: 'networkidle', timeout: 90000 });
-      return { success: true, message: `Navigated to ${input.url}` };
+      try {
+        await page.goto(input.url, { waitUntil: 'networkidle', timeout: 90000 });
+        return { success: true, message: `Navigated to ${input.url}` };
+      } catch (err) {
+        return { success: false, message: `Navigation failed: ${err.message}. Stay on the current page and try a different approach.` };
+      }
     }
 
     case 'extract_results':
@@ -377,6 +381,7 @@ Your goal: Search for property and tax records using the criteria provided, then
 
 ## Key rules
 - Always start with take_screenshot.
+- NEVER navigate to a different domain. Only use the navigate tool to follow links within the same county website. Do not invent or guess alternative URLs.
 - If a search attempt returns no results, try an alternative format (e.g., swap first/last name order, try just the last name).
 - If the page has a keyword search box, try syntax like: OwnerName:"SMITH JOHN" Year:2025
 - Collect these fields for each record: ownerName, propertyAddress, parcelId, taxYear, taxAmountDue, paymentStatus, county, state, legalDescription, additionalDetails.
@@ -390,7 +395,7 @@ Search Criteria:
 ${criteria.length > 0 ? criteria.join('\n') : 'No specific criteria provided'}
 ${nameForSearch ? `\nName string to use in search: "${nameForSearch}"` : ''}
 
-Start by taking a screenshot to see the page, then proceed with the search. Return all found property/tax records.`;
+Start by taking a screenshot to see the page, then proceed with the search. Stay on this domain only — do not navigate to any other website. Return all found property/tax records.`;
 
     // Groq / OpenAI-style messages array.
     // System prompt goes as the first message with role "system".
