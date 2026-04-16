@@ -224,7 +224,7 @@ async function executeTool(page, toolName, input) {
         } else {
           return { success: false, message: 'Provide either selector or text' };
         }
-        await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+        await page.waitForLoadState('load', { timeout: 20000 }).catch(() => {});
         return { success: true, message: 'Clicked and page settled' };
       } catch (err) {
         return { success: false, message: err.message };
@@ -246,18 +246,18 @@ async function executeTool(page, toolName, input) {
 
     case 'press_key': {
       await page.keyboard.press(input.key);
-      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+      await page.waitForLoadState('load', { timeout: 20000 }).catch(() => {});
       return { success: true, message: `Pressed ${input.key}` };
     }
 
     case 'wait': {
-      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+      await page.waitForLoadState('load', { timeout: 20000 }).catch(() => {});
       if (input.milliseconds > 0) await page.waitForTimeout(input.milliseconds);
       return { success: true, message: 'Page settled' };
     }
 
     case 'navigate': {
-      await page.goto(input.url, { waitUntil: 'networkidle', timeout: 30000 });
+      await page.goto(input.url, { waitUntil: 'load', timeout: 60000 });
       return { success: true, message: `Navigated to ${input.url}` };
     }
 
@@ -342,7 +342,7 @@ async function runBrowserAgentAnthropic({ url, firstName, lastName, fullName, ac
 
   try {
     onProgress('Launching browser and navigating to county website...');
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(url, { waitUntil: 'load', timeout: 60000 });
 
     const criteria = [];
     if (firstName)     criteria.push(`First Name: "${firstName}"`);
@@ -467,7 +467,7 @@ async function runBrowserAgentOllama({ url, firstName, lastName, fullName, accou
 
   try {
     onProgress('Launching browser and navigating to county website...');
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(url, { waitUntil: 'load', timeout: 60000 });
 
     const criteria = [];
     if (firstName)     criteria.push(`First Name: "${firstName}"`);
