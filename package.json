@@ -1,5 +1,5 @@
 {
-  "name": "Orchestrate-Mortgage-Search-Service--Sriman",
+  "name": "mortgage-search-service",
   "version": "1.0.0",
   "description": "AI-powered Mortgage Title & Tax Search microservice using browser automation and Groq (Llama vision)",
   "main": "server.js",
