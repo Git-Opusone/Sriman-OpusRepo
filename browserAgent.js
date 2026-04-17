@@ -78,8 +78,9 @@ const AGENT_TOOLS = [
           },
           text: {
             type: 'string',
+            nullable: true,
             description:
-              'Visible text of the element to click (used when selector is unknown). E.g. "Search", "Submit"',
+              'Visible text of the element to click (used when selector is unknown). E.g. "Search", "Submit". Omit or pass null if using selector.',
           },
         },
       },
@@ -255,7 +256,7 @@ async function executeTool(page, toolName, input) {
       try {
         if (input.selector) {
           await page.click(input.selector, { timeout: 15000 });
-        } else if (input.text) {
+        } else if (input.text && typeof input.text === 'string') {
           await page.getByText(input.text, { exact: false }).first().click({ timeout: 15000 });
         } else {
           return { success: false, message: 'Provide either selector or text' };
