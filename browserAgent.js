@@ -6,8 +6,18 @@
  * navigate county property tax websites, fill search forms, and extract results.
  */
 
-const { chromium } = require('playwright');
+const { chromium: chromiumBase } = require('playwright');
+const { chromium: chromiumExtra } = require('playwright-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 const OpenAI = require('openai');
+
+// Apply stealth plugin — bypasses Cloudflare and other bot-detection systems
+chromiumExtra.use(StealthPlugin());
+
+const { detectFromUrl } = require('./src/platformDetector');
+const qpublicHandler    = require('./src/handlers/qpublic');
+const tylerHandler      = require('./src/handlers/tyler');
+const beaconHandler     = require('./src/handlers/beacon');
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -330,9 +340,16 @@ async function runBrowserAgent({
 }) {
   const headless = process.env.BROWSER_HEADLESS !== 'false';
 
+  // Use stealth-enhanced chromium for platforms that use Cloudflare/bot detection
+  const chromium = chromiumExtra;
+
   const browser = await chromium.launch({
     headless,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+    ],
   });
 
   const context = await browser.newContext({
@@ -342,6 +359,11 @@ async function runBrowserAgent({
   });
 
   const page = await context.newPage();
+
+  // Remove the webdriver flag that sites use to detect automation
+  await context.addInitScript(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+  });
 
   try {
     onProgress('Launching browser and navigating to county website...');
@@ -359,6 +381,55 @@ async function runBrowserAgent({
       (lastName && firstName ? `${lastName} ${firstName}` : lastName || firstName || '');
 
     const searchMode = accountNumber ? 'property_id' : 'name';
+
+    // -----------------------------------------------------------------------
+    // PLATFORM ROUTING: route to a dedicated handler before falling back to
+    // the generic AI loop. Handlers return null to signal fallback needed.
+    // -----------------------------------------------------------------------
+    const platform = detectFromUrl(url);
+    console.log(`[agent] platform=${platform}`);
+
+    if (platform === 'qpublic') {
+      onProgress('Detected qPublic platform — using dedicated handler...');
+      try {
+        const handlerResult = await qpublicHandler.search(page, {
+          accountNumber, firstName, lastName, fullName, onProgress,
+        });
+        if (handlerResult) return handlerResult;
+        onProgress('qPublic handler fell back — continuing with AI agent...');
+      } catch (handlerErr) {
+        console.log(`[agent] qPublic handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('qPublic handler error — falling back to AI agent...');
+      }
+    }
+
+    if (platform === 'tyler') {
+      onProgress('Detected Tyler iasWorld platform — using dedicated handler...');
+      try {
+        const handlerResult = await tylerHandler.search(page, {
+          accountNumber, firstName, lastName, fullName, onProgress,
+        });
+        if (handlerResult) return handlerResult;
+        onProgress('Tyler handler fell back — continuing with AI agent...');
+      } catch (handlerErr) {
+        console.log(`[agent] Tyler handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('Tyler handler error — falling back to AI agent...');
+      }
+    }
+
+    if (platform === 'beacon') {
+      onProgress('Detected Beacon/Schneider platform — using dedicated handler...');
+      try {
+        const handlerResult = await beaconHandler.search(page, {
+          accountNumber, firstName, lastName, fullName, onProgress,
+        });
+        if (handlerResult) return handlerResult;
+        onProgress('Beacon handler fell back — continuing with AI agent...');
+      } catch (handlerErr) {
+        console.log(`[agent] Beacon handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('Beacon handler error — falling back to AI agent...');
+      }
+    }
 
     // -----------------------------------------------------------------------
     // PROPERTY ID: use Playwright directly to navigate the search form.
