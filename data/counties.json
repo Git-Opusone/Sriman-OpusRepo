@@ -21919,8 +21919,8 @@
         "netronlinePath": "/state/TX/county/angelina"
       },
       "Aransas": {
-        "url": "https://aransascountytx-web.tylerhost.net/web/",
-        "platform": "tyler",
+        "url": "http://www.aransascad.org/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/aransas"
       },
@@ -22015,8 +22015,8 @@
         "netronlinePath": "/state/TX/county/bowie"
       },
       "Brazoria": {
-        "url": "https://brazoriacountytx-web.tylerhost.net/web/user/disclaimer",
-        "platform": "tyler",
+        "url": "https://esearch.brazoriacad.org/",
+        "platform": "bis",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/brazoria"
       },
@@ -22057,8 +22057,8 @@
         "netronlinePath": "/state/TX/county/burleson"
       },
       "Burnet": {
-        "url": "https://burnetcountytx-web.tylerhost.net/web/user/disclaimer",
-        "platform": "tyler",
+        "url": "http://www.burnet-cad.org/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/burnet"
       },
@@ -22255,8 +22255,8 @@
         "netronlinePath": "/state/TX/county/deaf_smith"
       },
       "Delta": {
-        "url": "https://deltacountytx-web.tylerhost.net/web/user/disclaimer",
-        "platform": "tyler",
+        "url": "https://www.delta-cad.org/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/delta"
       },
@@ -22303,8 +22303,8 @@
         "netronlinePath": "/state/TX/county/eastland"
       },
       "Ector": {
-        "url": "https://ectorcountytx-web.tylerhost.net/web/user/disclaimer",
-        "platform": "tyler",
+        "url": "http://www.ectorcad.org/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/ector"
       },
@@ -22429,8 +22429,8 @@
         "netronlinePath": "/state/TX/county/goliad"
       },
       "Gonzales": {
-        "url": "https://gonzalescountytx-web.tylerhost.net/web/user/disclaimer",
-        "platform": "tyler",
+        "url": "http://www.gonzalescad.org/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/gonzales"
       },
@@ -22537,8 +22537,8 @@
         "netronlinePath": "/state/TX/county/hemphill"
       },
       "Henderson": {
-        "url": "https://hendersoncountytx-web.tylerhost.net/web/",
-        "platform": "tyler",
+        "url": "https://esearch.henderson-cad.org",
+        "platform": "bis",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/henderson"
       },
@@ -22549,8 +22549,8 @@
         "netronlinePath": "/state/TX/county/hidalgo"
       },
       "Hill": {
-        "url": "https://hillcountytx-web.tylerhost.net/web/search/DOCSEARCH100427S1",
-        "platform": "tyler",
+        "url": "https://hillcad.org/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/hill"
       },
@@ -22561,8 +22561,8 @@
         "netronlinePath": "/state/TX/county/hockley"
       },
       "Hood": {
-        "url": "https://hoodcountytx-web.tylerhost.net/web/user/disclaimer",
-        "platform": "tyler",
+        "url": "https://hoodcad.net/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/hood"
       },
@@ -22591,8 +22591,8 @@
         "netronlinePath": "/state/TX/county/hudspeth"
       },
       "Hunt": {
-        "url": "https://huntcountytx-web.tylerhost.net/web/user/disclaimer",
-        "platform": "tyler",
+        "url": "http://www.hunt-cad.org/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/hunt"
       },
@@ -22669,8 +22669,8 @@
         "netronlinePath": "/state/TX/county/karnes"
       },
       "Kaufman": {
-        "url": "https://kaufmancountytx-web.tylerhost.net/web/action/ACTIONGROUP1008S6",
-        "platform": "tyler",
+        "url": "http://www.kaufman-cad.org/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/kaufman"
       },
@@ -22729,8 +22729,8 @@
         "netronlinePath": "/state/TX/county/knox"
       },
       "Lamar": {
-        "url": "https://lamarcountytx-web.tylerhost.net/web/user/disclaimer",
-        "platform": "tyler",
+        "url": "http://www.lamarcad.org/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/lamar"
       },
@@ -22861,8 +22861,8 @@
         "netronlinePath": "/state/TX/county/mcculloch"
       },
       "McLennan": {
-        "url": "https://mclennancountytx-web.tylerhost.net/web/user/disclaimer",
-        "platform": "tyler",
+        "url": "http://www.mclennancad.org/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/mclennan"
       },
@@ -22945,8 +22945,8 @@
         "netronlinePath": "/state/TX/county/nacogdoches"
       },
       "Navarro": {
-        "url": "https://navarrocountytx-web.tylerhost.net/web/",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/navarro"
       },
@@ -22987,8 +22987,8 @@
         "netronlinePath": "/state/TX/county/orange"
       },
       "Palo Pinto": {
-        "url": "https://palopintocountytx-selfservice.tylerhost.net/web/user/disclaimer",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/palo_pinto"
       },
@@ -22999,8 +22999,8 @@
         "netronlinePath": "/state/TX/county/panola"
       },
       "Parker": {
-        "url": "https://parkercountytx-web.tylerhost.net/web/",
-        "platform": "tyler",
+        "url": "https://parkercountytx.com/154/Tax-Assessor-Collector",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/parker"
       },
@@ -23023,8 +23023,8 @@
         "netronlinePath": "/state/TX/county/polk"
       },
       "Potter": {
-        "url": "https://pottercountytx-web.tylerhost.net/web/user/disclaimer",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/potter"
       },
@@ -23041,8 +23041,8 @@
         "netronlinePath": "/state/TX/county/rains"
       },
       "Randall": {
-        "url": "https://randallcountytx-web.tylerhost.net/web/",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/randall"
       },
@@ -23089,8 +23089,8 @@
         "netronlinePath": "/state/TX/county/robertson"
       },
       "Rockwall": {
-        "url": "https://rockwalltx-web.tylerhost.net/web/",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/rockwall"
       },
@@ -23221,8 +23221,8 @@
         "netronlinePath": "/state/TX/county/tarrant"
       },
       "Taylor": {
-        "url": "https://taylorcountytx-web.tylerhost.net/web/",
-        "platform": "tyler",
+        "url": "https://taylor-cad.org/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/taylor"
       },
@@ -23371,8 +23371,8 @@
         "netronlinePath": "/state/TX/county/willacy"
       },
       "Williamson": {
-        "url": "https://williamsoncountytx-web.tylerhost.net/williamsonweb/user/disclaimer",
-        "platform": "tyler",
+        "url": "http://www.wcad.org/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/williamson"
       },
@@ -23383,20 +23383,20 @@
         "netronlinePath": "/state/TX/county/wilson"
       },
       "Winkler": {
-        "url": "https://winklercauotx-web.tylerhost.net/web/search/DOCSEARCH356S1",
-        "platform": "tyler",
+        "url": "https://winklercad.org/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/winkler"
       },
       "Wise": {
-        "url": "http://wisecountytx-web.tylerhost.net/web",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/wise"
       },
       "Wood": {
-        "url": "https://woodcountytx-web.tylerhost.net/web/user/disclaimer",
-        "platform": "tyler",
+        "url": "http://www.woodcad.net/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/wood"
       },
