@@ -119,6 +119,29 @@
     label .req { color: var(--red); margin-left: 2px; }
     .hint { font-size: .77rem; color: var(--gray-400); margin-top: 4px; }
 
+    select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 7px;
+      font-size: .95rem;
+      color: var(--gray-900);
+      background: #fff;
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+      cursor: pointer;
+    }
+    select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(26,86,219,.12);
+    }
+    select:disabled { background: var(--gray-50); color: var(--gray-400); cursor: not-allowed; }
+
+    .url-alive    { background:#d1fae5; color:#065f46; }
+    .url-refreshed{ background:#fef3c7; color:#92400e; }
+    .url-dead     { background:#fee2e2; color:#991b1b; }
+    .url-checking { background:#e0e7ff; color:#3730a3; }
+
     input[type="text"], input[type="url"] {
       width: 100%;
       padding: 10px 14px;
@@ -334,14 +357,46 @@
       <span class="icon">🔍</span> Search Parameters
     </div>
 
-    <!-- County URL -->
-    <div class="form-group">
-      <label for="countyUrl">County Search URL <span class="req">*</span></label>
-      <input type="url" id="countyUrl"
-        placeholder="https://esearch.andrewscad.org/"
-        value="https://esearch.andrewscad.org/" />
-      <p class="hint">Paste the county CAD / tax assessor search URL. Find county URLs at publicrecords.netronline.com</p>
+    <!-- State + County selectors -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="stateSelect">State <span class="req">*</span></label>
+        <select id="stateSelect" onchange="onStateChange()">
+          <option value="">— Select State —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="countySelect">County <span class="req">*</span></label>
+        <select id="countySelect" onchange="onCountyChange()" disabled>
+          <option value="">— Select County —</option>
+        </select>
+      </div>
     </div>
+
+    <!-- Resolved URL (read-only, shown after county selected) -->
+    <div class="form-group" id="urlRow" style="display:none;">
+      <label>County Search URL
+        <span id="urlStatusBadge" style="margin-left:8px;font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:10px;"></span>
+      </label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="url" id="countyUrl" readonly
+          style="background:var(--gray-50);color:var(--gray-600);font-size:.82rem;" />
+        <span id="platformBadge" style="white-space:nowrap;font-size:.75rem;color:var(--gray-400);"></span>
+      </div>
+      <p class="hint" id="urlHint"></p>
+    </div>
+
+    <!-- Manual URL override (collapsed by default) -->
+    <details style="margin-bottom:12px;">
+      <summary style="font-size:.8rem;color:var(--gray-400);cursor:pointer;user-select:none;">
+        Enter URL manually (override)
+      </summary>
+      <div class="form-group" style="margin-top:10px;">
+        <input type="url" id="manualUrl"
+          placeholder="https://esearch.andrewscad.org/" />
+        <p class="hint">Overrides the auto-looked-up URL above</p>
+      </div>
+    </details>
 
     <div class="divider">Owner / Taxpayer Name</div>
 
@@ -537,19 +592,96 @@
       </div>`;
   }
 
+  // ── State / County directory ─────────────────────────────────────────────
+
+  async function loadStates() {
+    try {
+      const states = await fetch('/api/states').then(r => r.json());
+      const sel = document.getElementById('stateSelect');
+      states.forEach(({ code, name }) => {
+        const opt = document.createElement('option');
+        opt.value = code; opt.textContent = name;
+        sel.appendChild(opt);
+      });
+    } catch (_) {}
+  }
+
+  async function onStateChange() {
+    const state  = val('stateSelect');
+    const cSel   = document.getElementById('countySelect');
+    cSel.innerHTML = '<option value="">— Select County —</option>';
+    cSel.disabled  = true;
+    hide('urlRow');
+    if (!state) return;
+
+    try {
+      const counties = await fetch(`/api/counties?state=${state}`).then(r => r.json());
+      counties.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        cSel.appendChild(opt);
+      });
+      cSel.disabled = false;
+    } catch (_) {}
+  }
+
+  async function onCountyChange() {
+    const state  = val('stateSelect');
+    const county = val('countySelect');
+    if (!state || !county) { hide('urlRow'); return; }
+
+    const badge = document.getElementById('urlStatusBadge');
+    const hint  = document.getElementById('urlHint');
+    const urlInput = document.getElementById('countyUrl');
+    badge.textContent = 'checking…';
+    badge.className   = 'url-checking';
+    urlInput.value    = '';
+    document.getElementById('platformBadge').textContent = '';
+    show('urlRow');
+
+    try {
+      const data = await fetch(`/api/county-url?state=${encodeURIComponent(state)}&county=${encodeURIComponent(county)}`).then(r => r.json());
+      urlInput.value = data.url || '';
+      document.getElementById('platformBadge').textContent = data.platformLabel ? `Platform: ${data.platformLabel}` : '';
+
+      if (data.status === 'alive') {
+        badge.textContent = '✓ Active'; badge.className = 'url-alive';
+        hint.textContent  = 'URL verified active.';
+      } else if (data.status === 'refreshed') {
+        badge.textContent = '↻ Updated'; badge.className = 'url-refreshed';
+        hint.textContent  = data.message;
+      } else if (data.status === 'dead') {
+        badge.textContent = '✗ Inactive'; badge.className = 'url-dead';
+        hint.textContent  = data.message || 'URL may be inactive. Try the manual override below.';
+      } else {
+        badge.textContent = 'Not found'; badge.className = 'url-dead';
+        hint.textContent  = data.message || 'County not in directory. Use manual URL below.';
+      }
+    } catch (_) {
+      badge.textContent = 'Error'; badge.className = 'url-dead';
+      hint.textContent  = 'Could not resolve county URL.';
+    }
+  }
+
   // ── Main search ──────────────────────────────────────────────────────────
 
   function startSearch() {
-    const url         = val('countyUrl');
-    const firstName   = val('firstName');
-    const lastName    = val('lastName');
-    const fullName    = val('fullName');
+    const state         = val('stateSelect');
+    const county        = val('countySelect');
+    const manualUrl     = val('manualUrl');
+    const resolvedUrl   = val('countyUrl');
+    const firstName     = val('firstName');
+    const lastName      = val('lastName');
+    const fullName      = val('fullName');
     const accountNumber = val('accountNumber');
 
+    // Final URL: manual override > resolved directory URL
+    const url = manualUrl || resolvedUrl;
+
     // Validate
-    if (!url) {
-      alert('Please enter the County Search URL.');
-      document.getElementById('countyUrl').focus();
+    if (!url && !state) {
+      alert('Please select a State and County, or enter a URL manually.');
+      document.getElementById('stateSelect').focus();
       return;
     }
     if (!firstName && !lastName && !fullName && !accountNumber) {
@@ -565,9 +697,11 @@
     show('statusBox');
     document.getElementById('searchBtn').disabled = true;
 
-    // Build query string
+    // Build query string — send state+county so server can do health check
     const params = new URLSearchParams();
-    params.set('url', url);
+    if (url)          params.set('url', url);
+    if (state)        params.set('state', state);
+    if (county)       params.set('county', county);
     if (firstName)     params.set('firstName', firstName);
     if (lastName)      params.set('lastName', lastName);
     if (fullName)      params.set('fullName', fullName);
@@ -669,6 +803,9 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.target.tagName === 'INPUT') startSearch();
   });
+
+  // Initialise state dropdown on load
+  loadStates();
 </script>
 </body>
 </html>
