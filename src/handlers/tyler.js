@@ -24,12 +24,16 @@
 // Disclaimer / Terms pages
 const DISCLAIMER_SELECTORS = [
   '#ctl00_ContentPlaceHolder1_lbAccept',
+  '#submitDisclaimerAccept',
+  'button[id*="disclaimer" i]',
   'a:has-text("I Agree")',
   'a:has-text("I Accept")',
   'a:has-text("Agree")',
   'a:has-text("Accept")',
   'input[value*="Agree" i]',
   'input[value*="Accept" i]',
+  'button:has-text("I Accept")',
+  'button:has-text("I Agree")',
   'button:has-text("Agree")',
   'button:has-text("Accept")',
   'button:has-text("Continue")',
@@ -77,6 +81,10 @@ const OWNER_INPUT_SELECTORS = [
   'input[id*="OwnerName" i]',
   'input[id*="ownerName" i]',
   'input[name*="OwnerName" i]',
+  // mapublicaccess.tylerhost.net (commonsearch.aspx) uses inpOwner
+  '#inpOwner',
+  'input[name="inpOwner"]',
+  'input[id*="Owner" i]',
   'input[placeholder*="Owner" i]',
   'input[placeholder*="owner" i]',
   // propaccess.tylertech.net uses a different naming convention
@@ -160,7 +168,7 @@ async function detectPageType(page) {
     const hasManyRows = Array.from(tables).some(t => t.querySelectorAll('tr').length > 3);
 
     const hasSearchInputs = document.querySelector(
-      'input[id*="Owner" i], input[id*="AcctNum" i], input[id*="owner" i], input[placeholder*="owner" i]'
+      'input[id*="Owner" i], input[id*="AcctNum" i], input[id*="owner" i], input[name="inpOwner"], input[placeholder*="owner" i]'
     );
 
     if (url.includes('detail') || url.includes('details') || url.includes('parcel')) {
@@ -176,11 +184,13 @@ async function detectPageType(page) {
 async function waitForResults(page) {
   try {
     await page.waitForSelector(
-      'table tbody tr td a, .SearchResults tr, #searchResults tr, table.dataGridView tr',
+      'table.SearchResults tr, #searchResults tr, table.dataGridView tr, ' +
+      '.GridRow, .GridAltRow, tr.GridRow, ' +
+      'table tbody tr td a',
       { timeout: 15000 }
     );
   } catch (_) {
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);
   }
 }
 
@@ -226,39 +236,70 @@ async function extractDetailFields(page) {
   });
 }
 
+const TYLER_RESULT_KEYWORDS = ['owner', 'parcel', 'account', 'address', 'situs', 'location', 'property id', 'acct', 'name'];
+
 /**
  * Extract the results table from a Tyler search results page.
  * Returns { headers, rows } or null.
  */
 async function extractResultsTable(page) {
-  return page.evaluate(() => {
-    // Tyler iasWorld uses various table IDs/classes
-    const candidates = [
+  return page.evaluate((keywords) => {
+    // Tyler iasWorld uses various table IDs/classes — prefer named candidates
+    const namedCandidates = [
       document.querySelector('table.SearchResults'),
       document.querySelector('#searchResults table'),
       document.querySelector('table.dataGridView'),
       document.querySelector('#gvResults'),
-      ...Array.from(document.querySelectorAll('table')),
+      document.querySelector('table[id*="grid" i]'),
+      document.querySelector('table[id*="result" i]'),
     ].filter(Boolean);
 
-    // Pick the table with the most data rows
+    const allTables = Array.from(document.querySelectorAll('table'));
+    const candidates = [...new Set([...namedCandidates, ...allTables])];
+
+    // Score each table: keyword-matching headers beat raw row count; skip form tables
     let best = null;
-    let bestRows = 0;
+    let bestScore = -1;
+
     for (const t of candidates) {
-      const rows = t.querySelectorAll('tr').length;
-      if (rows > bestRows) { best = t; bestRows = rows; }
+      // Skip tables that contain form inputs (likely search forms, not results)
+      if (t.querySelector('input[type="text"], input[type="search"], select, textarea')) continue;
+
+      const allRows = t.querySelectorAll('tr');
+      if (allRows.length < 2) continue;
+
+      const firstRowCells = Array.from(allRows[0].querySelectorAll('th, td'));
+      const headerText = firstRowCells.map(el => el.innerText.trim().toLowerCase()).join(' ');
+      const kwMatches = keywords.filter(kw => headerText.includes(kw)).length;
+
+      let score;
+      if (kwMatches >= 2) {
+        score = 1000 + kwMatches * 10 + allRows.length;
+      } else if (kwMatches === 1) {
+        score = 500 + allRows.length;
+      } else {
+        // No header match — score only by row count (low priority)
+        score = allRows.length;
+      }
+
+      if (score > bestScore) { best = t; bestScore = score; }
     }
-    if (!best || bestRows < 2) return null;
+
+    if (!best || bestScore < 2) return null;
 
     const allRows = Array.from(best.querySelectorAll('tr'));
-    const headers = Array.from(allRows[0].querySelectorAll('th, td')).map(el => el.innerText.trim());
+    // Normalize headers: strip sort arrows and whitespace
+    const headers = Array.from(allRows[0].querySelectorAll('th, td'))
+      .map(el => el.innerText.trim().replace(/[▲▼↑↓\s]+$/, '').trim());
     const rows = allRows.slice(1).map(row => ({
       cells: Array.from(row.querySelectorAll('td')).map(td => td.innerText.trim()),
-      href:  row.querySelector('a')?.getAttribute('href') || null,
+      href:  row.querySelector('a[href*="detail"], a[href*="parcel"], a[href*="account"], a[href*="record"], a[href*="property"]')?.getAttribute('href')
+             || row.querySelector('td a')?.getAttribute('href')
+             || null,
     })).filter(r => r.cells.some(c => c.length > 0));
 
     return headers.length > 0 && rows.length > 0 ? { headers, rows } : null;
-  });
+  }, TYLER_RESULT_KEYWORDS);
 }
 
 // ─── Main export ─────────────────────────────────────────────────────────────
@@ -412,9 +453,18 @@ async function search(page, {
     const obj = {};
     headers.forEach((h, idx) => { if (h) obj[h] = cells[idx] || ''; });
 
-    const parcelId  = obj['Account Number'] || obj['Parcel ID'] || obj['Property ID'] || cells[0] || '';
-    const ownerName = obj['Owner Name']     || obj['Owner']     || cells[1] || '';
-    const address   = obj['Situs Address']  || obj['Property Address'] || obj['Address'] || cells[2] || '';
+    // Headers vary by county (e.g. "Parcel" "Parcel ID" "Account Number" "Account")
+    const findVal = (...keys) => {
+      for (const k of keys) {
+        if (obj[k]) return obj[k];
+        const match = Object.keys(obj).find(h => h.toLowerCase().includes(k.toLowerCase()));
+        if (match && obj[match]) return obj[match];
+      }
+      return '';
+    };
+    const parcelId  = findVal('Account Number', 'Parcel ID', 'Property ID', 'Parcel', 'Account') || cells[1] || cells[0] || '';
+    const ownerName = findVal('Owner Name', 'Owner') || cells[2] || cells[1] || '';
+    const address   = findVal('Situs Address', 'Property Address', 'Address', 'Location') || cells[3] || cells[2] || '';
     const appraised = obj['Appraised Value'] || obj['Market Value'] || obj['Total Appraised'] || '';
 
     const summaryRecord = {
@@ -439,12 +489,20 @@ async function search(page, {
       console.log(`[tyler] Detail error for ${parcelId}: ${err.message}`);
     }
 
+    const dFind = (...keys) => {
+      for (const k of keys) {
+        if (detailFields[k]) return detailFields[k];
+        const match = Object.keys(detailFields).find(h => h.toLowerCase().includes(k.toLowerCase()));
+        if (match && detailFields[match]) return detailFields[match];
+      }
+      return '';
+    };
     records.push({
       ...summaryRecord,
-      ownerName:        detailFields['Owner Name']        || detailFields['Owner']            || summaryRecord.ownerName,
-      propertyAddress:  detailFields['Situs Address']     || detailFields['Property Address'] || detailFields['Address'] || summaryRecord.propertyAddress,
-      legalDescription: detailFields['Legal Description'] || detailFields['Legal']            || summaryRecord.legalDescription,
-      taxAmountDue:     detailFields['Total Appraised']   || detailFields['Market Value']     || detailFields['Appraised Value'] || summaryRecord.taxAmountDue,
+      ownerName:        dFind('Owner Name', 'Owner')                                    || summaryRecord.ownerName,
+      propertyAddress:  dFind('Situs Address', 'Property Address', 'Address', 'Location') || summaryRecord.propertyAddress,
+      legalDescription: dFind('Legal Description', 'Legal')                              || summaryRecord.legalDescription,
+      taxAmountDue:     dFind('Total Appraised', 'Market Value', 'Appraised Value', 'Appraised') || summaryRecord.taxAmountDue,
       additionalDetails: JSON.stringify({ ...obj, ...detailFields }),
     });
 

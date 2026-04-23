@@ -287,6 +287,45 @@ async function extractResultsTable(page) {
   });
 }
 
+/**
+ * Old qpublic.net county pages are Xara-generated static HTML that embed a
+ * link to the real qpublic.schneidercorp.com search app. The <a> tags have
+ * no visible content so Playwright's click() fails (zero-size target).
+ * Navigate directly to the embedded href instead.
+ * Returns true if navigation happened.
+ */
+async function handleQpublicNetLanding(page) {
+  const url = page.url();
+  if (!url.includes('qpublic.net')) return false;
+
+  const schneidercorpUrl = await page.evaluate(() => {
+    for (const a of document.querySelectorAll('a[href*="qpublic.schneidercorp.com"]')) {
+      const href = a.getAttribute('href');
+      if (href) return href;
+    }
+    return null;
+  });
+
+  if (!schneidercorpUrl) return false;
+
+  console.log(`[qpublic] qpublic.net landing → direct nav to: ${schneidercorpUrl}`);
+  try {
+    // Use 'domcontentloaded' — CF challenge can delay 'load' / 'networkidle' >30s
+    await page.goto(schneidercorpUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+    // Wait for the Angular search form to mount
+    await page.waitForSelector(
+      'input[id*="txtName"], input[placeholder="enter name..."], input[id*="txtParcelID"], input[placeholder*="parcel" i]',
+      { timeout: 12000 }
+    ).catch(() => {});
+    await dismissModal(page);
+    return true;
+  } catch (e) {
+    console.log(`[qpublic] schneidercorp nav failed: ${e.message?.substring(0, 80)}`);
+    return false;
+  }
+}
+
 // ─── ValidateUser.aspx handler ────────────────────────────────────────────────
 
 /**
@@ -328,9 +367,13 @@ async function handleValidateUser(page) {
   if (destFromParam && !destFromParam.includes('ValidateUser')) {
     console.log(`[qpublic] ValidateUser → navigating to param dest: ${destFromParam}`);
     try {
-      await page.goto(destFromParam, { waitUntil: 'networkidle', timeout: 30000 });
+      await page.goto(destFromParam, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
       await dismissModal(page);
-      return !page.url().includes('ValidateUser.aspx');
+      if (!page.url().includes('ValidateUser.aspx')) return true;
+      // Server redirected back to ValidateUser — session not yet established.
+      // Fall through to click the Continue button on the ValidateUser page.
+      console.log('[qpublic] ValidateUser → server re-redirected to ValidateUser; trying Continue click');
     } catch (_) {}
   }
 
@@ -346,10 +389,7 @@ async function handleValidateUser(page) {
     'input[type="submit"]',
   ];
 
-  const pageHtml = await page.evaluate(() => document.body.innerHTML.substring(0, 6000));
-  console.log(`[qpublic] ValidateUser page content preview:\n${
-    (await page.evaluate(() => document.body.innerText.substring(0, 400)))
-  }\n---`);
+  console.log(`[qpublic] ValidateUser text: ${await page.evaluate(() => document.body.innerText.substring(0, 200))}`);
 
   const clicked = await tryClick(page, CONTINUE_SELECTORS, 5000);
   if (clicked) {
@@ -361,12 +401,37 @@ async function handleValidateUser(page) {
     }
   }
 
+  // ── 2b. Submit the ASP.NET form directly (ValidateUser has hidden inputs but
+  //        the Continue button may not be visible or scrolled off) ─────────────
+  console.log('[qpublic] ValidateUser → no button found; submitting form directly');
+  const submitted = await page.evaluate(() => {
+    const form = document.getElementById('form1');
+    if (!form) return false;
+    // Try common PostBack event targets first
+    const targets = ['ctl00$ContentPlaceHolder1$btnContinue', 'btnContinue', 'Continue'];
+    for (const t of targets) {
+      try { if (typeof __doPostBack === 'function') { __doPostBack(t, ''); return true; } } catch (_) {}
+    }
+    form.submit();
+    return true;
+  });
+  if (submitted) {
+    await page.waitForLoadState('domcontentloaded', { timeout: 30000 }).catch(() => {});
+    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+    await dismissModal(page);
+    if (!page.url().includes('ValidateUser.aspx')) {
+      console.log(`[qpublic] ValidateUser → form submit resolved to: ${page.url()}`);
+      return true;
+    }
+    console.log('[qpublic] ValidateUser → form submit still on ValidateUser');
+  }
+
   // ── 3. Wait for JS auto-redirect ────────────────────────────────────────────
-  console.log('[qpublic] ValidateUser → waiting for JS auto-redirect (12 s)...');
+  console.log('[qpublic] ValidateUser → waiting for JS auto-redirect (25 s)...');
   try {
     await page.waitForFunction(
       () => !location.href.includes('ValidateUser.aspx'),
-      { timeout: 12000 }
+      { timeout: 25000 }
     );
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
     await dismissModal(page);
@@ -376,17 +441,26 @@ async function handleValidateUser(page) {
     console.log('[qpublic] ValidateUser → JS redirect timed out');
   }
 
-  // ── 4. Navigate to app root (strip ValidateUser path, go to base) ───────────
+  // ── 4. Navigate directly to the app search URL (extract from nested url= param) ──
   try {
     const appRoot = new URL(currentUrl);
-    // Try the schneidercorp root — session may be established now
-    const rootUrl = appRoot.origin + '/Application.aspx';
-    const appParam = appRoot.searchParams.get('App') || appRoot.searchParams.get('AppID');
+    // App param may be in the nested url= value (e.g. ValidateUser.aspx?url=...App=FooGA...)
+    let appParam = appRoot.searchParams.get('App') || appRoot.searchParams.get('AppID');
+    if (!appParam) {
+      const nestedRaw = appRoot.searchParams.get('url') || appRoot.searchParams.get('returnUrl') || '';
+      if (nestedRaw) {
+        try {
+          const inner = new URL(nestedRaw);
+          appParam = inner.searchParams.get('App') || inner.searchParams.get('AppID');
+        } catch (_) {}
+      }
+    }
     const fallbackUrl = appParam
       ? `${appRoot.origin}/Application.aspx?App=${appParam}&PageType=Search`
-      : rootUrl;
-    console.log(`[qpublic] ValidateUser → trying app root: ${fallbackUrl}`);
-    await page.goto(fallbackUrl, { waitUntil: 'networkidle', timeout: 30000 });
+      : `${appRoot.origin}/Application.aspx`;
+    console.log(`[qpublic] ValidateUser → trying fallback: ${fallbackUrl}`);
+    await page.goto(fallbackUrl, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
     await dismissModal(page);
     return !page.url().includes('ValidateUser.aspx');
   } catch (_) {}
@@ -419,12 +493,18 @@ async function search(page, {
 
   if (pageType === 'disclaimer') {
     onProgress('Accepting disclaimer...');
-    const clicked = await tryClick(page, DISCLAIMER_SELECTORS);
-    if (!clicked) {
-      console.log('[qpublic] Could not accept disclaimer — falling back');
-      return null;
+    // On old qpublic.net pages the "Yes, I accept" link has target="_new" so a
+    // normal click opens a new tab Playwright can't follow. Extract the
+    // schneidercorp.com href and goto() it directly instead.
+    const landingHandled = await handleQpublicNetLanding(page);
+    if (!landingHandled) {
+      const clicked = await tryClick(page, DISCLAIMER_SELECTORS);
+      if (!clicked) {
+        console.log('[qpublic] Could not accept disclaimer — falling back');
+        return null;
+      }
+      console.log(`[qpublic] Accepted disclaimer via: ${clicked}`);
     }
-    console.log(`[qpublic] Accepted disclaimer via: ${clicked}`);
     const nextType = await detectPageType(page);
     console.log(`[qpublic] Page type after disclaimer: ${nextType}`);
     if (nextType !== 'search') {
@@ -439,8 +519,10 @@ async function search(page, {
       await handleValidateUser(page);
     } else {
       onProgress('Navigating to search page...');
-      const clicked = await tryClick(page, SEARCH_NAV_SELECTORS);
-      if (!clicked) {
+      // Try direct navigation for old qpublic.net Xara landing pages first
+      const landingHandled = await handleQpublicNetLanding(page);
+      const clicked = landingHandled ? null : await tryClick(page, SEARCH_NAV_SELECTORS);
+      if (!landingHandled && !clicked) {
         const searchUrl = currentUrl.includes('?')
           ? currentUrl.replace(/PageType=[^&]*/i, 'PageType=Search')
           : currentUrl + '?PageType=Search';

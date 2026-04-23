@@ -18,6 +18,9 @@ const { detectFromUrl } = require('./src/platformDetector');
 const qpublicHandler    = require('./src/handlers/qpublic');
 const tylerHandler      = require('./src/handlers/tyler');
 const beaconHandler     = require('./src/handlers/beacon');
+const patriotHandler    = require('./src/handlers/patriot');
+const visionHandler     = require('./src/handlers/vision');
+const bisHandler        = require('./src/handlers/bis');
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -428,6 +431,48 @@ async function runBrowserAgent({
       } catch (handlerErr) {
         console.log(`[agent] Beacon handler error: ${handlerErr.message} — continuing with AI`);
         onProgress('Beacon handler error — falling back to AI agent...');
+      }
+    }
+
+    if (platform === 'patriot') {
+      onProgress('Detected Patriot Properties platform — using dedicated handler...');
+      try {
+        const handlerResult = await patriotHandler.search(page, {
+          accountNumber, firstName, lastName, fullName, onProgress,
+        });
+        if (handlerResult) return handlerResult;
+        onProgress('Patriot handler fell back — continuing with AI agent...');
+      } catch (handlerErr) {
+        console.log(`[agent] Patriot handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('Patriot handler error — falling back to AI agent...');
+      }
+    }
+
+    if (platform === 'vision') {
+      onProgress('Detected Vision Government Solutions platform — using dedicated handler...');
+      try {
+        const handlerResult = await visionHandler.search(page, {
+          accountNumber, firstName, lastName, fullName, onProgress,
+        });
+        if (handlerResult) return handlerResult;
+        onProgress('Vision handler fell back — continuing with AI agent...');
+      } catch (handlerErr) {
+        console.log(`[agent] Vision handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('Vision handler error — falling back to AI agent...');
+      }
+    }
+
+    if (platform === 'bis') {
+      onProgress('Detected BIS Consultants platform — using dedicated handler...');
+      try {
+        const handlerResult = await bisHandler.search(page, {
+          accountNumber, firstName, lastName, fullName, onProgress,
+        });
+        if (handlerResult) return handlerResult;
+        onProgress('BIS handler fell back — continuing with AI agent...');
+      } catch (handlerErr) {
+        console.log(`[agent] BIS handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('BIS handler error — falling back to AI agent...');
       }
     }
 
