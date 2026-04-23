@@ -39,17 +39,21 @@ async function main() {
 
   const browser = await chromium.launch({
     headless: process.env.BROWSER_HEADLESS !== 'false',
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--ignore-certificate-errors'],
   });
   const context = await browser.newContext({
     viewport: { width: 1280, height: 900 },
     userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+    ignoreHTTPSErrors: true,
   });
   const page = await context.newPage();
 
   try {
     console.log('Navigating to URL...');
-    await page.goto(URL_ARG, { waitUntil: 'networkidle', timeout: 60000 });
+    // Use 'load' to avoid timeouts from map tiles or continuous analytics pings
+    await page.goto(URL_ARG, { waitUntil: 'load', timeout: 60000 });
+    // Give Angular/React SPAs a moment to mount after initial load
+    await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
     console.log('Page loaded:', page.url());
 
     // Detect if SEARCH looks like a parcel ID (has digits/dashes) or a name

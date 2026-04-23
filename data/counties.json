@@ -3946,7 +3946,7 @@
         "netronlinePath": "/state/GA/county/greene"
       },
       "Gwinnett": {
-        "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=1282&LayerID=43872&PageTypeID=2&PageID=16058",
+        "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=1282&LayerID=43872&PageType=Search",
         "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/gwinnett"
@@ -22945,8 +22945,8 @@
         "netronlinePath": "/state/TX/county/nacogdoches"
       },
       "Navarro": {
-        "url": null,
-        "platform": null,
+        "url": "https://esearch.navarrocad.com/",
+        "platform": "bis",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/navarro"
       },
@@ -22987,8 +22987,8 @@
         "netronlinePath": "/state/TX/county/orange"
       },
       "Palo Pinto": {
-        "url": null,
-        "platform": null,
+        "url": "https://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=PALOPINTOCAD",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/palo_pinto"
       },
@@ -23023,8 +23023,8 @@
         "netronlinePath": "/state/TX/county/polk"
       },
       "Potter": {
-        "url": null,
-        "platform": null,
+        "url": "https://www.prad.org/property-search",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/potter"
       },
@@ -23041,8 +23041,8 @@
         "netronlinePath": "/state/TX/county/rains"
       },
       "Randall": {
-        "url": null,
-        "platform": null,
+        "url": "https://www.prad.org/property-search",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/randall"
       },
@@ -23089,8 +23089,8 @@
         "netronlinePath": "/state/TX/county/robertson"
       },
       "Rockwall": {
-        "url": null,
-        "platform": null,
+        "url": "https://www.rockwallcad.com/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/rockwall"
       },
@@ -23353,8 +23353,8 @@
         "netronlinePath": "/state/TX/county/wheeler"
       },
       "Wichita": {
-        "url": null,
-        "platform": null,
+        "url": "https://esearch.wadtx.com/",
+        "platform": "bis",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/wichita"
       },
@@ -23389,8 +23389,8 @@
         "netronlinePath": "/state/TX/county/winkler"
       },
       "Wise": {
-        "url": null,
-        "platform": null,
+        "url": "https://esearch.wise-cad.com/",
+        "platform": "bis",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/wise"
       },
@@ -24049,8 +24049,8 @@
         "netronlinePath": "/state/VT/county/fletcher"
       },
       "Franklin": {
-        "url": null,
-        "platform": "unknown",
+        "url": "https://franklin.patriotproperties.com/",
+        "platform": "patriot",
         "lastVerified": null,
         "netronlinePath": "/state/VT/county/franklin"
       },

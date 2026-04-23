@@ -214,8 +214,11 @@ async function detectPageType(page) {
 
     if (!hasParcelInput && !hasNameInput) {
       // No search inputs visible — probably on map or error page
-      const hasNavLinks = document.querySelectorAll('a').length > 5;
-      return hasNavLinks ? 'map' : 'error';
+      // Count meaningful links (nav tabs, search buttons); Angular SPAs may have many
+      const linkCount = document.querySelectorAll('a').length;
+      const hasSearchLink = !!document.querySelector('a[href*="PageType=Search"], li#search1 a') ||
+        Array.from(document.querySelectorAll('a')).some(a => /property search|^search$/i.test(a.textContent.trim()));
+      return (linkCount > 5 || hasSearchLink) ? 'map' : 'error';
     }
 
     return 'search';
@@ -488,6 +491,19 @@ async function search(page, {
   console.log(`[qpublic] mode=${searchMode} startUrl=${page.url()}`);
 
   // ── 1. Handle entry pages (disclaimer / map) ───────────────────────────────
+  // Wait for Angular/React SPA to mount — qPublic schneidercorp pages can take
+  // a moment to render nav links and search inputs after the page 'load' event.
+  // Dismiss any Terms & Conditions modal that might block the search form.
+  await dismissModal(page);
+  await page.waitForFunction(
+    () => document.querySelectorAll('a').length > 5 ||
+          !!document.querySelector(
+            'input[placeholder="enter name..."], input[id*="txtName"], ' +
+            'input[id*="txtParcelID"], li#search1, a[href*="PageType=Search"]'
+          ),
+    { timeout: 15000 }
+  ).catch(() => {});
+
   const pageType = await detectPageType(page);
   console.log(`[qpublic] detected page type: ${pageType}`);
 
@@ -523,9 +539,21 @@ async function search(page, {
       const landingHandled = await handleQpublicNetLanding(page);
       const clicked = landingHandled ? null : await tryClick(page, SEARCH_NAV_SELECTORS);
       if (!landingHandled && !clicked) {
-        const searchUrl = currentUrl.includes('?')
-          ? currentUrl.replace(/PageType=[^&]*/i, 'PageType=Search')
-          : currentUrl + '?PageType=Search';
+        // Build a search URL by replacing/adding PageType=Search.
+        // Handle both PageTypeID=N (AppID-format) and PageType=Map forms.
+        let searchUrl;
+        if (/PageTypeID=/i.test(currentUrl)) {
+          // Remove PageID and PageTypeID, add PageType=Search
+          searchUrl = currentUrl
+            .replace(/[?&]PageTypeID=[^&]*/i, '')
+            .replace(/[?&]PageID=[^&]*/i, '')
+            .replace(/(\?.*)/, '$1&PageType=Search')
+            .replace(/^([^?]*)$/, '$1?PageType=Search');
+        } else {
+          searchUrl = currentUrl.includes('?')
+            ? currentUrl.replace(/PageType=[^&]*/i, 'PageType=Search')
+            : currentUrl + '?PageType=Search';
+        }
         try {
           await page.goto(searchUrl, { waitUntil: 'networkidle', timeout: 30000 });
           console.log(`[qpublic] Navigated to search URL: ${searchUrl}`);
@@ -692,7 +720,13 @@ async function search(page, {
         onProgress(`Loading detail for ${parcelId || 'record ' + (i + 1)}...`);
         console.log(`[qpublic] Detail URL: ${detailUrl}`);
         await page.goto(detailUrl, { waitUntil: 'networkidle', timeout: 30000 });
-        await page.waitForSelector('table, .detail, h1, h2', { timeout: 10000 }).catch(() => {});
+        // Wait for Angular/React content to hydrate — qPublic Schneider detail pages
+        // use client-side rendering on top of SSR, so tables may appear after networkidle
+        await page.waitForSelector(
+          'table tr td:not(:empty), [class*="parcel" i] td, [id*="ParcelID"], .tt-upm-parcel-detail-section, [class*="detail-section"]',
+          { timeout: 10000 }
+        ).catch(() => {});
+        await page.waitForTimeout(800);
         detailFields = await extractDetailFields(page);
         console.log(`[qpublic] Detail fields (${Object.keys(detailFields).length}):`, JSON.stringify(detailFields).substring(0, 600));
         onProgress(`Extracted ${Object.keys(detailFields).length} detail fields.`);

@@ -209,13 +209,35 @@ async function extractDetailFields(page) {
   return page.evaluate(() => {
     const data = {};
 
-    // th/td or td/td label-value rows
+    // th/td or td/td label-value rows (adjacent-cell pattern)
     document.querySelectorAll('tr').forEach(row => {
       const cells = Array.from(row.querySelectorAll('th, td'));
       for (let i = 0; i < cells.length - 1; i++) {
-        const label = cells[i].innerText.trim().replace(/:$/, '');
-        const value = cells[i + 1]?.innerText.trim() || '';
-        if (label && value && label.length < 80 && !label.match(/^\d+$/) && value.length < 300) {
+        const rawLabel = cells[i].innerText.trim();
+        const rawValue = cells[i + 1]?.innerText.trim() || '';
+        const label = rawLabel.replace(/:$/, '');
+
+        // Tyler Datalet format: each cell may contain "Label: Value" inline
+        // If rawLabel contains a colon and rawValue also contains a colon,
+        // both cells are probably self-contained — parse each individually.
+        const isInlinePair = rawLabel.includes(':') && rawValue.includes(':');
+
+        if (!isInlinePair && label && rawValue && label.length < 80 &&
+            !label.match(/^\d+$/) && rawValue.length < 300) {
+          data[label] = rawValue;
+        }
+      }
+    });
+
+    // Tyler Datalet inline "Label: Value" format (each cell is self-contained)
+    document.querySelectorAll('td, th').forEach(cell => {
+      const text = cell.innerText.trim();
+      const colonIdx = text.indexOf(':');
+      if (colonIdx > 0 && colonIdx < text.length - 1) {
+        const label = text.substring(0, colonIdx).trim();
+        const value = text.substring(colonIdx + 1).trim();
+        if (label.length > 0 && label.length < 60 && value.length > 0 && value.length < 200 &&
+            !label.match(/^\d+$/) && !data[label]) {
           data[label] = value;
         }
       }
@@ -300,13 +322,55 @@ async function extractResultsTable(page) {
       .map(el => el.innerText.trim().replace(/[▲▼↑↓\s]+$/, '').trim());
     const rows = allRows.slice(1).map(row => ({
       cells: Array.from(row.querySelectorAll('td')).map(td => td.innerText.trim()),
-      href:  row.querySelector('a[href*="detail"], a[href*="parcel"], a[href*="account"], a[href*="record"], a[href*="property"]')?.getAttribute('href')
+      // Try specific detail URL patterns first, then any link in the row
+      href:  row.querySelector('a[href*="detail" i], a[href*="parcel" i], a[href*="account" i], a[href*="record" i], a[href*="property" i]')?.getAttribute('href')
              || row.querySelector('td a')?.getAttribute('href')
+             || row.querySelector('a')?.getAttribute('href')
              || null,
     })).filter(r => r.cells.some(c => c.length > 0));
 
     return headers.length > 0 && rows.length > 0 ? { headers, rows } : null;
   }, TYLER_RESULT_KEYWORDS);
+}
+
+/**
+ * When result rows have no href links (ASP.NET row onclick or postback navigation),
+ * click the first data row and capture the resulting detail URL.
+ * Returns the detail URL string or null.
+ */
+async function discoverDetailUrl(page, resultsUrl) {
+  try {
+    // Try clicking the first link in the first data row
+    const firstRowLink = page.locator('table tr:nth-child(2) a').first();
+    if (await firstRowLink.count() > 0) {
+      const href = await firstRowLink.getAttribute('href');
+      if (href && href.startsWith('javascript:')) {
+        // ASP.NET postback — click and wait for navigation
+        const [_nav] = await Promise.all([
+          page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {}),
+          firstRowLink.click({ timeout: 5000 }),
+        ]);
+        const url = page.url();
+        if (url !== resultsUrl) return url;
+        return null;
+      }
+      if (href && !href.startsWith('#') && !href.startsWith('javascript:')) return href;
+    }
+
+    // No link — try clicking the row's first non-empty text cell
+    const firstDataRow = page.locator('table tr').nth(1);
+    if (await firstDataRow.count() === 0) return null;
+
+    const [_nav] = await Promise.all([
+      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {}),
+      firstDataRow.click({ timeout: 5000 }),
+    ]);
+    const url = page.url();
+    return url !== resultsUrl ? url : null;
+  } catch (e) {
+    console.log(`[tyler] discoverDetailUrl failed: ${e.message?.substring(0, 80)}`);
+    return null;
+  }
 }
 
 // ─── Main export ─────────────────────────────────────────────────────────────
@@ -461,6 +525,54 @@ async function search(page, {
   const searchResultsUrl = page.url();
   const baseUrl = new URL(page.url()).origin;
 
+  // When all hrefs are null (ASP.NET row-click navigation), discover the URL pattern
+  // by clicking the first row, then build URLs for subsequent rows from the pattern.
+  let detailUrlTemplate = null;
+  let detailUrlMode = null; // 'parcel' | null
+  if (cappedRows.every(r => !r.href)) {
+    console.log('[tyler] No hrefs in results — discovering detail URL via row click...');
+    const discoveredUrl = await discoverDetailUrl(page, searchResultsUrl);
+    if (discoveredUrl) {
+      console.log(`[tyler] Discovered detail URL: ${discoveredUrl}`);
+      // Build a template by finding what changed relative to the first row's parcel/acct ID
+      const row0 = cappedRows[0];
+      const obj0 = {};
+      headers.forEach((h, idx) => { if (h) obj0[h] = row0.cells[idx] || ''; });
+      const findVal0 = (...keys) => {
+        for (const k of keys) {
+          if (obj0[k]) return obj0[k];
+          const m = Object.keys(obj0).find(h => h.toLowerCase().includes(k.toLowerCase()));
+          if (m && obj0[m]) return obj0[m];
+        }
+        return '';
+      };
+      const acct0 = findVal0('Account Number', 'Parcel ID', 'Property ID', 'Parcel', 'Account', 'Acct #');
+      const jur0  = findVal0('Jur', 'Jurisdiction', 'Jur Code');
+
+      if (acct0 && discoveredUrl.includes(acct0)) {
+        // Parcel-ID-based detail URL (e.g. /Parcel.aspx?acct={id}&jur={jur})
+        detailUrlTemplate = discoveredUrl
+          .replace(encodeURIComponent(acct0), '__ACCT__')
+          .replace(acct0, '__ACCT__');
+        if (jur0 && detailUrlTemplate.includes(jur0)) {
+          detailUrlTemplate = detailUrlTemplate.replace(jur0, '__JUR__');
+        }
+        detailUrlMode = 'parcel';
+        console.log(`[tyler] Detail URL template (parcel): ${detailUrlTemplate}`);
+      } else if (/[?&]sIndex=\d/i.test(discoveredUrl)) {
+        // Tyler Datalet viewer uses session-indexed sIndex= navigation.
+        // The sIndex session is consumed by discovery and cannot be reliably reused
+        // (all subsequent indices show stale data). Return results table data only.
+        console.log('[tyler] Tyler Datalet sIndex navigation detected — returning results table data only');
+        detailUrlMode = null; // no detail loading
+      }
+
+      // Navigate back to results (for parcel mode and the fallback case)
+      await page.goto(searchResultsUrl, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
+      await waitForResults(page);
+    }
+  }
+
   for (let i = 0; i < cappedRows.length; i++) {
     const { cells, href } = cappedRows[i];
     const obj = {};
@@ -475,10 +587,11 @@ async function search(page, {
       }
       return '';
     };
-    const parcelId  = findVal('Account Number', 'Parcel ID', 'Property ID', 'Parcel', 'Account') || cells[1] || cells[0] || '';
+    const parcelId  = findVal('Account Number', 'Parcel ID', 'Property ID', 'Parcel', 'Account', 'Acct #') || cells[1] || cells[0] || '';
     const ownerName = findVal('Owner Name', 'Owner') || cells[2] || cells[1] || '';
     const address   = findVal('Situs Address', 'Property Address', 'Address', 'Location') || cells[3] || cells[2] || '';
     const appraised = obj['Appraised Value'] || obj['Market Value'] || obj['Total Appraised'] || '';
+    const jur       = findVal('Jur', 'Jurisdiction', 'Jur Code');
 
     const summaryRecord = {
       parcelId, ownerName, propertyAddress: address, taxAmountDue: appraised,
@@ -488,11 +601,32 @@ async function search(page, {
 
     let detailFields = {};
     try {
+      onProgress(`Loading detail for ${parcelId || 'record ' + (i + 1)}...`);
+      let navigated = false;
+
       if (href) {
+        // Direct link in result row (most Tyler sites)
         const detailUrl = href.startsWith('http') ? href : `${baseUrl}${href.startsWith('/') ? '' : '/'}${href}`;
-        onProgress(`Loading detail for ${parcelId || 'record ' + (i + 1)}...`);
         console.log(`[tyler] Detail URL: ${detailUrl}`);
         await page.goto(detailUrl, { waitUntil: 'networkidle', timeout: 30000 });
+        navigated = true;
+      } else if (detailUrlMode === 'parcel' && detailUrlTemplate) {
+        // Parcel-ID-based URL template
+        const detailUrl = detailUrlTemplate.replace('__ACCT__', parcelId).replace('__JUR__', jur || '');
+        const fullUrl = detailUrl.startsWith('http') ? detailUrl : `${baseUrl}${detailUrl}`;
+        console.log(`[tyler] Detail URL (parcel template): ${fullUrl}`);
+        await page.goto(fullUrl, { waitUntil: 'networkidle', timeout: 30000 });
+        navigated = true;
+      } else if (detailUrlMode === 'index') {
+        // Index-based navigation: use sIndex=N URLs directly (session stays active)
+        const sUrl = detailUrlTemplate.replace('__IDX__', String(i));
+        console.log(`[tyler] sIndex URL (${i}): ${sUrl}`);
+        await page.goto(sUrl, { waitUntil: 'networkidle', timeout: 30000 });
+        navigated = page.url() !== searchResultsUrl;
+        console.log(`[tyler] After sIndex nav: ${page.url()}`);
+      }
+
+      if (navigated) {
         await page.waitForSelector('table, .detail, h1, h2', { timeout: 10000 }).catch(() => {});
         detailFields = await extractDetailFields(page);
         console.log(`[tyler] Detail fields (${Object.keys(detailFields).length}):`, JSON.stringify(detailFields).substring(0, 400));
@@ -519,7 +653,7 @@ async function search(page, {
       additionalDetails: JSON.stringify({ ...obj, ...detailFields }),
     });
 
-    if (i < cappedRows.length - 1) {
+    if (i < cappedRows.length - 1 && detailUrlMode !== 'index') {
       try {
         await page.goto(searchResultsUrl, { waitUntil: 'networkidle', timeout: 30000 });
         await waitForResults(page);
