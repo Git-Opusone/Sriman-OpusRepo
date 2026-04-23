@@ -29,7 +29,22 @@ const PROPERTY_KEYWORDS = [
   'property search', 'property tax', 'tax commissioner',
   'tax search', 'treasurer tax', 'tax assessor', 'tax office',
 ];
-const SKIP_HREF = ['netronline.com','historicaerials.com','datastore.','map.netronline'];
+const SKIP_HREF = [
+  'netronline.com','historicaerials.com','datastore.','map.netronline',
+  // State government portals — never the right county property search link
+  'georgia.gov','texas.gov','florida.gov','myfloridacounty.com',
+  'az.gov','ca.gov','ny.gov','pa.gov','oh.gov','il.gov',
+  'nc.gov','va.gov','wa.gov','co.gov','tn.gov','mi.gov',
+  'in.gov','ga.gov','iowa.gov','ks.gov','ky.gov','mo.gov',
+  'state.al.us','state.ak.us','state.ar.us','state.mn.us',
+];
+
+// Domains that might return 403 due to bot detection but are NOT dead URLs
+const KNOWN_PLATFORM_DOMAINS = [
+  'schneidercorp.com', 'tylerhost.net', 'tylertech.com',
+  'patriotproperties.com', 'vgsi.com', 'visionappraisal.com',
+  'bisconsultants.com', 'cadcentral.com',
+];
 const SKIP_TEXT = ['clerk','recorder','gis','mapping','aerial','vital','ucc','corporation'];
 
 function detectPlatform(url) {
@@ -82,6 +97,10 @@ async function checkUrlHealth(url) {
     const finalUrl  = res.request?.res?.responseUrl || url;
     const finalDomain = baseDomain(finalUrl);
 
+    // For known platforms, a 403 means bot-blocked not dead — treat as alive
+    if (status === 403 && KNOWN_PLATFORM_DOMAINS.some(d => originalDomain.includes(d.split('.')[0]))) {
+      return 'alive';
+    }
     // Dead if 4xx/5xx or redirected to a completely different domain
     if (status >= 400) return 'dead';
     if (finalDomain && originalDomain && finalDomain !== originalDomain) {
@@ -154,11 +173,49 @@ async function findLiveUrl(stateCode, countyName) {
   }
 }
 
+// Domains maintained by national vendors — IP blocks make them appear dead but they're not
+const TRUSTED_PLATFORM_DOMAINS = [
+  'schneidercorp.com', 'tylerhost.net', 'tylertech.com', 'iasworld',
+  'patriotproperties.com', 'vgsi.com', 'visionappraisal.com',
+  'bisconsultants.com', 'cadcentral.com',
+];
+
+// URL patterns that indicate a legitimate county property search site
+const VALID_URL_PATTERNS = [
+  'qpublic', 'schneidercorp', 'tylerhost', 'iasworld', 'tylertech',
+  'patriotproperties', 'vgsi', 'visionappraisal', 'bisconsultants', 'cadcentral',
+  'assessor', 'appraisal', 'propertytax', 'property-tax', 'propertysearch',
+  'property-search', 'taxoffice', 'taxassessor', 'taxsearch', 'treasurer',
+  'cad.org', 'cad.tx', 'apd.com',
+];
+
+// Domains that are state portals and should never overwrite a county URL
+const STATE_PORTAL_PATTERNS = [
+  'georgia.gov', 'iowa.gov', 'texas.gov', 'florida.gov', 'myfloridacounty.com',
+  'az.gov', 'ca.gov', 'ny.gov', 'pa.gov', 'oh.gov', 'il.gov',
+  'nc.gov', 'va.gov', 'wa.gov', 'co.gov', 'tn.gov', 'mi.gov',
+  'in.gov/', 'ks.gov/', 'ky.gov/', 'mo.gov/', 'iowa.gov',
+];
+
+function isValidPropertyUrl(url) {
+  if (!url) return false;
+  const u = url.toLowerCase();
+  if (STATE_PORTAL_PATTERNS.some(p => u.includes(p))) return false;
+  return VALID_URL_PATTERNS.some(p => u.includes(p));
+}
+
 /**
  * Master function: checks stored URL, refreshes via netronline if dead.
  * Returns { url, status: 'alive'|'refreshed'|'dead', message }
  */
 async function resolveCountyUrl(storedUrl, stateCode, countyName) {
+  // Known-platform URLs (Beacon, Tyler, qPublic, etc.) are maintained by national vendors.
+  // An IP block or bot-detect from this machine doesn't mean the URL is dead — skip check.
+  const isKnownPlatform = TRUSTED_PLATFORM_DOMAINS.some(d => (storedUrl || '').toLowerCase().includes(d));
+  if (isKnownPlatform) {
+    return { url: storedUrl, status: 'alive', message: 'URL is active (known platform)' };
+  }
+
   // 1. Quick health check on stored URL
   const health = await checkUrlHealth(storedUrl);
 
@@ -170,12 +227,17 @@ async function resolveCountyUrl(storedUrl, stateCode, countyName) {
   console.log(`[urlHealthCheck] ${storedUrl} is dead — searching netronline for updated URL`);
   const newUrl = await findLiveUrl(stateCode, countyName);
 
-  if (newUrl) {
+  // Validate the new URL before persisting — never overwrite with a state portal
+  if (newUrl && isValidPropertyUrl(newUrl)) {
     return {
       url: newUrl,
       status: 'refreshed',
       message: `County URL was updated. Old: ${storedUrl} → New: ${newUrl}`,
     };
+  }
+
+  if (newUrl && !isValidPropertyUrl(newUrl)) {
+    console.log(`[urlHealthCheck] Rejected new URL (state portal or low-quality): ${newUrl}`);
   }
 
   return {

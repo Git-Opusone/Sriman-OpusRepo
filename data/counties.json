@@ -1694,7 +1694,7 @@
       },
       "Alamosa": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=AlamosaCountyCO&PageType=Map",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/CO/county/alamosa"
       },
@@ -1856,7 +1856,7 @@
       },
       "Huerfano": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=HuerfanoCountyCO&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/CO/county/huerfano"
       },
@@ -2054,7 +2054,7 @@
       },
       "Washington": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=WashingtonCountyCO&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/CO/county/washington"
       },
@@ -3146,7 +3146,7 @@
     "FL": {
       "Alachua": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=1081&LayerID=26490&PageTypeID=2&PageID=10768",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/alachua"
       },
@@ -3158,7 +3158,7 @@
       },
       "Bay": {
         "url": "https://qpublic.schneidercorp.com/application.aspx?app=BayCountyFL&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/bay"
       },
@@ -3200,7 +3200,7 @@
       },
       "Clay": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=830&LayerID=15008&PageTypeID=2&PageID=6754",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/clay"
       },
@@ -3224,7 +3224,7 @@
       },
       "Dixie": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=867&LayerID=16385&PageTypeID=2&PageID=7230",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/dixie"
       },
@@ -3254,13 +3254,13 @@
       },
       "Gadsden": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=GadsdenCountyFL&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/gadsden"
       },
       "Gilchrist": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=GilchristCountyFL&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/gilchrist"
       },
@@ -3284,7 +3284,7 @@
       },
       "Hardee": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=HardeeCountyFL&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/hardee"
       },
@@ -3314,13 +3314,13 @@
       },
       "Holmes": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=HolmesCountyFL&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/holmes"
       },
       "Indian River": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=IndianRiverCountyFL&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/indian_river"
       },
@@ -3332,7 +3332,7 @@
       },
       "Jefferson": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=JeffersonCountyFL&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/jefferson"
       },
@@ -3368,13 +3368,13 @@
       },
       "Liberty": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=LibertyCountyFL&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/liberty"
       },
       "Madison": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=MadisonCountyFL&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/madison"
       },
@@ -3404,7 +3404,7 @@
       },
       "Monroe": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=605&LayerID=9946&PageTypeID=2&PageID=4381",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/monroe"
       },
@@ -3416,7 +3416,7 @@
       },
       "Okaloosa": {
         "url": "https://qpublic.schneidercorp.com/application.aspx?app=OkaloosaCountyFL&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/okaloosa"
       },
@@ -3488,7 +3488,7 @@
       },
       "St Johns": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=StJohnsCountyFL&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/st_johns"
       },
@@ -3530,7 +3530,7 @@
       },
       "Wakulla": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=WakullaCountyFL&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/wakulla"
       },
@@ -3542,7 +3542,7 @@
       },
       "Washington": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=WashingtonCountyFL&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/FL/county/washington"
       },
@@ -3581,13 +3581,13 @@
       },
       "Banks": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=BanksCountyGA&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/banks"
       },
       "Barrow": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=635&LayerID=11218&PageTypeID=2&PageID=4614",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/barrow"
       },
@@ -3611,13 +3611,13 @@
       },
       "Bibb": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=BibbCountyGA&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/bibb"
       },
       "Bleckley": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=BleckleyCountyGA&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/bleckley"
       },
@@ -3743,13 +3743,13 @@
       },
       "Cobb": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=1051&LayerID=23951&PageTypeID=2&PageID=9967",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/cobb"
       },
       "Coffee": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=737&LayerID=11775&PageTypeID=2&PageID=5474",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/coffee"
       },
@@ -3773,7 +3773,7 @@
       },
       "Coweta": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=CowetaCountyGA&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/coweta"
       },
@@ -3797,7 +3797,7 @@
       },
       "Dawson": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=DawsonCountyGA&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/dawson"
       },
@@ -3833,7 +3833,7 @@
       },
       "Douglas": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=988&LayerID=20162&PageTypeID=2&PageID=8760",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/douglas"
       },
@@ -3881,7 +3881,7 @@
       },
       "Fayette": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=942&LayerID=18406&PageTypeID=2&PageID=8204",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/fayette"
       },
@@ -3904,8 +3904,8 @@
         "netronlinePath": "/state/GA/county/franklin"
       },
       "Fulton": {
-        "url": "https://www.fultoncountytaxes.org/property-taxes/search-for-tax-bill.aspx",
-        "platform": "generic",
+        "url": null,
+        "platform": "unknown",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/fulton"
       },
@@ -3947,7 +3947,7 @@
       },
       "Gwinnett": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=1282&LayerID=43872&PageTypeID=2&PageID=16058",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/gwinnett"
       },
@@ -3983,7 +3983,7 @@
       },
       "Hart": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=HartCountyGA&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/hart"
       },
@@ -4037,7 +4037,7 @@
       },
       "Jenkins": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=JenkinsCountyGA&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/jenkins"
       },
@@ -4079,7 +4079,7 @@
       },
       "Liberty": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=989&LayerID=20166&PageTypeID=2&PageID=8770",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/liberty"
       },
@@ -4103,7 +4103,7 @@
       },
       "Lumpkin": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=LumpkinCountyGA&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/lumpkin"
       },
@@ -4127,7 +4127,7 @@
       },
       "McDuffie": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=712&LayerID=11417&PageTypeID=2&PageID=4888",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/mcduffie"
       },
@@ -4187,7 +4187,7 @@
       },
       "Newton": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=NewtonCountyGA&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/newton"
       },
@@ -4205,7 +4205,7 @@
       },
       "Paulding": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=PauldingCountyGA&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/paulding"
       },
@@ -4271,7 +4271,7 @@
       },
       "Richmond": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=678&LayerID=11365&PageTypeID=2&PageID=4758",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/richmond"
       },
@@ -4295,7 +4295,7 @@
       },
       "Seminole": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=SeminoleCountyGA&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/seminole"
       },
@@ -4349,7 +4349,7 @@
       },
       "Telfair": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=TelfairCountyGA&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/telfair"
       },
@@ -4367,7 +4367,7 @@
       },
       "Tift": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=TiftCountyGA&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/tift"
       },
@@ -4385,7 +4385,7 @@
       },
       "Treutlen": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=811&LayerID=14327&PageTypeID=2&PageID=6234",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/treutlen"
       },
@@ -4427,7 +4427,7 @@
       },
       "Walton": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=628&LayerID=11921&PageTypeID=1",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/walton"
       },
@@ -4469,13 +4469,13 @@
       },
       "White": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=982&LayerID=19945&PageTypeID=2&PageID=8692",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/white"
       },
       "Whitfield": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=1049&LayerID=23759&PageTypeID=2&PageID=9914",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/whitfield"
       },
@@ -5777,7 +5777,7 @@
       },
       "Parke": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=620&LayerID=11000&PageTypeID=2&PageID=4537",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/IN/county/parke"
       },
@@ -7220,7 +7220,7 @@
       },
       "Anderson": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=AndersonCountyKY&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/anderson"
       },
@@ -7262,19 +7262,19 @@
       },
       "Boyd": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=BoydCountyKY&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/boyd"
       },
       "Boyle": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=BoyleCountyKY&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/boyle"
       },
       "Bracken": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=970&LayerID=19467&PageTypeID=2&PageID=8527",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/bracken"
       },
@@ -7292,13 +7292,13 @@
       },
       "Bullitt": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=943&LayerID=18440&PageTypeID=2&PageID=8234",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/bullitt"
       },
       "Butler": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=ButlerCountyKY&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/butler"
       },
@@ -7340,7 +7340,7 @@
       },
       "Casey": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=891&LayerID=16818&PageTypeID=2&PageID=7500",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/casey"
       },
@@ -7358,7 +7358,7 @@
       },
       "Clay": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=1158&LayerID=31227&PageTypeID=2&PageID=12633",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/clay"
       },
@@ -7388,7 +7388,7 @@
       },
       "Edmonson": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=EdmonsonCountyKY&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/edmonson"
       },
@@ -7436,7 +7436,7 @@
       },
       "Gallatin": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=GallatinCountyKY&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/gallatin"
       },
@@ -7460,7 +7460,7 @@
       },
       "Grayson": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=GraysonCountyKY&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/grayson"
       },
@@ -7484,7 +7484,7 @@
       },
       "Hardin": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=HardinCountyKY&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/hardin"
       },
@@ -7568,7 +7568,7 @@
       },
       "Knott": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=1184&LayerID=35288&PageTypeID=2&PageID=13427",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/knott"
       },
@@ -7616,7 +7616,7 @@
       },
       "Lewis": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=LewisCountyKY&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/lewis"
       },
@@ -7646,7 +7646,7 @@
       },
       "Madison": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=MadisonCountyKY&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/madison"
       },
@@ -7712,7 +7712,7 @@
       },
       "Mercer": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=mercerCountyKY&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/mercer"
       },
@@ -7748,7 +7748,7 @@
       },
       "Nelson": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=871&LayerID=16487&PageTypeID=2&PageID=7286",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/nelson"
       },
@@ -7766,7 +7766,7 @@
       },
       "Oldham": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=OldhamCountyKY&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/oldham"
       },
@@ -7796,7 +7796,7 @@
       },
       "Pike": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=951&LayerID=18647&PageTypeID=2&PageID=8296",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/pike"
       },
@@ -7826,13 +7826,13 @@
       },
       "Rowan": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=938&LayerID=18313&PageTypeID=2&PageID=8174",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/rowan"
       },
       "Russell": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=RussellCountyKY&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/russell"
       },
@@ -7850,7 +7850,7 @@
       },
       "Simpson": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=963&LayerID=19131&PageTypeID=2&PageID=8439",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/simpson"
       },
@@ -7886,7 +7886,7 @@
       },
       "Union": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=UnionCountyKY&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/union"
       },
@@ -7928,7 +7928,7 @@
       },
       "Woodford": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=WoodfordCountyKY&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/KY/county/woodford"
       },
@@ -18938,7 +18938,7 @@
       },
       "Fulton": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=FultonCountyOH&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/OH/county/fulton"
       },
@@ -20645,13 +20645,13 @@
     "SC": {
       "Abbeville": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=613&LayerID=10508&PageTypeID=2&PageID=4483&KeyValue=133-00-00-031",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/SC/county/abbeville"
       },
       "Aiken": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=AikenCountySC&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/SC/county/aiken"
       },
@@ -20705,7 +20705,7 @@
       },
       "Cherokee": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=CherokeeCountySC&Layer=Parcels&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/SC/county/cherokee"
       },
@@ -20729,7 +20729,7 @@
       },
       "Colleton": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=1046&LayerID=23500&PageTypeID=2&PageID=9798",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/SC/county/colleton"
       },
@@ -20765,7 +20765,7 @@
       },
       "Florence": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=920&LayerID=17892&PageTypeID=2&PageID=7969",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/SC/county/florence"
       },
@@ -20807,13 +20807,13 @@
       },
       "Kershaw": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=KershawCountySC&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/SC/county/kershaw"
       },
       "Lancaster": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=211&LayerID=2815&PageTypeID=1&PageID=1605",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/SC/county/lancaster"
       },
@@ -20867,13 +20867,13 @@
       },
       "Orangeburg": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=1214&LayerID=36780&PageTypeID=2&PageID=14064",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/SC/county/orangeburg"
       },
       "Pickens": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=927&LayerID=18058&PageTypeID=2&PageID=8075",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/SC/county/pickens"
       },
@@ -20897,7 +20897,7 @@
       },
       "Sumter": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=SumterCountySC&PageType=Map",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/SC/county/sumter"
       },
@@ -20954,7 +20954,7 @@
       },
       "Brown": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=68&LayerID=436&PageTypeID=1&PageID=915",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/SD/county/brown"
       },
@@ -21514,9 +21514,9 @@
         "netronlinePath": "/state/TN/county/hamblen"
       },
       "Hamilton": {
-        "url": "https://assessor.hamiltontn.gov/search",
+        "url": "https://orders.freestar.io/request-access?publisher=fae87a20-a1cc-11e9-a11d-714f7ce21901&publisherName=Netronline",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-04-23",
         "netronlinePath": "/state/TN/county/hamilton"
       },
       "Hancock": {
@@ -25487,7 +25487,7 @@
       },
       "Hopewell": {
         "url": "https://qpublic.schneidercorp.com/Application.aspx?App=CityofHopewellVA&PageType=Search",
-        "platform": "beacon",
+        "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/VA/county/hopewell"
       },

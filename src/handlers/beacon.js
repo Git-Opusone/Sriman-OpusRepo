@@ -138,8 +138,13 @@ async function detectPageType(page) {
     if (body.includes('i accept') || (body.includes('disclaimer') && body.includes('accept'))) return 'disclaimer';
     if (url.includes('pagetype=map') || url.includes('pagetype=1')) return 'map';
 
-    const hasParcelInput = !!document.querySelector('input[id*="txtParcelID"], input[placeholder*="parcel number" i]');
-    const hasNameInput   = !!document.querySelector('input[placeholder="enter name..."], input[id*="txtName"]');
+    const hasParcelInput = !!document.querySelector(
+      'input[id*="txtParcelID"], input[placeholder*="parcel number" i], input[id*="parcel" i]'
+    );
+    const hasNameInput = !!document.querySelector(
+      'input[placeholder*="enter name" i], input[id*="txtName" i], ' +
+      'input[id*="OwnerName" i], input[placeholder*="owner" i]'
+    );
 
     if (!hasParcelInput && !hasNameInput) {
       return document.querySelectorAll('a').length > 5 ? 'map' : 'error';
@@ -214,27 +219,57 @@ async function extractDetailFields(page) {
   });
 }
 
+const BEACON_RESULT_KEYWORDS = ['owner', 'parcel', 'account', 'address', 'situs', 'location', 'name'];
+
 async function extractResultsTable(page) {
-  return page.evaluate(() => {
-    const tables = Array.from(document.querySelectorAll('table'));
+  return page.evaluate((keywords) => {
+    const namedCandidates = [
+      document.querySelector('table.SearchResults'),
+      document.querySelector('#searchResults table'),
+      document.querySelector('table.dataGridView'),
+      document.querySelector('table[id*="result" i]'),
+      document.querySelector('table[id*="grid" i]'),
+    ].filter(Boolean);
+
+    const allTables = Array.from(document.querySelectorAll('table'));
+    const candidates = [...new Set([...namedCandidates, ...allTables])];
+
     let best = null;
-    for (const t of tables) {
-      const rows = t.querySelectorAll('tr').length;
-      if (rows > (best ? best.querySelectorAll('tr').length : 1)) best = t;
+    let bestScore = -1;
+
+    for (const t of candidates) {
+      // Skip tables containing form inputs (they're search forms, not results)
+      if (t.querySelector('input[type="text"], input[type="search"], select, textarea')) continue;
+
+      const allRows = t.querySelectorAll('tr');
+      if (allRows.length < 2) continue;
+
+      const firstRowCells = Array.from(allRows[0].querySelectorAll('th, td'));
+      const headerText = firstRowCells.map(el => el.innerText.trim().toLowerCase()).join(' ');
+      const kwMatches = keywords.filter(kw => headerText.includes(kw)).length;
+
+      let score;
+      if (kwMatches >= 2)      score = 1000 + kwMatches * 10 + allRows.length;
+      else if (kwMatches === 1) score = 500 + allRows.length;
+      else                      score = allRows.length;
+
+      if (score > bestScore) { best = t; bestScore = score; }
     }
-    if (!best) return null;
+
+    if (!best || bestScore < 2) return null;
 
     const allRows = Array.from(best.querySelectorAll('tr'));
-    if (allRows.length < 2) return null;
-
-    const headers = Array.from(allRows[0].querySelectorAll('th, td')).map(el => el.innerText.trim());
+    const headers = Array.from(allRows[0].querySelectorAll('th, td'))
+      .map(el => el.innerText.trim().replace(/[▲▼↑↓\s]+$/, '').trim());
     const rows = allRows.slice(1).map(row => ({
       cells: Array.from(row.querySelectorAll('td')).map(td => td.innerText.trim()),
-      href:  row.querySelector('a')?.getAttribute('href') || null,
+      href:  row.querySelector('a[href*="detail"], a[href*="parcel"], a[href*="PageTypeID=4"]')?.getAttribute('href')
+             || row.querySelector('td a')?.getAttribute('href')
+             || null,
     })).filter(r => r.cells.some(c => c.length > 0));
 
     return headers.length > 0 && rows.length > 0 ? { headers, rows } : null;
-  });
+  }, BEACON_RESULT_KEYWORDS);
 }
 
 // ─── Main export ─────────────────────────────────────────────────────────────
@@ -382,10 +417,18 @@ async function search(page, {
     const obj = {};
     headers.forEach((h, idx) => { if (h) obj[h] = cells[idx] || ''; });
 
-    const parcelId  = obj['Parcel ID'] || obj['Parcel Number'] || obj['Account Number'] || cells[0] || '';
-    const ownerName = obj['Owner Name'] || obj['Owner']         || cells[1] || '';
-    const address   = obj['Property Address'] || obj['Situs Address'] || obj['Address'] || cells[2] || '';
-    const appraised = obj['Appraised Value'] || obj['Total Appraised'] || obj['Market Value'] || '';
+    const findVal = (...keys) => {
+      for (const k of keys) {
+        if (obj[k]) return obj[k];
+        const m = Object.keys(obj).find(h => h.toLowerCase().includes(k.toLowerCase()));
+        if (m && obj[m]) return obj[m];
+      }
+      return '';
+    };
+    const parcelId  = findVal('Account Number', 'Parcel ID', 'Parcel Number', 'Parcel') || cells[1] || cells[0] || '';
+    const ownerName = findVal('Owner Name', 'Owner') || cells[2] || cells[1] || '';
+    const address   = findVal('Property Address', 'Situs Address', 'Address', 'Location') || cells[3] || cells[2] || '';
+    const appraised = findVal('Appraised Value', 'Total Appraised', 'Market Value', 'Assessed') || '';
 
     const summaryRecord = {
       parcelId, ownerName, propertyAddress: address, taxAmountDue: appraised,

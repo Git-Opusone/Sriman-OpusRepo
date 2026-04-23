@@ -19,6 +19,7 @@
       --gray-100:   #f3f4f6;
       --gray-200:   #e5e7eb;
       --gray-400:   #9ca3af;
+      --gray-500:   #6b7280;
       --gray-600:   #4b5563;
       --gray-700:   #374151;
       --gray-900:   #111827;
@@ -789,9 +790,20 @@
   }
 
   function clearAll() {
-    ['countyUrl', 'firstName', 'lastName', 'fullName', 'accountNumber'].forEach((id) => {
-      document.getElementById(id).value = id === 'countyUrl' ? 'https://esearch.andrewscad.org/' : '';
+    // Reset text inputs
+    ['countyUrl', 'manualUrl', 'firstName', 'lastName', 'fullName', 'accountNumber'].forEach((id) => {
+      document.getElementById(id).value = '';
     });
+    // Reset state + county dropdowns
+    document.getElementById('stateSelect').value = '';
+    const cSel = document.getElementById('countySelect');
+    cSel.innerHTML = '<option value="">— Select County —</option>';
+    cSel.disabled = true;
+    // Hide the URL row and clear status badge
+    hide('urlRow');
+    document.getElementById('urlStatusBadge').textContent = '';
+    document.getElementById('platformBadge').textContent  = '';
+    document.getElementById('urlHint').textContent        = '';
     hide('statusBox');
     hide('errorBox');
     hide('resultsSection');
