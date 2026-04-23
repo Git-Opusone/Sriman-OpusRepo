@@ -163,6 +163,13 @@ async function detectPageType(page) {
     if (body.includes('i agree') || body.includes('i accept') ||
         (body.includes('disclaimer') && body.includes('agree'))) return 'disclaimer';
 
+    // Wrong portal type: county clerk / recorder / document search
+    if (url.includes('docsearch') || url.includes('/recorder/') || url.includes('recorder/web') ||
+        url.includes('/treasurer/') || body.includes('document number') ||
+        (body.includes('grantor') && body.includes('grantee') && body.includes('recording date'))) {
+      return 'wrong_type';
+    }
+
     // Results page: has a data table with multiple rows and no search form
     const tables = document.querySelectorAll('table');
     const hasManyRows = Array.from(tables).some(t => t.querySelectorAll('tr').length > 3);
@@ -323,6 +330,12 @@ async function search(page, {
   // ── 1. Accept disclaimer if present ────────────────────────────────────────
   let pageType = await detectPageType(page);
   console.log(`[tyler] initial page type: ${pageType}`);
+
+  if (pageType === 'wrong_type') {
+    onProgress('Tyler handler: this URL is a recorder/clerk portal, not a CAD property search — skipping.');
+    console.log('[tyler] Detected recorder/clerk/treasurer portal — returning null to trigger AI fallback');
+    return null;
+  }
 
   if (pageType === 'disclaimer') {
     onProgress('Accepting disclaimer...');

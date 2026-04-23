@@ -1705,8 +1705,8 @@
         "netronlinePath": "/state/CO/county/arapahoe"
       },
       "Archuleta": {
-        "url": "https://archuletacountyco-treasurer.tylerhost.net/Treasurer/web/",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/CO/county/archuleta"
       },
@@ -1717,8 +1717,8 @@
         "netronlinePath": "/state/CO/county/baca"
       },
       "Bent": {
-        "url": "https://bentcountyco-treasurer.tylerhost.net/treasurer/web/",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/CO/county/bent"
       },
@@ -1807,8 +1807,8 @@
         "netronlinePath": "/state/CO/county/eagle"
       },
       "Elbert": {
-        "url": "https://elbertcountyco-recorder.tylerhost.net/recorder/eagleweb/",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/CO/county/elbert"
       },
@@ -1831,8 +1831,8 @@
         "netronlinePath": "/state/CO/county/garfield"
       },
       "Gilpin": {
-        "url": "https://gilpincountyco-tsrweb.tylerhost.net/treasurer/web/",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/CO/county/gilpin"
       },
@@ -1885,8 +1885,8 @@
         "netronlinePath": "/state/CO/county/kit_carson"
       },
       "Lake": {
-        "url": "https://lakecountyco-treasurer.tylerhost.net/treasurer/web/login.jsp",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/CO/county/lake"
       },
@@ -12556,8 +12556,8 @@
         "netronlinePath": "/state/MI/county/clare"
       },
       "Clinton": {
-        "url": "https://clintoncountymi-recorder.tylerhost.net/recorder/web/",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/MI/county/clinton"
       },
@@ -15385,8 +15385,8 @@
         "netronlinePath": "/state/NE/county/knox"
       },
       "Lancaster": {
-        "url": "https://lancastercountyne-recorder.tylerhost.net/lancasterrecorder/web/",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/NE/county/lancaster"
       },
@@ -17401,8 +17401,8 @@
         "netronlinePath": "/state/NM/county/mora"
       },
       "Otero": {
-        "url": "https://oterocountynm-treasurer.tylerhost.net/treasurer/web/",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/NM/county/otero"
       },
@@ -17419,8 +17419,8 @@
         "netronlinePath": "/state/NM/county/rio_arriba"
       },
       "Roosevelt": {
-        "url": "https://rooseveltcountynm-tre.tylerhost.net/treasurer/treasurerweb/search.jsp",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/NM/county/roosevelt"
       },
@@ -17455,8 +17455,8 @@
         "netronlinePath": "/state/NM/county/sierra"
       },
       "Socorro": {
-        "url": "https://socorrocountynm-treasurer.tylerhost.net/treasurer/treasurerweb/search.jsp",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/NM/county/socorro"
       },
@@ -21907,8 +21907,8 @@
         "netronlinePath": "/state/TX/county/anderson"
       },
       "Andrews": {
-        "url": "https://andrewscountytx-web.tylerhost.net/web/",
-        "platform": "tyler",
+        "url": "https://esearch.andrewscad.org/",
+        "platform": "bis",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/andrews"
       },
@@ -23353,8 +23353,8 @@
         "netronlinePath": "/state/TX/county/wheeler"
       },
       "Wichita": {
-        "url": "https://wichitacountytx-recorder.tylerhost.net/recorder/web/",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/wichita"
       },
@@ -23494,8 +23494,8 @@
         "netronlinePath": "/state/UT/county/iron"
       },
       "Juab": {
-        "url": "https://juabcountyut-recorder.tylerhost.net/recorder/web/login.jsp?submit=Enter",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/UT/county/juab"
       },
@@ -23506,8 +23506,8 @@
         "netronlinePath": "/state/UT/county/kane"
       },
       "Millard": {
-        "url": "https://millardcountyut-recorder.tylerhost.net/recorder/web/login.jsp?submit=Enter+",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/UT/county/millard"
       },
@@ -25774,8 +25774,8 @@
         "netronlinePath": "/state/VA/county/rockbridge"
       },
       "Rockingham": {
-        "url": "https://rockinghamcountyva-recorder.tylerhost.net/recorder/web/",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/VA/county/rockingham"
       },
@@ -25993,8 +25993,8 @@
         "netronlinePath": "/state/WA/county/garfield"
       },
       "Grant": {
-        "url": "https://grantcountywa-recorder.tylerhost.net/grantrecorder/web/login.jsp?submit=Enter",
-        "platform": "tyler",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/WA/county/grant"
       },
