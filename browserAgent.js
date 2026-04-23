@@ -2,24 +2,22 @@
 
 /**
  * AI Browser Agent
- * Uses Playwright for browser automation and Groq (Llama vision) to intelligently
+ * Uses Playwright for browser automation and OpenAI (GPT-4o-mini vision) to intelligently
  * navigate county property tax websites, fill search forms, and extract results.
- *
- * Groq API is OpenAI-compatible — tool definitions and messages follow OpenAI format.
  */
 
 const { chromium } = require('playwright');
-const Groq = require('groq-sdk');
+const OpenAI = require('openai');
 
-const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-// Model to use — must support both vision and tool/function calling on Groq.
-// Default : meta-llama/llama-4-scout-17b-16e-instruct  (Llama 4 Scout — vision + tools, replaces decommissioned llama-3.2 vision models)
-// Check all available models at: https://console.groq.com/docs/models
-const MODEL = process.env.GROQ_MODEL || 'meta-llama/llama-4-scout-17b-16e-instruct';
+// Model to use — must support both vision and tool/function calling.
+// Default: gpt-4o-mini (vision + tool calling)
+// See all models at: https://platform.openai.com/docs/models
+const MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
 // ---------------------------------------------------------------------------
-// Tool definitions — OpenAI / Groq format  ({ type: "function", function: {...} })
+// Tool definitions — OpenAI format  ({ type: "function", function: {...} })
 // ---------------------------------------------------------------------------
 
 const AGENT_TOOLS = [
@@ -202,8 +200,7 @@ async function executeTool(page, toolName, input) {
     case 'take_screenshot': {
       // Get raw Buffer and convert to base64 manually — avoids potential whitespace/line-break
       // issues that occur when using Playwright's encoding:'base64' option directly.
-      // JPEG at quality 40 keeps the payload well under Groq's 4 MB limit.
-      const buf = await page.screenshot({ fullPage: false, type: 'jpeg', quality: 40 });
+      const buf = await page.screenshot({ fullPage: false, type: 'jpeg', quality: 80 });
       const data = buf.toString('base64').replace(/\s/g, '');
       return { _type: 'image', data, mimeType: 'image/jpeg' };
     }
@@ -361,58 +358,318 @@ async function runBrowserAgent({
       fullName ||
       (lastName && firstName ? `${lastName} ${firstName}` : lastName || firstName || '');
 
-    // System prompt
-    const systemPrompt = `You are an expert AI agent that navigates US county property tax and title search websites using browser automation tools.
+    const searchMode = accountNumber ? 'property_id' : 'name';
 
-Your goal: Search for property and tax records using the criteria provided, then return ALL found records via the extract_results tool.
+    // -----------------------------------------------------------------------
+    // PROPERTY ID: use Playwright directly to navigate the search form.
+    // Direct URL approaches fail on sites that require a session token
+    // (e.g. Andrews CAD redirects to /Search/Expired without one).
+    // Submitting the actual form generates a valid session automatically.
+    // -----------------------------------------------------------------------
+    if (searchMode === 'property_id') {
+      onProgress('Searching by Property ID via form...');
+      let formNavigated = false;
 
-## Step-by-step process
-1. Take a screenshot to see the current page.
-2. Call get_page_content to understand the form fields and buttons available.
-3. Fill in the search form using the criteria provided:
-   - Owner name fields: try "LASTNAME FIRSTNAME" or "FIRSTNAME LASTNAME"
-   - For a single keyword/general search box, use format like: OwnerName:"SMITH JOHN" or just SMITH JOHN
-   - If there's a year/tax year field, use 2025 or 2026
-   - Account/parcel ID fields: enter the account number directly
-4. Submit the form (click Search button or press Enter).
-5. Wait for results to load.
-6. Take a screenshot of the results page.
-7. Call get_page_content to read the results text.
-8. Extract ALL records using extract_results.
+      try {
+        // Try clicking a "By ID" / "Property ID" / "Account" tab if one exists
+        const idTabSelectors = [
+          'a:has-text("By ID")', 'button:has-text("By ID")',
+          'a:has-text("Property ID")', 'button:has-text("Property ID")',
+          'a:has-text("By Account")', 'button:has-text("By Account")',
+          'a:has-text("Account")', 'button:has-text("Account")',
+          'a:has-text("Parcel")', 'button:has-text("Parcel")',
+        ];
+        for (const sel of idTabSelectors) {
+          try {
+            const tab = page.locator(sel).first();
+            if (await tab.count() > 0) {
+              await tab.click({ timeout: 5000 });
+              await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+              console.log(`[agent] Clicked tab: ${sel}`);
+              break;
+            }
+          } catch (_) {}
+        }
 
-## Key rules
-- Always start with take_screenshot.
-- NEVER navigate to a different domain. Only use the navigate tool to follow links within the same county website. Do not invent or guess alternative URLs.
-- If a search attempt returns no results, try an alternative format (e.g., swap first/last name order, try just the last name).
-- If the page has a keyword search box, try syntax like: OwnerName:"SMITH JOHN" Year:2025
-- Collect these fields for each record: ownerName, propertyAddress, parcelId, taxYear, taxAmountDue, paymentStatus, county, state, legalDescription, additionalDetails.
-- As soon as you can see results on the page (even a table or list of names), call extract_results immediately. Do not wait until you have every field — partial data is better than nothing.
-- Do NOT loop forever — after 3 failed search attempts call extract_results with empty records and explain in the summary.`;
+        // Find the Property ID / Account Number input field
+        const inputSelectors = [
+          'input[name*="PropertyId"]', 'input[id*="PropertyId"]',
+          'input[name*="propertyId"]', 'input[id*="propertyId"]',
+          'input[name*="AccountNumber"]', 'input[id*="AccountNumber"]',
+          'input[name*="accountNumber"]', 'input[id*="accountNumber"]',
+          'input[placeholder*="Property ID" i]',
+          'input[placeholder*="Account" i]',
+          'input[placeholder*="Parcel" i]',
+        ];
+        let filled = false;
+        for (const sel of inputSelectors) {
+          try {
+            const input = page.locator(sel).first();
+            if (await input.count() > 0) {
+              await input.clear();
+              await input.fill(accountNumber, { timeout: 5000 });
+              console.log(`[agent] Filled input: ${sel} = ${accountNumber}`);
+              filled = true;
+              break;
+            }
+          } catch (_) {}
+        }
 
-    const userMessage = `Please search the county property tax website for the following:
+        if (!filled) {
+          // Last resort: fill the first visible text/number input on the page
+          const anyInput = page.locator('input[type="text"], input[type="number"], input:not([type])').first();
+          if (await anyInput.count() > 0) {
+            await anyInput.clear();
+            await anyInput.fill(accountNumber, { timeout: 5000 });
+            console.log(`[agent] Filled fallback input with ${accountNumber}`);
+            filled = true;
+          }
+        }
+
+        if (filled) {
+          // Submit the form
+          const submitSelectors = [
+            'button:has-text("Search")', 'input[type="submit"]',
+            'button[type="submit"]', 'a:has-text("Search")',
+          ];
+          for (const sel of submitSelectors) {
+            try {
+              const btn = page.locator(sel).first();
+              if (await btn.count() > 0) {
+                await btn.click({ timeout: 5000 });
+                await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
+                console.log(`[agent] Clicked submit: ${sel}`);
+                formNavigated = true;
+                break;
+              }
+            } catch (_) {}
+          }
+          if (!formNavigated) {
+            // Try pressing Enter as fallback
+            await page.keyboard.press('Enter');
+            await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
+            formNavigated = true;
+          }
+        }
+
+        console.log(`[agent] After form nav, URL: ${page.url()}`);
+        onProgress(`Loaded: ${page.url()}`);
+
+        // Wait for the results table to finish rendering (some sites use JS/AJAX)
+        try {
+          await page.waitForSelector('table tbody tr, table tr:nth-child(2)', { timeout: 12000 });
+          console.log('[agent] Results table detected in DOM');
+        } catch (_) {
+          console.log('[agent] No table detected — waiting 3s for JS rendering');
+          await page.waitForTimeout(3000);
+        }
+
+        // Log actual page text so we can see what the browser shows
+        const pageBodyText = await page.evaluate(() => document.body.innerText.substring(0, 2000));
+        console.log(`[agent] Page body text:\n${pageBodyText}\n---`);
+
+        // ── Step 1: Extract summary rows from results table ─────────────────
+        const summaryExtract = await page.evaluate(() => {
+          const allRows = Array.from(document.querySelectorAll('table tr'));
+          if (allRows.length < 2) return null;
+          const headers = Array.from(allRows[0].querySelectorAll('th, td')).map(el => el.innerText.trim());
+          const dataRows = allRows.slice(1)
+            .map(row => ({
+              cells: Array.from(row.querySelectorAll('td')).map(td => td.innerText.trim()),
+              // Capture first link href in the row (usually the property detail link)
+              href: row.querySelector('a')?.getAttribute('href') || null,
+            }))
+            .filter(r => r.cells.some(c => c.length > 0));
+          if (dataRows.length === 0) return null;
+          return { headers, rows: dataRows };
+        });
+
+        console.log('[agent] summaryExtract:', JSON.stringify(summaryExtract || null).substring(0, 600));
+
+        if (summaryExtract && summaryExtract.rows.length > 0) {
+          const { headers, rows } = summaryExtract;
+          const baseUrl = url.replace(/\/$/, '');
+          const records = [];
+
+          for (const { cells, href } of rows) {
+            const obj = {};
+            headers.forEach((h, i) => { if (h) obj[h] = cells[i] || ''; });
+
+            const propId   = obj['Property ID'] || obj['PropertyID'] || cells[0] || '';
+            const ownerId  = obj['Owner ID']    || obj['OwnerID']    || cells[4] || '';
+            const summaryRecord = {
+              ownerName:        obj['Owner Name']        || obj['OwnerName'] || cells[3] || '',
+              parcelId:         propId,
+              propertyAddress:  obj['Situs Address']     || obj['Address']   || cells[5] || '',
+              legalDescription: obj['Legal Description'] || obj['Legal Desc']|| cells[6] || '',
+              taxAmountDue:     obj['Appraised']         || obj['Tax Amount Due'] || '',
+              county: '', state: '',
+            };
+
+            // ── Step 2: Navigate to the property detail page ─────────────
+            let detailFields = {};
+            try {
+              // Build detail URL — try clicked href first, then common patterns
+              let detailUrl = href
+                ? (href.startsWith('http') ? href : `${baseUrl}${href.startsWith('/') ? '' : '/'}${href}`)
+                : `${baseUrl}/Property/View/${propId}${ownerId ? `?year=2025&ownerId=${ownerId}` : ''}`;
+
+              onProgress(`Loading detail page for Property ID ${propId}...`);
+              console.log(`[agent] Detail URL: ${detailUrl}`);
+              await page.goto(detailUrl, { waitUntil: 'networkidle', timeout: 30000 });
+
+              // Wait for detail content to load
+              await page.waitForSelector('table, .property-details, h1, h2', { timeout: 10000 }).catch(() => {});
+
+              // ── Step 3: Extract all labeled fields from the detail page ──
+              detailFields = await page.evaluate(() => {
+                const data = {};
+
+                // Pattern A: <tr><th>Label</th><td>Value</td></tr>  (most CAD sites)
+                document.querySelectorAll('tr').forEach(row => {
+                  const ths = row.querySelectorAll('th');
+                  const tds = row.querySelectorAll('td');
+                  // Row has alternating label/value cells
+                  const allCells = Array.from(row.querySelectorAll('th, td'));
+                  for (let i = 0; i < allCells.length - 1; i++) {
+                    const label = allCells[i].innerText.trim().replace(/:$/, '');
+                    const value = allCells[i + 1]?.innerText.trim() || '';
+                    if (label && value && !label.match(/^\s*$/) && label.length < 60) {
+                      data[label] = value;
+                    }
+                  }
+                });
+
+                // Pattern B: <dt>Label</dt><dd>Value</dd>
+                const dts = Array.from(document.querySelectorAll('dt'));
+                dts.forEach(dt => {
+                  const dd = dt.nextElementSibling;
+                  if (dd && dd.tagName === 'DD') {
+                    const label = dt.innerText.trim().replace(/:$/, '');
+                    if (label) data[label] = dd.innerText.trim();
+                  }
+                });
+
+                // Pattern C: elements with data-label / aria-label attributes
+                document.querySelectorAll('[data-label]').forEach(el => {
+                  data[el.getAttribute('data-label')] = el.innerText.trim();
+                });
+
+                return data;
+              });
+
+              console.log(`[agent] Detail fields (${Object.keys(detailFields).length}):`, JSON.stringify(detailFields).substring(0, 800));
+              onProgress(`Extracted ${Object.keys(detailFields).length} detail fields for Property ID ${propId}.`);
+            } catch (detailErr) {
+              console.log(`[agent] Detail page error for ${propId}: ${detailErr.message}`);
+            }
+
+            // Merge summary + detail into one rich record
+            records.push({
+              ...summaryRecord,
+              // Override/enrich with detail page values where available
+              ownerName:        detailFields['Owner Name']        || detailFields['Owner']           || summaryRecord.ownerName,
+              propertyAddress:  detailFields['Situs Address']     || detailFields['Address']         || summaryRecord.propertyAddress,
+              legalDescription: detailFields['Legal Description'] || detailFields['Legal Desc']      || summaryRecord.legalDescription,
+              taxAmountDue:     detailFields['Market Value']      || detailFields['Assessed Value']  || detailFields['Appraised']     || summaryRecord.taxAmountDue,
+              // All raw detail fields for display
+              additionalDetails: JSON.stringify({ ...obj, ...detailFields }),
+            });
+          }
+
+          Object.assign(page, { _directResults: {
+            records,
+            totalFound: records.length,
+            summary: `Found ${records.length} record(s) for Property ID ${accountNumber} with full property details.`,
+            searchedUrl: page.url(),
+          }});
+
+          console.log(`[agent] Full extraction complete — ${records.length} record(s)`);
+          onProgress(`Extraction complete — ${records.length} record(s) with full details.`);
+        }
+        // ────────────────────────────────────────────────────────────────────
+      } catch (formErr) {
+        console.log(`[agent] Form navigation error: ${formErr.message}`);
+      }
+
+      if (!formNavigated) {
+        console.log('[agent] Form navigation failed — AI will attempt navigation');
+      }
+
+      // If direct extraction succeeded, return immediately — skip AI loop
+      if (page._directResults) {
+        return page._directResults;
+      }
+    }
+
+    // System prompt with explicit numbered tool-call sequence
+    const systemPrompt = searchMode === 'property_id'
+      ? `You are a data extraction agent. The browser has already been navigated to the county property search results page for Property ID ${accountNumber}. You do NOT need to navigate or fill any forms.
+
+Your ONLY job: read the page and call extract_results with the property record.
+
+STEP 1: Call take_screenshot to see the current page.
+STEP 2: Call get_page_content to read the page text, tables, and data.
+STEP 3: Call extract_results with all property data found on the page. Include: ownerName, propertyAddress, parcelId, taxYear, taxAmountDue, paymentStatus, legalDescription, county, state, additionalDetails.
+
+If the page shows no results or an error, call extract_results with records=[] and explain in summary.
+Do NOT navigate anywhere. Do NOT fill any forms. Just read and extract.`
+      : `You are a browser automation agent searching a county property tax website by owner name.
+
+Execute these steps IN ORDER:
+
+STEP 1: Call take_screenshot.
+STEP 2: Call get_page_content to read available tabs, inputs, and buttons.
+STEP 3: Click the owner name search tab.
+  - Look for a button/link with text "By Owner", "Owner", or "Name" and click it.
+STEP 4: Fill the name fields or keyword box.
+  - If there are separate first/last name inputs: fill lastName="${lastName || ''}", firstName="${firstName || ''}".
+  - If there is a single keyword/search box: type OwnerName:"${nameForSearch}" Year:2025
+  - If there is only one name field: type "${nameForSearch}".
+STEP 5: Submit (click Search or press Enter).
+STEP 6: Call wait.
+STEP 7: Call take_screenshot.
+STEP 8: Call get_page_content to read the results.
+STEP 9: Call extract_results with all records found.
+
+RULES:
+- Never navigate to a different domain.
+- If first attempt returns no results, retry with last name only: "${lastName || nameForSearch}".
+- After 2 failed attempts call extract_results with empty records[] and explain in summary.`;
+
+    const userMessage = searchMode === 'property_id'
+      ? `Search the county property tax website for Property ID: ${accountNumber}
 
 County URL: ${url}
 
-Search Criteria:
-${criteria.length > 0 ? criteria.join('\n') : 'No specific criteria provided'}
-${nameForSearch ? `\nName string to use in search: "${nameForSearch}"` : ''}
+Follow your step-by-step instructions exactly. The property ID to search is: ${accountNumber}`
+      : `Search the county property tax website for owner: ${nameForSearch}
 
-Start by taking a screenshot to see the page, then proceed with the search. Stay on this domain only — do not navigate to any other website. Return all found property/tax records.`;
+County URL: ${url}
 
-    // Groq / OpenAI-style messages array.
+Search criteria: ${criteria.join(', ')}`;
+
+    // OpenAI messages array.
     // System prompt goes as the first message with role "system".
     const messages = [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userMessage },
     ];
 
+    console.log(`[agent] mode=${searchMode} accountNumber="${accountNumber}" url=${url}`);
+
     let finalResults = null;
     const MAX_ITERATIONS = 18;
 
     for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
       onProgress(`AI agent working... (step ${iteration}/${MAX_ITERATIONS})`);
+      console.log(`[agent] iteration ${iteration}`);
 
-      // Call the model; if Groq rejects an image payload, strip images and retry once.
+      // Force tool use for the first 6 iterations so the model can't skip navigation
+      // by returning a plain-text "I couldn't find it" answer.
+      const toolChoice = iteration <= 6 ? 'required' : 'auto';
+
+      // Call the model; if the API rejects an image payload, strip images and retry once.
       let response;
       try {
         response = await client.chat.completions.create({
@@ -420,7 +677,7 @@ Start by taking a screenshot to see the page, then proceed with the search. Stay
           max_tokens: 4096,
           messages,
           tools: AGENT_TOOLS,
-          tool_choice: 'auto',
+          tool_choice: toolChoice,
         });
       } catch (apiErr) {
         const msg = apiErr?.message || '';
@@ -436,7 +693,7 @@ Start by taking a screenshot to see the page, then proceed with the search. Stay
             max_tokens: 4096,
             messages: textOnlyMessages,
             tools: AGENT_TOOLS,
-            tool_choice: 'auto',
+            tool_choice: toolChoice,
           });
         } else {
           throw apiErr;
@@ -449,23 +706,38 @@ Start by taking a screenshot to see the page, then proceed with the search. Stay
 
       // Log any text the model produced
       if (assistantMessage.content && assistantMessage.content.trim()) {
-        onProgress(`Agent: ${assistantMessage.content.trim().substring(0, 200)}`);
+        const text = assistantMessage.content.trim();
+        onProgress(`Agent: ${text.substring(0, 200)}`);
+        console.log(`[agent]   model text: ${text.substring(0, 300)}`);
       }
 
       const finishReason = response.choices[0].finish_reason;
+      console.log(`[agent]   finish_reason=${finishReason}`);
 
+      // Only allow a clean stop if extract_results was already called.
+      // Otherwise the model gave a text answer without navigating — keep going.
       if (finishReason === 'stop') {
-        onProgress('Agent finished reasoning.');
-        break;
+        if (finalResults) {
+          onProgress('Agent finished.');
+          break;
+        }
+        // Model tried to answer without using tools — nudge it to continue
+        onProgress('Agent responded without tools — nudging to continue...');
+        messages.push({
+          role: 'user',
+          content: 'You have not called extract_results yet. Please continue executing the steps: take_screenshot, get_page_content, navigate the site, and call extract_results when done.',
+        });
+        continue;
       }
 
       if (finishReason !== 'tool_calls') {
+        console.log(`[agent]   unexpected finish_reason=${finishReason}, stopping`);
         break;
       }
 
       // -----------------------------------------------------------------------
       // Process tool calls
-      // Groq uses OpenAI-style tool_calls array in the assistant message.
+      // OpenAI returns tool_calls array in the assistant message.
       // Screenshots cannot be returned inline in a "tool" role message, so we
       // collect them and inject them as a follow-up "user" role message with
       // image_url content — which the vision model can see.
@@ -485,6 +757,7 @@ Start by taking a screenshot to see the page, then proceed with the search. Stay
         }
 
         onProgress(`Running: ${toolName}...`);
+        console.log(`[agent]   tool=${toolName} input=${JSON.stringify(input).substring(0, 120)}`);
 
         if (toolName === 'extract_results') {
           finalResults = { ...input, searchedUrl: page.url() };
@@ -498,6 +771,9 @@ Start by taking a screenshot to see the page, then proceed with the search. Stay
         }
 
         const result = await executeTool(page, toolName, input);
+
+        if (typeof result === 'string') console.log(`[agent]   result="${result.substring(0, 150)}"`);
+        else if (result && result._type !== 'image') console.log(`[agent]   result=${JSON.stringify(result).substring(0, 150)}`);
 
         if (result && result._type === 'image') {
           // Screenshot: collect for vision injection; confirm via tool message
@@ -561,7 +837,7 @@ Start by taking a screenshot to see the page, then proceed with the search. Stay
       searchedUrl: page.url(),
     };
   } finally {
-    await browser.close();
+    await browser.close().catch(() => {});
   }
 }
 

@@ -272,29 +272,30 @@
     .field-value.addr  { font-size: .88rem; color: var(--gray-700); }
     .field-value.empty { color: var(--gray-400); font-style: italic; }
 
-    .additional-details {
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid var(--gray-100);
+    /* Property detail grid (replaces old accordion) */
+    .property-detail-grid {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 2px solid var(--gray-100);
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
     }
-    .additional-details summary {
-      font-size: .82rem; font-weight: 600;
-      color: var(--gray-600); cursor: pointer;
-      list-style: none; display: flex; align-items: center; gap: 6px;
+    .det-section { }
+    .det-section-title {
+      font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--gray-500);
+      margin-bottom: 6px; padding-bottom: 4px;
+      border-bottom: 1px solid var(--gray-200);
     }
-    .additional-details summary::before { content: '▶'; font-size: .6rem; }
-    details[open] summary::before { content: '▼'; }
-    .additional-details table {
-      width: 100%; border-collapse: collapse;
-      margin-top: 8px; font-size: .82rem;
+    .det-table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+    .det-label {
+      padding: 4px 8px 4px 0; color: var(--gray-500);
+      font-weight: 500; vertical-align: top; width: 45%;
     }
-    .additional-details td {
-      padding: 5px 8px; border: 1px solid var(--gray-100);
-      vertical-align: top;
-    }
-    .additional-details td:first-child {
-      font-weight: 600; color: var(--gray-600);
-      width: 40%; background: var(--gray-50);
+    .det-value {
+      padding: 4px 0; color: #111827;
+      font-weight: 600; vertical-align: top;
     }
 
     /* No results */
@@ -455,21 +456,62 @@
       .replace(/"/g, '&quot;');
   }
 
-  function renderAdditional(details) {
-    if (!details || typeof details !== 'object') return '';
-    const entries = Object.entries(details).filter(([, v]) => v != null && v !== '');
-    if (entries.length === 0) return '';
-    const rows = entries
-      .map(([k, v]) => `<tr><td>${escHtml(k)}</td><td>${escHtml(String(v))}</td></tr>`)
+  // Fields already shown prominently — exclude from the detail grid
+  const PRIMARY_FIELDS = new Set([
+    'owner name','ownername','owner','property address','situs address','address','situs',
+    'legal description','legal desc','tax amount due','amount due','appraised',
+    'market value','assessed value','mineral value','tax year','payment status',
+    'county','state','property id','propertyid','parcel id',
+  ]);
+
+  function renderDetailGrid(details) {
+    let parsed = details;
+    if (typeof details === 'string') {
+      try { parsed = JSON.parse(details); } catch (_) { return ''; }
+    }
+    if (!parsed || typeof parsed !== 'object') return '';
+
+    // Separate into key sections based on common CAD field names
+    const sections = {
+      'Account': ['Property ID','Geographic ID','Geo ID','Type','Zoning','Property Use'],
+      'Location': ['Situs Address','Address','Map ID','Mapsco','Legal Description','Abstract/Subdivision','Neighborhood'],
+      'Owner': ['Owner Name','Owner','Owner ID','Mailing Address','Exemptions'],
+      'Property Values': ['Mineral Value','Market Value','Assessed Value','Appraised','Land Value','Improvement Value'],
+    };
+
+    const shown = new Set();
+    let html = '';
+
+    for (const [section, keys] of Object.entries(sections)) {
+      const rows = keys
+        .filter(k => parsed[k] != null && parsed[k] !== '')
+        .map(k => { shown.add(k); return `<tr><td class="det-label">${escHtml(k)}</td><td class="det-value">${escHtml(String(parsed[k]))}</td></tr>`; })
+        .join('');
+      if (rows) html += `<div class="det-section"><div class="det-section-title">${section}</div><table class="det-table">${rows}</table></div>`;
+    }
+
+    // Everything else not already shown
+    const extras = Object.entries(parsed)
+      .filter(([k, v]) => !shown.has(k) && v != null && v !== '' && !PRIMARY_FIELDS.has(k.toLowerCase()))
+      .map(([k, v]) => `<tr><td class="det-label">${escHtml(k)}</td><td class="det-value">${escHtml(String(v))}</td></tr>`)
       .join('');
-    return `
-      <details class="additional-details">
-        <summary>Additional Details (${entries.length})</summary>
-        <table>${rows}</table>
-      </details>`;
+    if (extras) html += `<div class="det-section"><div class="det-section-title">Other Fields</div><table class="det-table">${extras}</table></div>`;
+
+    return html ? `<div class="property-detail-grid">${html}</div>` : '';
   }
 
   function renderRecord(rec, index) {
+    const detail = renderDetailGrid(rec.additionalDetails);
+    // Pull key values from detail data too
+    let parsed = {};
+    if (rec.additionalDetails) {
+      try { parsed = typeof rec.additionalDetails === 'string' ? JSON.parse(rec.additionalDetails) : rec.additionalDetails; } catch (_) {}
+    }
+    const marketValue   = parsed['Market Value']   || parsed['Assessed Value'] || rec.taxAmountDue || '';
+    const appraisedVal  = parsed['Appraised']       || '';
+    const taxYear       = rec.taxYear || parsed['Tax Year'] || '';
+    const payStatus     = rec.paymentStatus || parsed['Payment Status'] || '';
+
     return `
       <div class="record-card">
         <div class="record-header">
@@ -477,19 +519,20 @@
             <div class="record-owner">${escHtml(rec.ownerName || 'Unknown Owner')}</div>
             ${rec.parcelId ? `<div class="record-parcel">Parcel / Account: ${escHtml(rec.parcelId)}</div>` : ''}
           </div>
-          ${statusPill(rec.paymentStatus)}
+          ${statusPill(payStatus)}
         </div>
         <div class="record-body">
           <div class="fields-grid">
             ${fieldHtml('Property Address', rec.propertyAddress, 'addr')}
-            ${fieldHtml('Tax Amount Due', rec.taxAmountDue, 'large')}
-            ${fieldHtml('Tax Year', rec.taxYear)}
-            ${fieldHtml('Payment Status', rec.paymentStatus)}
-            ${fieldHtml('County', rec.county)}
-            ${fieldHtml('State', rec.state)}
+            ${fieldHtml('Market / Assessed Value', marketValue, 'large')}
+            ${appraisedVal ? fieldHtml('Appraised Value', appraisedVal) : ''}
+            ${taxYear ? fieldHtml('Tax Year', taxYear) : ''}
+            ${payStatus ? fieldHtml('Payment Status', payStatus) : ''}
+            ${rec.county ? fieldHtml('County', rec.county) : ''}
+            ${rec.state  ? fieldHtml('State',  rec.state)  : ''}
             ${rec.legalDescription ? fieldHtml('Legal Description', rec.legalDescription) : ''}
           </div>
-          ${renderAdditional(rec.additionalDetails)}
+          ${detail}
         </div>
       </div>`;
   }
