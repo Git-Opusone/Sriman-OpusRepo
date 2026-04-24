@@ -738,7 +738,7 @@
       "Apache": {
         "url": "https://eagletreasurer.co.apache.az.us:8443/treasurer/treasurerweb/search.jsp?guest=true",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-04-24",
         "netronlinePath": "/state/AZ/county/apache"
       },
       "Cochise": {
@@ -10347,7 +10347,7 @@
       "Plymouth": {
         "url": "https://plymouth.patriotproperties.com/default.asp",
         "platform": "patriot",
-        "lastVerified": "2026-04-23",
+        "lastVerified": null,
         "netronlinePath": "/state/MA/county/plymouth_township"
       },
       "Suffolk": {
@@ -11767,8 +11767,8 @@
         "netronlinePath": "/state/MA/county/plainfield_township"
       },
       "Plainville": {
-        "url": "https://plainville.patriotproperties.com/",
-        "platform": "patriot",
+        "url": "https://www.mass.gov/",
+        "platform": "generic",
         "lastVerified": "2026-04-24",
         "netronlinePath": "/state/MA/county/plainville_township"
       },
