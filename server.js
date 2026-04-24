@@ -9,6 +9,7 @@ process.on('unhandledRejection', (reason) => console.error('[unhandledRejection]
 const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
+const fs      = require('fs');
 
 const { runBrowserAgent }               = require('./browserAgent');
 const { getAllStates, getCountiesForState, getCountyUrl } = require('./src/countyDirectory');
@@ -251,7 +252,15 @@ app.get('/docs/*', (req, res, next) => {
 
 // ─── Serve frontend ───────────────────────────────────────────────────────────
 
-app.get('*', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+app.get('*', (req, res) => {
+  // Serve /docs/* from the docs folder before falling back to the SPA
+  if (req.path.startsWith('/docs/')) {
+    const rel = path.basename(req.path); // strip any directory traversal
+    const abs = path.join(__dirname, 'docs', req.path.replace(/^\/docs\//, ''));
+    if (fs.existsSync(abs) && fs.statSync(abs).isFile()) return res.sendFile(abs);
+  }
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 app.listen(PORT, () => {
   console.log(`\n🏠 Mortgage Title & Tax Search Service`);
