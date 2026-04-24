@@ -210,20 +210,18 @@ async function extractDetailFields(page) {
     const data = {};
 
     // th/td or td/td label-value rows (adjacent-cell pattern)
+    // For Tyler Datalet pages, label cells always end with ':'. Requiring this
+    // prevents owner names, addresses, and value cells from being misread as labels.
     document.querySelectorAll('tr').forEach(row => {
       const cells = Array.from(row.querySelectorAll('th, td'));
       for (let i = 0; i < cells.length - 1; i++) {
         const rawLabel = cells[i].innerText.trim();
         const rawValue = cells[i + 1]?.innerText.trim() || '';
+        const isHeader = cells[i].tagName === 'TH';
+        // Only treat as label if it's a <th> OR ends with ':' (Tyler Datalet convention)
+        if (!isHeader && !rawLabel.endsWith(':')) continue;
         const label = rawLabel.replace(/:$/, '');
-
-        // Tyler Datalet format: each cell may contain "Label: Value" inline
-        // If rawLabel contains a colon and rawValue also contains a colon,
-        // both cells are probably self-contained — parse each individually.
-        const isInlinePair = rawLabel.includes(':') && rawValue.includes(':');
-
-        if (!isInlinePair && label && rawValue && label.length < 80 &&
-            !label.match(/^\d+$/) && rawValue.length < 300) {
+        if (label && rawValue && label.length < 80 && !label.match(/^\d+$/) && rawValue.length < 300) {
           data[label] = rawValue;
         }
       }
@@ -609,7 +607,9 @@ async function search(page, {
 
     let detailFields = {};
     try {
-      onProgress(`Loading detail for ${parcelId || 'record ' + (i + 1)}...`);
+      if (detailUrlMode !== 'sindex' || i === 0) {
+        onProgress(`Loading detail for ${parcelId || 'record ' + (i + 1)}...`);
+      }
       let navigated = false;
 
       if (href) {
@@ -625,20 +625,15 @@ async function search(page, {
         console.log(`[tyler] Detail URL (parcel template): ${fullUrl}`);
         await page.goto(fullUrl, { waitUntil: 'networkidle', timeout: 30000 });
         navigated = true;
-      } else if (detailUrlMode === 'sindex' && detailUrlTemplate) {
+      } else if (detailUrlMode === 'sindex') {
         if (i === 0 && row0DetailFields) {
-          // Row 0 was pre-extracted during discovery — reuse it
+          // Row 0 detail was captured during discovery — reuse without re-navigating
           detailFields = row0DetailFields;
-          console.log(`[tyler] Using pre-extracted sIndex=0 fields (${Object.keys(detailFields).length})`);
-          navigated = true;
+          console.log(`[tyler] sIndex=0 pre-extracted fields: ${Object.keys(detailFields).length}`);
+          // navigated stays false so the if(navigated) block below is skipped
         } else {
-          // Navigate directly to sIndex=N; session stays alive as long as we don't reset via search form
-          const sUrl = detailUrlTemplate.replace('__IDX__', String(i));
-          const fullUrl = sUrl.startsWith('http') ? sUrl : `${baseUrl}${sUrl}`;
-          console.log(`[tyler] sIndex URL (${i}): ${fullUrl}`);
-          await page.goto(fullUrl, { waitUntil: 'networkidle', timeout: 30000 });
-          navigated = page.url() !== searchResultsUrl;
-          console.log(`[tyler] After sIndex nav (${i}): ${page.url()}`);
+          // sIndex URLs beyond 0 return the same stale record (session consumed by discovery click)
+          console.log(`[tyler] sIndex row ${i}: table data only (session consumed)`);
         }
       } else if (detailUrlMode === 'index') {
         // Legacy index mode (kept for compatibility)
