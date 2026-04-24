@@ -1,5 +1,7 @@
 'use strict';
 
+const { detectCaptcha } = require('../captchaDetector');
+
 /**
  * src/handlers/qpublic.js
  *
@@ -547,6 +549,13 @@ async function search(page, {
   const searchMode = accountNumber ? 'parcel' : 'owner';
   onProgress(`qPublic handler: searching by ${searchMode === 'parcel' ? 'Parcel ID' : 'Owner Name'}...`);
   console.log(`[qpublic] mode=${searchMode} startUrl=${page.url()}`);
+
+  // ── 0. CAPTCHA / bot-challenge check ──────────────────────────────────────
+  const captcha = await detectCaptcha(page);
+  if (captcha.detected) {
+    onProgress(`CAPTCHA detected (${captcha.type}) — cannot proceed automatically.`);
+    return { ...captcha, searchedUrl: page.url() };
+  }
 
   // ── 1. Handle entry pages (disclaimer / map) ───────────────────────────────
   // Wait for Angular/React SPA to mount — qPublic schneidercorp pages can take

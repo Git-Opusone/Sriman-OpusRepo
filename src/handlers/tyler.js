@@ -1,5 +1,7 @@
 'use strict';
 
+const { detectCaptcha } = require('../captchaDetector');
+
 /**
  * src/handlers/tyler.js
  *
@@ -388,6 +390,13 @@ async function search(page, {
   const searchMode = accountNumber ? 'account' : 'owner';
   onProgress(`Tyler iasWorld: searching by ${searchMode === 'account' ? 'Account Number' : 'Owner Name'}...`);
   console.log(`[tyler] mode=${searchMode} startUrl=${page.url()}`);
+
+  // ── 0. CAPTCHA / bot-challenge check ──────────────────────────────────────
+  const captcha = await detectCaptcha(page);
+  if (captcha.detected) {
+    onProgress(`CAPTCHA detected (${captcha.type}) — cannot proceed automatically.`);
+    return { ...captcha, searchedUrl: page.url() };
+  }
 
   // ── 1. Accept disclaimer if present ────────────────────────────────────────
   let pageType = await detectPageType(page);

@@ -21,6 +21,7 @@ const beaconHandler     = require('./src/handlers/beacon');
 const patriotHandler    = require('./src/handlers/patriot');
 const visionHandler     = require('./src/handlers/vision');
 const bisHandler        = require('./src/handlers/bis');
+const { detectCaptcha } = require('./src/captchaDetector');
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -888,6 +889,18 @@ Search criteria: ${criteria.join(', ')}`;
         }
 
         const result = await executeTool(page, toolName, input);
+
+        // After navigate or page-read, check for CAPTCHA before the AI wastes more turns.
+        if (toolName === 'navigate' || toolName === 'get_page_content') {
+          const captcha = await detectCaptcha(page);
+          if (captcha.detected) {
+            onProgress(`CAPTCHA detected (${captcha.type}) — search cannot continue automatically.`);
+            console.log(`[agent] CAPTCHA detected (${captcha.type}) at ${page.url()} — aborting AI loop`);
+            finalResults = { ...captcha, searchedUrl: page.url() };
+            done = true;
+            break;
+          }
+        }
 
         if (typeof result === 'string') console.log(`[agent]   result="${result.substring(0, 150)}"`);
         else if (result && result._type !== 'image') console.log(`[agent]   result=${JSON.stringify(result).substring(0, 150)}`);

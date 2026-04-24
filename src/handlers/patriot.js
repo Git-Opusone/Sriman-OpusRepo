@@ -1,5 +1,7 @@
 'use strict';
 
+const { detectCaptcha } = require('../captchaDetector');
+
 /**
  * src/handlers/patriot.js
  *
@@ -298,6 +300,13 @@ async function search(page, {
   const searchMode = accountNumber ? 'parcel' : 'owner';
   onProgress(`Patriot Properties handler: searching by ${searchMode === 'parcel' ? 'Parcel ID' : 'Owner Name'}...`);
   console.log(`[patriot] mode=${searchMode} startUrl=${page.url()}`);
+
+  // ── 0. CAPTCHA / bot-challenge check ──────────────────────────────────────
+  const captcha = await detectCaptcha(page);
+  if (captcha.detected) {
+    onProgress(`CAPTCHA detected (${captcha.type}) — cannot proceed automatically.`);
+    return { ...captcha, searchedUrl: page.url() };
+  }
 
   // ── 1. Handle disclaimer page if present ────────────────────────────────────
   const bodyText = await page.evaluate(() => document.body.innerText.toLowerCase());

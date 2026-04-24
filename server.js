@@ -131,6 +131,13 @@ app.get('/api/search/stream', async (req, res) => {
       onProgress:    (message) => sendEvent('progress', { message }),
     });
 
+    if (results.captchaBlocked) {
+      sendEvent('captcha', {
+        type:       results.captchaType || 'CAPTCHA',
+        message:    results.summary,
+        searchedUrl: results.searchedUrl,
+      });
+    }
     sendEvent('results', results);
     sendEvent('done', { success: true });
   } catch (err) {

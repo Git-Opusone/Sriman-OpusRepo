@@ -236,6 +236,32 @@
       font-size: .9rem;
     }
 
+    #captchaBox {
+      display: none;
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      font-size: .9rem;
+    }
+    #captchaBox .captcha-title {
+      font-weight: 600;
+      color: #92400e;
+      margin-bottom: 6px;
+    }
+    #captchaBox .captcha-body {
+      color: #78350f;
+      line-height: 1.5;
+    }
+    #captchaBox .captcha-note {
+      margin-top: 10px;
+      font-size: .82rem;
+      color: #92400e;
+      border-top: 1px solid #fcd34d;
+      padding-top: 8px;
+    }
+
     /* ── Results ── */
     #resultsSection { display: none; }
 
@@ -444,6 +470,18 @@
 
   <!-- ── Error ── -->
   <div id="errorBox"></div>
+
+  <!-- ── CAPTCHA warning ── -->
+  <div id="captchaBox">
+    <div class="captcha-title">⚠ Search Blocked — CAPTCHA Challenge Detected</div>
+    <div class="captcha-body" id="captchaBody"></div>
+    <div class="captcha-note">
+      <strong>Order note:</strong> This search could not be completed automatically because the county website
+      presented a CAPTCHA challenge that requires human verification. Please note this order for manual
+      follow-up or contact the county assessor's office directly. A future upgrade will add automated
+      CAPTCHA resolution.
+    </div>
+  </div>
 
   <!-- ── Results ── -->
   <section id="resultsSection">
@@ -693,6 +731,7 @@
 
     // Reset UI
     hide('errorBox');
+    hide('captchaBox');
     hide('resultsSection');
     document.getElementById('progressLog').innerHTML = '';
     show('statusBox');
@@ -718,6 +757,14 @@
     evtSource.addEventListener('progress', (e) => {
       const d = JSON.parse(e.data);
       log(d.message);
+    });
+
+    evtSource.addEventListener('captcha', (e) => {
+      const d = JSON.parse(e.data);
+      document.getElementById('captchaBody').textContent =
+        `${d.type} was detected at: ${d.searchedUrl || url}`;
+      show('captchaBox');
+      log(`⚠ CAPTCHA detected (${d.type}) — search blocked.`);
     });
 
     evtSource.addEventListener('results', (e) => {
@@ -806,6 +853,7 @@
     document.getElementById('urlHint').textContent        = '';
     hide('statusBox');
     hide('errorBox');
+    hide('captchaBox');
     hide('resultsSection');
     document.getElementById('progressLog').innerHTML = '';
     document.getElementById('searchBtn').disabled = false;
