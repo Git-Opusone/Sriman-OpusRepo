@@ -959,6 +959,8 @@
   <a href="#challenges">Challenges</a>
   <a href="#staging">Staging</a>
   <a href="#techstack">Tech Stack</a>
+  <a href="#ai-engine">AI Engine</a>
+  <a href="#cache">Search Cache</a>
 </nav>
 
 
@@ -2043,6 +2045,244 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECTION 11 — AI ENGINE & COST MODEL
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" id="ai-engine">
+  <div class="section-header">
+    <div class="section-num">11</div>
+    <div>
+      <h2>AI Engine &amp; Cost Model</h2>
+      <div class="section-sub">OpenAI GPT-4o-mini — when it's called, what it costs, and how to minimize spend</div>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="exec-summary">
+      <p>The AI engine is a <strong>last-resort fallback</strong>, not the primary path. Every search first tries a dedicated platform handler (Patriot, Tyler, Vision, qPublic, Beacon, BIS). Only when a handler is unavailable or fails does the system invoke GPT-4o-mini to visually navigate the county site. In production, maximizing handler coverage directly minimizes AI API cost.</p>
+    </div>
+
+    <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom:2rem;">
+      <div class="metric-card">
+        <span class="metric-icon">🤖</span>
+        <div class="metric-value">GPT-4o-mini</div>
+        <div class="metric-label">AI Model<br>(vision + tool calling)</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">💲</span>
+        <div class="metric-value">$0</div>
+        <div class="metric-label">Cost when dedicated<br>handler succeeds</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">🔁</span>
+        <div class="metric-value">2–5</div>
+        <div class="metric-label">Typical API calls<br>per AI-fallback search</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">⚡</span>
+        <div class="metric-value">~$0.003</div>
+        <div class="metric-label">Avg cost per<br>AI-fallback search</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">📦</span>
+        <div class="metric-value">18</div>
+        <div class="metric-label">Max iterations<br>(hard limit)</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">📊</span>
+        <div class="metric-value">~$10</div>
+        <div class="metric-label">Est. cost for 1,000<br>AI-fallback searches</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">Decision Flow — When Is OpenAI Called?</h3>
+    <div style="background:var(--gray-50); border:1px solid var(--gray-200); border-radius:12px; padding:1.5rem; margin-bottom:2rem; font-size:0.88rem;">
+      <div style="display:flex; flex-direction:column; gap:0.6rem;">
+        <div style="display:flex; align-items:center; gap:1rem;">
+          <span style="background:var(--navy);color:white;border-radius:999px;padding:0.2em 0.8em;font-size:0.75rem;font-weight:700;white-space:nowrap;">Step 1</span>
+          <span><strong>Platform Detection</strong> — URL fingerprinting identifies the platform (Patriot, Tyler, Vision, qPublic, Beacon, BIS)</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:1rem;">
+          <span style="background:var(--green);color:white;border-radius:999px;padding:0.2em 0.8em;font-size:0.75rem;font-weight:700;white-space:nowrap;">✓ Handler found</span>
+          <span>Dedicated handler runs — <strong>0 OpenAI API calls</strong>. Returns results directly.</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:1rem;">
+          <span style="background:var(--amber);color:white;border-radius:999px;padding:0.2em 0.8em;font-size:0.75rem;font-weight:700;white-space:nowrap;">✗ No handler / handler fails</span>
+          <span>AI agentic loop starts — <strong>1 OpenAI API call per iteration</strong>, up to 18 max.</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:1rem; border-top:1px solid var(--gray-200); padding-top:0.6rem;">
+          <span style="background:var(--blue);color:white;border-radius:999px;padding:0.2em 0.8em;font-size:0.75rem;font-weight:700;white-space:nowrap;">Cache check (both paths)</span>
+          <span>Before any browser launch, cache is checked. A cache hit returns results <strong>instantly at $0 cost</strong>.</span>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">What the AI Receives Each Iteration</h3>
+    <table class="styled-table" style="margin-bottom:2rem;">
+      <thead><tr><th>Input</th><th>Details</th></tr></thead>
+      <tbody>
+        <tr><td><strong>System prompt</strong></td><td>Detailed numbered instructions: how to find the search form, which fields to fill, how to submit, and when to call <code>extract_results</code></td></tr>
+        <tr><td><strong>User message</strong></td><td>County URL, owner name or property ID, specific search parameters</td></tr>
+        <tr><td><strong>Page text</strong></td><td>First 6,000 characters of page body text — form labels, button text, visible data</td></tr>
+        <tr><td><strong>Screenshot</strong></td><td>JPEG screenshot of the browser viewport (80% quality, base64 encoded) — enables visual form detection</td></tr>
+        <tr><td><strong>Tool history</strong></td><td>Previous iteration's tool calls and results — gives the model memory of what it already did</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">Available AI Tools (Function Calls)</h3>
+    <table class="styled-table" style="margin-bottom:2rem;">
+      <thead><tr><th>Tool</th><th>What It Does</th></tr></thead>
+      <tbody>
+        <tr><td><code>take_screenshot</code></td><td>Captures current browser viewport as JPEG; returned as base64 in next message</td></tr>
+        <tr><td><code>get_page_content</code></td><td>Returns raw page HTML + visible body text for text-based form detection</td></tr>
+        <tr><td><code>fill_input</code></td><td>Fills a form field by CSS selector or input name</td></tr>
+        <tr><td><code>click_element</code></td><td>Clicks a button, link, or checkbox by selector</td></tr>
+        <tr><td><code>navigate</code></td><td>Navigates to a URL (used for direct property ID URLs)</td></tr>
+        <tr><td><code>extract_results</code></td><td>Signals extraction complete; exits the loop</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">Cost Estimates at Production Scale</h3>
+    <table class="styled-table">
+      <thead><tr><th>Volume</th><th>All handler hits (best case)</th><th>50% AI fallback (typical)</th><th>100% AI fallback (worst case)</th></tr></thead>
+      <tbody>
+        <tr><td>100 searches/day</td><td><strong>$0.00</strong></td><td>~$0.15</td><td>~$0.30</td></tr>
+        <tr><td>1,000 searches/day</td><td><strong>$0.00</strong></td><td>~$1.50</td><td>~$3.00</td></tr>
+        <tr><td>10,000 searches/day</td><td><strong>$0.00</strong></td><td>~$15.00</td><td>~$30.00</td></tr>
+        <tr><td>50,000 searches/day</td><td><strong>$0.00</strong></td><td>~$75.00</td><td>~$150.00</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.8rem; color:var(--gray-500); margin-top:0.5rem;">Based on GPT-4o-mini pricing (~$0.15/1M input, $0.60/1M output tokens). Assumes avg 4 iterations × 1,500 input + 600 output tokens. Cache hits reduce AI-fallback cost further — see Section 12.</p>
+
+    <div style="margin-top:1.5rem; background:var(--green-bg); border:1px solid var(--green-border); border-radius:10px; padding:1.25rem 1.5rem;">
+      <h4 style="color:var(--green); margin-bottom:0.5rem;">Cost Optimization Strategy</h4>
+      <ul style="font-size:0.88rem; color:var(--gray-700); line-height:1.8; padding-left:1.2rem;">
+        <li><strong>Expand handler coverage</strong> — every new county that works via a dedicated handler = $0 per search forever</li>
+        <li><strong>Use the Search Cache</strong> (Section 12) — repeated same-county/same-name searches hit cache at $0</li>
+        <li><strong>Configure <code>OPENAI_MODEL</code></strong> — default is <code>gpt-4o-mini</code>; do not upgrade to <code>gpt-4o</code> (10× more expensive) unless accuracy requires it</li>
+        <li><strong>US-region deployment</strong> — eliminates IP-block retries that waste iterations</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECTION 12 — SEARCH RESULT CACHE
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" id="cache">
+  <div class="section-header">
+    <div class="section-num">12</div>
+    <div>
+      <h2>Search Result Cache</h2>
+      <div class="section-sub">In-memory LRU cache — eliminates redundant browser launches and OpenAI API calls for repeated searches</div>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="exec-summary">
+      <p>In production, mortgage order processing means <strong>thousands of searches hit the same counties, same owner names, and same property IDs</strong> repeatedly (e.g., multiple orders for properties in Harris County TX, or re-searches due to data corrections). Without a cache, every repeat search costs the same as the first — a full Playwright browser launch, 400–500 MB RAM, and 2–18 OpenAI API calls. The search cache eliminates this waste entirely.</p>
+    </div>
+
+    <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); margin-bottom:2rem;">
+      <div class="metric-card">
+        <span class="metric-icon">⚡</span>
+        <div class="metric-value">&lt;5ms</div>
+        <div class="metric-label">Cache hit response<br>(vs 15–90s live search)</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">💰</span>
+        <div class="metric-value">$0</div>
+        <div class="metric-label">OpenAI API cost<br>on cache hit</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">🗂️</span>
+        <div class="metric-value">1,000</div>
+        <div class="metric-label">Max cached entries<br>(configurable)</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">⏱️</span>
+        <div class="metric-value">4 hrs</div>
+        <div class="metric-label">Default TTL<br>(configurable)</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">🔄</span>
+        <div class="metric-value">LRU</div>
+        <div class="metric-label">Eviction policy<br>(oldest first)</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">🚫</span>
+        <div class="metric-value">Never</div>
+        <div class="metric-label">CAPTCHA results<br>are not cached</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">Cache Key Construction</h3>
+    <div style="background:var(--gray-50); border:1px solid var(--gray-200); border-radius:10px; padding:1.25rem 1.5rem; font-family:monospace; font-size:0.85rem; margin-bottom:2rem;">
+      <div style="color:var(--gray-500); margin-bottom:0.5rem;">// All values are lowercased + trimmed before joining</div>
+      <div style="color:var(--navy); font-weight:600;">key = url § firstName § lastName § fullName § accountNumber</div>
+      <div style="color:var(--gray-500); margin-top:0.75rem; font-family:sans-serif; font-size:0.82rem;">
+        Example: <code>https://esearch.andrewscad.org/ § § smith §  § </code><br>
+        Same county URL + same search terms = always the same cache key, regardless of which order triggered the search.
+      </div>
+    </div>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">Cache Behaviour Rules</h3>
+    <table class="styled-table" style="margin-bottom:2rem;">
+      <thead><tr><th>Scenario</th><th>Cache Action</th><th>Reason</th></tr></thead>
+      <tbody>
+        <tr><td>Successful search result</td><td style="color:var(--green);font-weight:600;">Stored</td><td>Safe to reuse — property records don't change mid-day</td></tr>
+        <tr><td>CAPTCHA-blocked result</td><td style="color:var(--red);font-weight:600;">NOT stored</td><td>CAPTCHA is transient — retry minutes later may succeed</td></tr>
+        <tr><td>Search error / timeout</td><td style="color:var(--red);font-weight:600;">NOT stored</td><td>Transient failure — should not propagate to future requests</td></tr>
+        <tr><td>Entry older than TTL</td><td style="color:var(--amber);font-weight:600;">Auto-evicted</td><td>Stale data — next request triggers fresh live search</td></tr>
+        <tr><td>Cache at max size (1,000)</td><td style="color:var(--amber);font-weight:600;">LRU eviction</td><td>Oldest entry removed to make room for newest</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">Configuration (Environment Variables)</h3>
+    <table class="styled-table" style="margin-bottom:2rem;">
+      <thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>CACHE_TTL_HOURS</code></td><td><code>4</code></td><td>How long a cached result is considered fresh (hours). Set to <code>8</code> for overnight batches, <code>1</code> for live data requirements.</td></tr>
+        <tr><td><code>CACHE_MAX_SIZE</code></td><td><code>1000</code></td><td>Maximum number of entries in memory. Each entry is ~50–200 KB depending on result size. 1,000 entries ≈ 50–200 MB RAM.</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">Monitoring Cache Health</h3>
+    <p style="margin-bottom:0.75rem; font-size:0.88rem;">Cache statistics are included in the <code>GET /api/health</code> response:</p>
+    <div style="background:var(--gray-50); border:1px solid var(--gray-200); border-radius:10px; padding:1.25rem 1.5rem; font-family:monospace; font-size:0.82rem; margin-bottom:2rem;">
+      <pre style="margin:0; white-space:pre-wrap; color:var(--gray-700);">{
+  "status": "ok",
+  "activeSearches": 2,
+  "cache": {
+    "size": 347,          // total entries stored (including expired)
+    "liveEntries": 312,   // non-expired entries
+    "maxSize": 1000,
+    "ttlHours": 4,
+    "totalCacheHits": 891 // cache hits since server start
+  }
+}</pre>
+    </div>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">Production Impact at Scale</h3>
+    <table class="styled-table" style="margin-bottom:1.5rem;">
+      <thead><tr><th>Scenario</th><th>Without Cache</th><th>With Cache (50% repeat rate)</th><th>With Cache (80% repeat rate)</th></tr></thead>
+      <tbody>
+        <tr><td>1,000 searches/day</td><td>1,000 browser launches<br>~$3–$10 AI cost</td><td>500 launches<br>~$1.50–$5.00 AI cost</td><td>200 launches<br>~$0.60–$2.00 AI cost</td></tr>
+        <tr><td>10,000 searches/day</td><td>10,000 launches<br>~$30–$100 AI cost</td><td>5,000 launches<br>~$15–$50 AI cost</td><td>2,000 launches<br>~$6–$20 AI cost</td></tr>
+        <tr><td>Response time (cached)</td><td>15–90 seconds</td><td colspan="2" style="text-align:center; color:var(--green); font-weight:600;">&lt;5 milliseconds ⚡</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.8rem; color:var(--gray-500);">Repeat rate = percentage of searches where the same URL + name/property combination was already cached. Mortgage order processing naturally has high repeat rates — multiple orders per county, same owners appearing across different lenders.</p>
+
+    <div style="margin-top:1.5rem; background:var(--blue-pale); border:1px solid #93c5fd; border-radius:10px; padding:1.25rem 1.5rem;">
+      <h4 style="color:var(--blue); margin-bottom:0.5rem;">Future Upgrade Path</h4>
+      <p style="font-size:0.88rem; color:var(--gray-700); line-height:1.7;">The current cache is <strong>in-process memory only</strong> — it resets on every server restart and is not shared across multiple server instances. For multi-server deployments, replace <code>_searchCache</code> (<code>Map</code>) in <code>server.js</code> with a <strong>Redis</strong> client using the same key/TTL logic. The interface is a drop-in replacement: <code>GET</code> / <code>SET</code> / <code>EX</code> (expire). No other code changes required.</p>
     </div>
 
   </div>

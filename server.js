@@ -42,6 +42,48 @@ let activeSearches = 0;
 // connection open indefinitely. Configurable via env for slow networks.
 const SEARCH_TIMEOUT_MS = parseInt(process.env.SEARCH_TIMEOUT_MS || String(3 * 60 * 1000), 10);
 
+// ─── Search result cache ───────────────────────────────────────────────────────
+// In production, thousands of orders can search the same county/owner repeatedly.
+// Caching avoids redundant Playwright launches and OpenAI API calls.
+// Property records rarely change within a working day → 4-hour TTL is safe.
+const CACHE_TTL_MS   = parseInt(process.env.CACHE_TTL_HOURS || '4', 10) * 60 * 60 * 1000;
+const CACHE_MAX_SIZE = parseInt(process.env.CACHE_MAX_SIZE  || '1000', 10);
+
+const _searchCache = new Map(); // cacheKey → { result, cachedAt, hits }
+
+function _buildCacheKey({ url, firstName, lastName, fullName, accountNumber }) {
+  return [url, firstName, lastName, fullName, accountNumber]
+    .map(s => (s || '').trim().toLowerCase())
+    .join('§');
+}
+
+function _cacheGet(key) {
+  const entry = _searchCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.cachedAt > CACHE_TTL_MS) { _searchCache.delete(key); return null; }
+  entry.hits++;
+  return entry.result;
+}
+
+function _cacheSet(key, result) {
+  if (result.captchaBlocked) return; // transient block — don't cache
+  if (_searchCache.size >= CACHE_MAX_SIZE) {
+    _searchCache.delete(_searchCache.keys().next().value); // evict oldest (LRU-lite)
+  }
+  _searchCache.set(key, { result, cachedAt: Date.now(), hits: 0 });
+  console.log(`[cache] stored key (size=${_searchCache.size}/${CACHE_MAX_SIZE})`);
+}
+
+function _getCacheStats() {
+  let totalHits = 0, liveEntries = 0;
+  const now = Date.now();
+  for (const entry of _searchCache.values()) {
+    if (now - entry.cachedAt <= CACHE_TTL_MS) { liveEntries++; totalHits += entry.hits; }
+  }
+  return { size: _searchCache.size, liveEntries, maxSize: CACHE_MAX_SIZE,
+           ttlHours: CACHE_TTL_MS / 3_600_000, totalCacheHits: totalHits };
+}
+
 function runBrowserAgentWithTimeout(params) {
   return Promise.race([
     runBrowserAgent(params),
@@ -106,6 +148,7 @@ app.get('/api/health', (_req, res) => {
     timestamp: new Date().toISOString(),
     activeSearches,
     maxConcurrent: MAX_CONCURRENT,
+    cache: _getCacheStats(),
   });
 });
 
@@ -171,6 +214,24 @@ app.get('/api/search/stream', async (req, res) => {
       }
     }
 
+    // ── Cache check ────────────────────────────────────────────────────────────
+    const cacheParams = { url: searchUrl,
+      firstName: firstName || '', lastName: lastName || '',
+      fullName: fullName || '', accountNumber: accountNumber || '' };
+    const cacheKey    = _buildCacheKey(cacheParams);
+    const cached      = _cacheGet(cacheKey);
+
+    if (cached) {
+      console.log(`[cache] HIT — serving stored results (hits=${_searchCache.get(cacheKey)?.hits})`);
+      sendEvent('progress', { message: '⚡ Cache hit — returning stored results instantly (no browser needed)' });
+      if (cached.captchaBlocked) {
+        sendEvent('captcha', { type: cached.captchaType || 'CAPTCHA', message: cached.summary, searchedUrl: cached.searchedUrl });
+      }
+      sendEvent('results', { ...cached, fromCache: true });
+      sendEvent('done', { success: true, fromCache: true });
+      return;
+    }
+
     sendEvent('progress', { message: `Using: ${searchUrl}` });
 
     const results = await runBrowserAgentWithTimeout({
@@ -181,6 +242,8 @@ app.get('/api/search/stream', async (req, res) => {
       accountNumber: accountNumber || '',
       onProgress:    (message) => sendEvent('progress', { message }),
     });
+
+    _cacheSet(cacheKey, results); // store for future identical searches
 
     if (results.captchaBlocked) {
       sendEvent('captcha', {
@@ -219,6 +282,21 @@ app.post('/api/search', async (req, res) => {
   console.log(`[server] REST search started — active: ${activeSearches}/${MAX_CONCURRENT}`);
 
   try {
+    const cacheKey = _buildCacheKey({ url,
+      firstName: firstName || '', lastName: lastName || '',
+      fullName: fullName || '', accountNumber: accountNumber || '' });
+    const cached = _cacheGet(cacheKey);
+
+    if (cached) {
+      console.log(`[cache] REST HIT`);
+      if (cached.captchaBlocked) {
+        return res.status(422).json({ success: false, captchaBlocked: true,
+          captchaType: cached.captchaType || 'CAPTCHA', error: cached.summary,
+          results: cached, fromCache: true });
+      }
+      return res.json({ success: true, results: cached, fromCache: true });
+    }
+
     const results = await runBrowserAgentWithTimeout({
       url,
       firstName:     firstName     || '',
@@ -226,6 +304,8 @@ app.post('/api/search', async (req, res) => {
       fullName:      fullName      || '',
       accountNumber: accountNumber || '',
     });
+
+    _cacheSet(cacheKey, results);
 
     if (results.captchaBlocked) {
       return res.status(422).json({
