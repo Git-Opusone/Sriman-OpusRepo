@@ -371,8 +371,12 @@
   <label>Search:</label>
   <input type="text" id="filter-text" placeholder="state, county, name…" style="width:180px">
 
-  <button class="btn btn-outline" onclick="resetFilters()">Reset</button>
+  <button class="btn btn-outline" onclick="resetFilters()">Reset Filters</button>
   <div style="flex:1"></div>
+  <label class="btn btn-outline" style="cursor:pointer" title="Load a previously exported CSV back into the tracker">
+    Import CSV
+    <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="importCSV(event)">
+  </label>
   <button class="btn btn-success" onclick="exportCSV()">Export CSV</button>
 </div>
 
@@ -479,9 +483,11 @@
 
 <!-- EXPORT BAR -->
 <div class="export-bar">
-  <span>Tip: click any <strong>Result Count</strong>, <strong>Detail Fields</strong>, or <strong>Notes</strong> cell to edit. Click a status badge to toggle.</span>
+  <span>Click any <strong>Result Count</strong>, <strong>Detail Fields</strong>, or <strong>Notes</strong> cell to edit inline. Click a status badge to cycle it. All edits auto-save to browser storage.</span>
   <div style="flex:1"></div>
-  <button class="btn btn-outline" onclick="exportCSV()">Export CSV</button>
+  <span id="save-indicator" style="font-size:0.78rem;color:var(--gray-500);margin-right:0.5rem"></span>
+  <button class="btn btn-outline" onclick="clearSavedState()" title="Reset all progress back to defaults">Reset Progress</button>
+  <button class="btn btn-outline" style="margin-left:0.5rem" onclick="exportCSV()">Export CSV</button>
 </div>
 
 <script>
@@ -769,6 +775,56 @@ function nextStatus(cur) {
   return STATUS_CYCLE[(i + 1) % STATUS_CYCLE.length];
 }
 
+// ─── Persistence (localStorage) ──────────────────────────────────────────────
+const STORAGE_KEY = 'staging-tracker-v2.2';
+
+function readCellEdits(i) {
+  const trs = document.querySelectorAll('#test-tbody tr');
+  return {
+    resultCount:  trs[i]?.cells[8]?.textContent?.trim()  ?? '',
+    detailFields: trs[i]?.cells[9]?.textContent?.trim()  ?? '',
+    notes:        trs[i]?.cells[11]?.textContent?.trim() ?? '',
+  };
+}
+
+function saveState() {
+  const saved = {};
+  TESTS.forEach((t, i) => {
+    const edits = readCellEdits(i);
+    saved[i] = { status: t.status, ...edits };
+  });
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); } catch (_) {}
+  const el = document.getElementById('save-indicator');
+  if (el) {
+    el.textContent = '✓ Saved ' + new Date().toLocaleTimeString();
+    el.style.color = 'var(--green)';
+    clearTimeout(el._timer);
+    el._timer = setTimeout(() => { el.style.color = 'var(--gray-500)'; }, 3000);
+  }
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    Object.entries(saved).forEach(([i, s]) => {
+      const idx = parseInt(i);
+      if (!TESTS[idx]) return;
+      if (s.status && STATUS_CYCLE.includes(s.status)) TESTS[idx].status = s.status;
+      if (s.resultCount  !== undefined) TESTS[idx].resultCount  = s.resultCount;
+      if (s.detailFields !== undefined) TESTS[idx].detailFields = s.detailFields;
+      if (s.notes        !== undefined) TESTS[idx].notes        = s.notes;
+    });
+  } catch (_) {}
+}
+
+function clearSavedState() {
+  if (!confirm('Reset ALL test results back to defaults?\n\nThis clears saved progress and cannot be undone.')) return;
+  try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+  location.reload();
+}
+
 // ─── Render ───────────────────────────────────────────────────────────────────
 function platBadge(p) {
   return `<span class="plat plat-${p}">${p === 'qpublic' ? 'qPublic' : p.charAt(0).toUpperCase()+p.slice(1)}</span>`;
@@ -779,9 +835,9 @@ function renderRows() {
   tbody.innerHTML = '';
   TESTS.forEach((t, i) => {
     const tr = document.createElement('tr');
-    tr.dataset.index = i;
+    tr.dataset.index    = i;
     tr.dataset.platform = t.platform;
-    tr.dataset.status = t.status;
+    tr.dataset.status   = t.status;
     tr.className = `status-${t.status}`;
 
     const shortUrl = t.url.replace(/^https?:\/\//, '').replace(/\?.*/, '').substring(0, 50);
@@ -806,8 +862,7 @@ function renderRows() {
 }
 
 function cycleStatus(el, idx) {
-  const cur = TESTS[idx].status;
-  const next = nextStatus(cur);
+  const next = nextStatus(TESTS[idx].status);
   TESTS[idx].status = next;
   el.className = `badge ${STATUS_CLS[next]}`;
   el.textContent = STATUS_LABELS[next];
@@ -815,20 +870,31 @@ function cycleStatus(el, idx) {
   tr.className = `status-${next}`;
   tr.dataset.status = next;
   updateStats();
+  saveState();
 }
+
+// Auto-save on any contenteditable change (debounced 600ms)
+let _saveTimer;
+document.addEventListener('input', e => {
+  if (e.target.closest('#test-tbody') && e.target.getAttribute('contenteditable') === 'true') {
+    clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(saveState, 600);
+    const ind = document.getElementById('save-indicator');
+    if (ind) { ind.textContent = 'Unsaved…'; ind.style.color = 'var(--amber)'; }
+  }
+});
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 function updateStats() {
-  const all = TESTS;
-  const pass  = all.filter(t => t.status === 'pass').length;
-  const fail  = all.filter(t => t.status === 'fail').length;
-  const pend  = all.filter(t => t.status === 'pending' || t.status === 'running').length;
-  const done  = pass + fail;
-  document.getElementById('stat-total').textContent = all.length;
+  const pass = TESTS.filter(t => t.status === 'pass').length;
+  const fail = TESTS.filter(t => t.status === 'fail').length;
+  const pend = TESTS.filter(t => t.status === 'pending' || t.status === 'running').length;
+  const done = pass + fail;
+  document.getElementById('stat-total').textContent = TESTS.length;
   document.getElementById('stat-pass').textContent  = pass;
   document.getElementById('stat-fail').textContent  = fail;
   document.getElementById('stat-pend').textContent  = pend;
-  document.getElementById('stat-cov').textContent   = done === 0 ? '0%' : Math.round(done / all.length * 100) + '%';
+  document.getElementById('stat-cov').textContent   = done === 0 ? '0%' : Math.round(done / TESTS.length * 100) + '%';
 }
 
 // ─── Filter ───────────────────────────────────────────────────────────────────
@@ -837,9 +903,9 @@ function applyFilters() {
   const status = document.getElementById('filter-status').value;
   const text   = document.getElementById('filter-text').value.toLowerCase();
   document.querySelectorAll('#test-tbody tr').forEach(tr => {
-    const pMatch = plat === 'all' || tr.dataset.platform === plat;
-    const sMatch = status === 'all' || tr.dataset.status === status;
-    const tMatch = !text || tr.textContent.toLowerCase().includes(text);
+    const pMatch = plat   === 'all' || tr.dataset.platform === plat;
+    const sMatch = status === 'all' || tr.dataset.status   === status;
+    const tMatch = !text  || tr.textContent.toLowerCase().includes(text);
     tr.classList.toggle('hidden', !(pMatch && sMatch && tMatch));
   });
 }
@@ -879,15 +945,16 @@ function sortTable(col) {
 // ─── Export CSV ───────────────────────────────────────────────────────────────
 function exportCSV() {
   const headers = ['#','State','County','Platform','URL','Search Type','Sample Name','Sample Parcel/Acct','Result Count','Detail Fields','Status','Notes'];
-  const rows = TESTS.map((t, i) => [
-    i+1, t.state, t.county, t.platform, t.url,
-    t.searchType, t.sampleName, t.sampleParcel,
-    // pick up live edits from table cells
-    document.querySelectorAll('#test-tbody tr')[i]?.cells[8]?.textContent?.trim() || t.resultCount,
-    document.querySelectorAll('#test-tbody tr')[i]?.cells[9]?.textContent?.trim() || t.detailFields,
-    t.status,
-    document.querySelectorAll('#test-tbody tr')[i]?.cells[11]?.textContent?.trim() || t.notes,
-  ]);
+  const rows = TESTS.map((t, i) => {
+    const edits = readCellEdits(i);
+    return [i+1, t.state, t.county, t.platform, t.url,
+      t.searchType, t.sampleName, t.sampleParcel,
+      edits.resultCount  || t.resultCount,
+      edits.detailFields || t.detailFields,
+      t.status,
+      edits.notes        || t.notes,
+    ];
+  });
   const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a = Object.assign(document.createElement('a'), {
     href: 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv),
@@ -896,9 +963,57 @@ function exportCSV() {
   a.click();
 }
 
+// ─── Import CSV ───────────────────────────────────────────────────────────────
+function parseCSVLine(line) {
+  const result = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i+1] === '"') { cur += '"'; i++; } else { inQ = !inQ; }
+    } else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+    else { cur += c; }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function importCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const lines = e.target.result.split(/\r?\n/).filter(l => l.trim());
+    let updated = 0;
+    lines.slice(1).forEach(line => {          // skip header row
+      const cols = parseCSVLine(line);
+      const rowNum = parseInt(cols[0]) - 1;   // col 0 = 1-based row #
+      if (isNaN(rowNum) || rowNum < 0 || rowNum >= TESTS.length) return;
+      const status = (cols[10] || '').toLowerCase().trim();
+      if (STATUS_CYCLE.includes(status)) TESTS[rowNum].status = status;
+      TESTS[rowNum].resultCount  = cols[8]  || '';
+      TESTS[rowNum].detailFields = cols[9]  || '';
+      TESTS[rowNum].notes        = cols[11] || '';
+      updated++;
+    });
+    renderRows();
+    saveState();
+    const ind = document.getElementById('save-indicator');
+    if (ind) { ind.textContent = `✓ Imported ${updated} rows`; ind.style.color = 'var(--green)'; }
+  };
+  reader.readAsText(file);
+  event.target.value = '';   // allow re-importing the same file
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
+loadState();    // apply any saved progress before rendering
 renderRows();
 document.getElementById('last-updated').textContent = new Date().toISOString().slice(0,10);
+
+// Show "Saved" indicator if state already exists
+if (localStorage.getItem(STORAGE_KEY)) {
+  const ind = document.getElementById('save-indicator');
+  if (ind) { ind.textContent = '✓ Progress loaded'; ind.style.color = 'var(--green)'; }
+}
 </script>
 </body>
 </html>
