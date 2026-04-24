@@ -94,6 +94,18 @@
   .header h1 span { color: var(--amber); }
   .header p { color: rgba(255,255,255,0.65); font-size: 0.88rem; margin-top: 0.25rem; }
 
+  /* ── CSV Banner ── */
+  .csv-banner {
+    padding: 0.6rem 2rem;
+    font-size: 0.82rem;
+    border-bottom: 1px solid var(--gray-200);
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .csv-banner code { background: rgba(0,0,0,0.07); padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.78rem; }
+  .csv-banner.loading { background: var(--gray-50); color: var(--gray-500); border-color: var(--gray-200); }
+  .csv-banner.ok      { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+  .csv-banner.warn    { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+
   /* ── Summary Cards ── */
   .summary-grid {
     display: grid;
@@ -147,6 +159,7 @@
   .btn-primary { background: var(--blue); color: var(--white); }
   .btn-outline { background: transparent; color: var(--gray-700); border: 1px solid var(--gray-300); }
   .btn-success { background: var(--green); color: var(--white); }
+  .btn-refresh { background: var(--blue-pale); color: var(--blue); border: 1px solid #93c5fd; }
 
   /* ── Table ── */
   .table-wrap {
@@ -195,7 +208,6 @@
     display: inline-flex; align-items: center; gap: 0.3em;
     padding: 0.2em 0.65em; border-radius: 999px;
     font-size: 0.72rem; font-weight: 700; white-space: nowrap;
-    cursor: pointer; user-select: none;
   }
   .badge-pass    { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border); }
   .badge-fail    { background: var(--red-bg);    color: var(--red);    border: 1px solid var(--red-border); }
@@ -215,22 +227,6 @@
   .plat-qpublic { background: var(--p-qpublic); }
   .plat-beacon  { background: var(--p-beacon); }
   .plat-bis     { background: var(--p-bis); }
-
-  /* Editable cells */
-  [contenteditable="true"] {
-    outline: none; min-width: 40px;
-    border-radius: 4px; padding: 1px 3px;
-    transition: background 0.15s;
-  }
-  [contenteditable="true"]:focus {
-    background: #e0edff;
-    box-shadow: 0 0 0 1px var(--blue);
-  }
-  [contenteditable="true"]:empty::before {
-    content: attr(data-placeholder);
-    color: var(--gray-300);
-    pointer-events: none;
-  }
 
   .url-cell a {
     color: var(--blue); text-decoration: none;
@@ -314,7 +310,12 @@
 <!-- HEADER -->
 <div class="header">
   <h1>Staging Test Tracker — <span>v2.2</span></h1>
-  <p>Platform: Orchestrate-Mortgage Property Tax &amp; Title Search &nbsp;|&nbsp; Branch: claude/add-groq-api-integration-SE8jL &nbsp;|&nbsp; Last Updated: <span id="last-updated">2026-04-24</span></p>
+  <p>Platform: Orchestrate-Mortgage Property Tax &amp; Title Search &nbsp;|&nbsp; Branch: claude/add-groq-api-integration-SE8jL &nbsp;|&nbsp; Date: <span id="last-updated">2026-04-24</span></p>
+</div>
+
+<!-- CSV BANNER -->
+<div class="csv-banner loading" id="csv-banner">
+  ⏳ Loading test data from <code>staging-test-tracker-testcases.csv</code>…
 </div>
 
 <!-- SUMMARY CARDS -->
@@ -373,10 +374,7 @@
 
   <button class="btn btn-outline" onclick="resetFilters()">Reset Filters</button>
   <div style="flex:1"></div>
-  <label class="btn btn-outline" style="cursor:pointer" title="Load a previously exported CSV back into the tracker">
-    Import CSV
-    <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="importCSV(event)">
-  </label>
+  <button class="btn btn-refresh" onclick="refreshCSV()" title="Re-fetch staging-test-tracker-testcases.csv and redraw the table">↻ Refresh from CSV</button>
   <button class="btn btn-success" onclick="exportCSV()">Export CSV</button>
 </div>
 
@@ -465,9 +463,9 @@
     <div class="legend-row"><span class="badge badge-skip">— SKIP</span> Excluded (IP-block, env issue, etc.)</div>
   </div>
   <div class="legend-group">
-    <h3>Tips</h3>
-    <div class="legend-row">Click a status badge to cycle through statuses</div>
-    <div class="legend-row">Click Result Count / Detail Fields / Notes cells to edit inline</div>
+    <h3>How to update results</h3>
+    <div class="legend-row">Edit <code>docs/staging-test-tracker-testcases.csv</code> in Excel or any editor</div>
+    <div class="legend-row">Refresh this page (or click <strong>↻ Refresh from CSV</strong>) to see latest</div>
     <div class="legend-row">Run: <code>node scripts/testHandler.js &lt;platform&gt; &lt;url&gt; &lt;lastName&gt;</code></div>
   </div>
   <div class="legend-group">
@@ -483,351 +481,99 @@
 
 <!-- EXPORT BAR -->
 <div class="export-bar">
-  <span>Click any <strong>Result Count</strong>, <strong>Detail Fields</strong>, or <strong>Notes</strong> cell to edit inline. Click a status badge to cycle it. All edits auto-save to browser storage.</span>
+  <span>Source of truth: <code>docs/staging-test-tracker-testcases.csv</code> — edit in Excel, save, then click <strong>↻ Refresh from CSV</strong> or reload the page.</span>
   <div style="flex:1"></div>
-  <span id="save-indicator" style="font-size:0.78rem;color:var(--gray-500);margin-right:0.5rem"></span>
-  <button class="btn btn-outline" onclick="clearSavedState()" title="Reset all progress back to defaults">Reset Progress</button>
-  <button class="btn btn-outline" style="margin-left:0.5rem" onclick="exportCSV()">Export CSV</button>
+  <button class="btn btn-outline" onclick="exportCSV()">Export CSV</button>
 </div>
 
 <script>
-// ─── Test Data ───────────────────────────────────────────────────────────────
-// Columns: state, county, platform, url, searchType, sampleName, sampleParcel, resultCount, detailFields, status, notes
-const TESTS = [
-  // ── CONFIRMED PASS ────────────────────────────────────────────────────────
-  {
-    state: 'MA', county: 'Plymouth County', platform: 'patriot',
-    url: 'https://plymouth.patriotproperties.com/default.asp',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '077C-157A-014-00AP / Acct 29507',
-    resultCount: '50', detailFields: '30', status: 'pass',
-    notes: 'Sample: SMITH DAVID E, 14 Abigail\'s Path. 30 detail fields confirmed.'
-  },
-  {
-    state: 'NH', county: 'Goshen', platform: 'patriot',
-    url: 'https://goshen.patriotproperties.com/',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '5A-0-66-0 / Acct 686',
-    resultCount: '6', detailFields: '31', status: 'pass',
-    notes: 'Sample: MORZUCH BERNARD J & SMITH CHERYL D, 53 Aberdeen Rd. 31 fields confirmed.'
-  },
-  {
-    state: 'MA', county: 'State Public Access (Tyler)', platform: 'tyler',
-    url: 'http://mapublicaccess.tylerhost.net/search/commonsearch.aspx?mode=address',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: 'sIndex=0 / 7 Bob\'s Hill',
-    resultCount: '25+', detailFields: '20+', status: 'pass',
-    notes: 'Sample: SMITH, AARON C. sIndex session confirmed. id="inpOwner" branch used.'
-  },
-  {
-    state: 'NH', county: 'Alton', platform: 'vision',
-    url: 'http://gis.vgsi.com/AltonNH/',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: 'Parcel.aspx?pid=N',
-    resultCount: '10', detailFields: '98–121', status: 'pass',
-    notes: 'async.asmx/GetData2 API confirmed. 98-121 detail fields via VGSI API.'
-  },
-  {
-    state: 'TX', county: 'Andrews County', platform: 'tyler',
-    url: 'https://esearch.andrewscad.org/',
-    searchType: 'Owner Name / Parcel ID', sampleName: '(POC test)',
-    sampleParcel: '—',
-    resultCount: '—', detailFields: '—', status: 'pass',
-    notes: 'Original POC. Search by owner name + property ID confirmed. Session-based URL.'
-  },
+// ─── Data ─────────────────────────────────────────────────────────────────────
+let TESTS = [];
 
-  // ── PENDING — PATRIOT (additional NE states) ──────────────────────────────
-  {
-    state: 'VT', county: 'Barnard', platform: 'patriot',
-    url: 'https://barnardvt.patriotproperties.com/',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'VT subdomain pattern (barnardvt.patriotproperties.com). Verify detector handles subdomain.'
-  },
-  {
-    state: 'VT', county: 'Braintree', platform: 'patriot',
-    url: 'https://braintree.patriotproperties.com/',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'Second VT town — confirm multi-town consistency for subdomain format.'
-  },
-  {
-    state: 'NH', county: 'Somersworth', platform: 'patriot',
-    url: 'http://somersworthnh.patriotproperties.com/default.asp',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'NH Patriot — subdomain includes state code suffix (somersworthnh). Confirm multi-word/hyphen town handling.'
-  },
-  {
-    state: 'CT', county: 'Madison', platform: 'patriot',
-    url: 'https://www.patriotproperties.com/MADISON/default.asp',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'CT Patriot. Confirm CT coverage (counties.json shows both Patriot & qPublic in CT).'
-  },
-  {
-    state: 'RI', county: 'Charlestown', platform: 'patriot',
-    url: 'https://www.patriotproperties.com/CHARLESTOWN/default.asp',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'RI Patriot. RI also has Vision towns — confirm correct platform detection for each.'
-  },
-
-  // ── PENDING — TYLER (additional counties) ────────────────────────────────
-  {
-    state: 'AZ', county: 'Yuma County', platform: 'tyler',
-    url: 'https://yumacountyaz-assessor.tylerhost.net/assessor/web/',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'Tyler tylerhost.net pattern (AZ). Standard iasWorld — not MA public access branch.'
-  },
-  {
-    state: 'CA', county: 'Fresno County', platform: 'tyler',
-    url: 'https://fresnocountyca-web.tylerhost.net/web/',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'Tyler CA — test disclaimer page handling if present.'
-  },
-  {
-    state: 'CA', county: 'Humboldt County', platform: 'tyler',
-    url: 'https://humboldtcountyca-web.tylerhost.net/web/',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'Additional CA Tyler — verify Humboldt vs Fresno parity in field extraction.'
-  },
-
-  // ── PENDING — VISION (additional towns) ──────────────────────────────────
-  {
-    state: 'CT', county: 'Bolton', platform: 'vision',
-    url: 'http://gis.vgsi.com/BoltonCT/',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'CT Vision. Confirm VGSI async.asmx/GetData2 returns same field count as NH.'
-  },
-  {
-    state: 'CT', county: 'Bridgewater', platform: 'vision',
-    url: 'http://gis.vgsi.com/bridgewaterct/Search.aspx',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'URL includes /Search.aspx suffix — verify platformDetector accepts this form.'
-  },
-  {
-    state: 'RI', county: 'Charlestown', platform: 'vision',
-    url: 'http://gis.vgsi.com/CharlestownRI/',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'RI Vision. Note: counties.json also has Charlestown as Patriot — check correct platform.'
-  },
-  {
-    state: 'ME', county: 'Cumberland County', platform: 'vision',
-    url: 'https://gis.vgsi.com/cumberlandme/Search.aspx',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'ME Vision (HTTPS variant). Test lowercase town slug in URL.'
-  },
-  {
-    state: 'NH', county: 'Alton (2nd run)', platform: 'vision',
-    url: 'http://gis.vgsi.com/AltonNH/',
-    searchType: 'Parcel ID', sampleName: '(use known parcel from pass run)',
-    sampleParcel: '(from run #4)',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'Re-run with parcel ID search to confirm pid-based lookup returns correct detail page.'
-  },
-
-  // ── PENDING — QPUBLIC (new platform) ─────────────────────────────────────
-  {
-    state: 'SC', county: 'Abbeville County', platform: 'qpublic',
-    url: 'https://qpublic.schneidercorp.com/Application.aspx?AppID=613&LayerID=10508&PageTypeID=2&PageID=4483',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'qPublic SC — PageTypeID=2 (search page). No IP-block issue for SC.'
-  },
-  {
-    state: 'SC', county: 'Aiken County', platform: 'qpublic',
-    url: 'https://qpublic.schneidercorp.com/Application.aspx?App=AikenCountySC&Layer=Parcels&PageType=Search',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'qPublic SC — App= URL style (no numeric AppID). Verify URL builder produces correct search URL.'
-  },
-  {
-    state: 'FL', county: 'Alachua County', platform: 'qpublic',
-    url: 'https://qpublic.schneidercorp.com/Application.aspx?AppID=1081&LayerID=26490&PageTypeID=2&PageID=10768',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'FL qPublic — schneidercorp.com. No known IP-block for FL. Test Angular SPA rendering.'
-  },
-  {
-    state: 'FL', county: 'Bay County', platform: 'qpublic',
-    url: 'https://qpublic.schneidercorp.com/application.aspx?app=BayCountyFL&PageType=Search',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'qPublic FL — lowercase application.aspx. Confirm case-insensitive URL routing works.'
-  },
-  {
-    state: 'GA', county: 'Appling County', platform: 'qpublic',
-    url: 'http://www.qpublic.net/ga/appling/search.html',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'skip',
-    notes: 'SKIP from non-US dev machine — IP-blocked. Re-test from US staging server. Old qpublic.net URL (not schneidercorp.com).'
-  },
-
-  // ── PENDING — BEACON (new platform) ──────────────────────────────────────
-  {
-    state: 'MN', county: 'Benton County', platform: 'beacon',
-    url: 'http://beacon.schneidercorp.com/Application.aspx?AppID=386&LayerID=5759&PageTypeID=2&PageID=3098',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'Beacon MN — primary Beacon state. Test Angular SPA + waitForAngularContent().'
-  },
-  {
-    state: 'MN', county: 'Blue Earth County', platform: 'beacon',
-    url: 'http://beacon.schneidercorp.com/?site=BlueEarthCountyMN',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'Beacon MN — ?site= URL style. Verify URL builder correctly navigates to search page.'
-  },
-  {
-    state: 'WI', county: 'Barron County', platform: 'beacon',
-    url: 'https://beacon.schneidercorp.com/Application.aspx?App=BarronCountyWI&PageType=Map',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'Beacon WI — PageType=Map (not Search). URL builder must switch to PageType=Search.'
-  },
-  {
-    state: 'IA', county: 'Adams County', platform: 'beacon',
-    url: 'https://beacon.schneidercorp.com/Application.aspx?AppID=1136&LayerID=28790&PageTypeID=2&PageID=11979',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'Beacon IA — numeric AppID style. Third distinct Beacon state for coverage.'
-  },
-  {
-    state: 'AR', county: 'Crawford County', platform: 'beacon',
-    url: 'http://beacon.schneidercorp.com/Application.aspx?AppID=374&LayerID=5195&PageTypeID=1',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'Beacon AR — PageTypeID=1 (not 2). Verify URL builder strips and appends correct search params.'
-  },
-  {
-    state: 'CO', county: 'Park County', platform: 'beacon',
-    url: 'https://beacon.schneidercorp.com/Application.aspx?AppID=1085&LayerID=26739&PageTypeID=2&PageID=10841',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'Beacon CO — additional state for Beacon coverage.'
-  },
-
-  // ── PENDING — BIS / Harris (new platform) ────────────────────────────────
-  {
-    state: 'ME', county: 'Lisbon', platform: 'bis',
-    url: 'http://reonline.harriscomputer.com/research.aspx?ClientID=1013',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'BIS/Harris ME — harriscomputer.com. Intercept /search/SearchResults XHR. Verify {resultsList} shape.'
-  },
-  {
-    state: 'ME', county: 'North Berwick', platform: 'bis',
-    url: 'http://reonline.harriscomputer.com/research.aspx?ClientID=1028',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'BIS/Harris ME — second ClientID to confirm session-bound XHR intercept works per ClientID.'
-  },
-  {
-    state: 'CA', county: 'Ventura County', platform: 'bis',
-    url: 'https://assessor.countyofventura.org/research/research.html',
-    searchType: 'Owner Name (Last)', sampleName: 'Smith',
-    sampleParcel: '—',
-    resultCount: '', detailFields: '', status: 'pending',
-    notes: 'BIS CA — different host pattern (not harriscomputer.com). Confirm XHR intercept URL path is same.'
-  },
-];
-
-// ─── Status cycle ─────────────────────────────────────────────────────────────
-const STATUS_CYCLE = ['pending', 'running', 'pass', 'fail', 'skip'];
+// ─── Status labels ────────────────────────────────────────────────────────────
 const STATUS_LABELS = { pass:'✓ PASS', fail:'✗ FAIL', pending:'⏳ PENDING', running:'▶ RUNNING', skip:'— SKIP' };
 const STATUS_CLS    = { pass:'badge-pass', fail:'badge-fail', pending:'badge-pending', running:'badge-running', skip:'badge-skip' };
 
-function nextStatus(cur) {
-  const i = STATUS_CYCLE.indexOf(cur);
-  return STATUS_CYCLE[(i + 1) % STATUS_CYCLE.length];
-}
-
-// ─── Persistence (localStorage) ──────────────────────────────────────────────
-const STORAGE_KEY = 'staging-tracker-v2.2';
-
-function readCellEdits(i) {
-  const trs = document.querySelectorAll('#test-tbody tr');
-  return {
-    resultCount:  trs[i]?.cells[8]?.textContent?.trim()  ?? '',
-    detailFields: trs[i]?.cells[9]?.textContent?.trim()  ?? '',
-    notes:        trs[i]?.cells[11]?.textContent?.trim() ?? '',
-  };
-}
-
-function saveState() {
-  const saved = {};
-  TESTS.forEach((t, i) => {
-    const edits = readCellEdits(i);
-    saved[i] = { status: t.status, ...edits };
-  });
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved)); } catch (_) {}
-  const el = document.getElementById('save-indicator');
-  if (el) {
-    el.textContent = '✓ Saved ' + new Date().toLocaleTimeString();
-    el.style.color = 'var(--green)';
-    clearTimeout(el._timer);
-    el._timer = setTimeout(() => { el.style.color = 'var(--gray-500)'; }, 3000);
+// ─── CSV parser ───────────────────────────────────────────────────────────────
+function parseCSVLine(line) {
+  const result = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i+1] === '"') { cur += '"'; i++; } else { inQ = !inQ; }
+    } else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+    else { cur += c; }
   }
+  result.push(cur.trim());
+  return result;
 }
 
-function loadState() {
+// ─── CSV fetch + init ─────────────────────────────────────────────────────────
+async function initFromCSV() {
+  const banner = document.getElementById('csv-banner');
+  banner.className = 'csv-banner loading';
+  banner.innerHTML = '⏳ Loading test data from <code>staging-test-tracker-testcases.csv</code>…';
+
+  if (window.location.protocol === 'file:') {
+    banner.className = 'csv-banner warn';
+    banner.innerHTML = '⚠ Cannot load CSV via <code>file://</code> — open this page via ' +
+      '<strong>http://localhost:3000/docs/staging-test-tracker.html</strong> ' +
+      '(start the server with <code>npm start</code> or <code>node server.js</code>)';
+    renderRows();
+    return;
+  }
+
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const saved = JSON.parse(raw);
-    Object.entries(saved).forEach(([i, s]) => {
-      const idx = parseInt(i);
-      if (!TESTS[idx]) return;
-      if (s.status && STATUS_CYCLE.includes(s.status)) TESTS[idx].status = s.status;
-      if (s.resultCount  !== undefined) TESTS[idx].resultCount  = s.resultCount;
-      if (s.detailFields !== undefined) TESTS[idx].detailFields = s.detailFields;
-      if (s.notes        !== undefined) TESTS[idx].notes        = s.notes;
-    });
-  } catch (_) {}
+    const res = await fetch('./staging-test-tracker-testcases.csv?_=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const lines = text.split(/\r?\n/);
+
+    // Skip header row (row 0), skip blank rows
+    TESTS = lines.slice(1)
+      .map(line => {
+        const cols = parseCSVLine(line);
+        if (!cols[1] || !cols[1].trim()) return null; // no state = blank row
+        const status = (cols[10] || 'pending').toLowerCase().trim();
+        const validStatuses = ['pass', 'fail', 'pending', 'running', 'skip'];
+        return {
+          state:        cols[1]  || '',
+          county:       cols[2]  || '',
+          platform:     (cols[3] || '').toLowerCase().trim(),
+          url:          cols[4]  || '',
+          searchType:   cols[5]  || '',
+          sampleName:   cols[6]  || '',
+          sampleParcel: cols[7]  || '',
+          resultCount:  cols[8]  || '',
+          detailFields: cols[9]  || '',
+          status:       validStatuses.includes(status) ? status : 'pending',
+          notes:        cols[11] || '',
+        };
+      })
+      .filter(t => t !== null);
+
+    const now = new Date().toLocaleTimeString();
+    banner.className = 'csv-banner ok';
+    banner.innerHTML = '✓ Loaded <strong>' + TESTS.length + '</strong> tests from ' +
+      '<code>staging-test-tracker-testcases.csv</code> &nbsp;—&nbsp; refreshed at <strong>' + now + '</strong>';
+  } catch (err) {
+    banner.className = 'csv-banner warn';
+    banner.innerHTML = '⚠ Could not load CSV: ' + err.message +
+      ' — make sure the server is running and <code>docs/staging-test-tracker-testcases.csv</code> exists';
+  }
+
+  renderRows();
+  updateStats();
 }
 
-function clearSavedState() {
-  if (!confirm('Reset ALL test results back to defaults?\n\nThis clears saved progress and cannot be undone.')) return;
-  try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
-  location.reload();
+async function refreshCSV() {
+  await initFromCSV();
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────────
 function platBadge(p) {
-  return `<span class="plat plat-${p}">${p === 'qpublic' ? 'qPublic' : p.charAt(0).toUpperCase()+p.slice(1)}</span>`;
+  const label = p === 'qpublic' ? 'qPublic' : (p ? p.charAt(0).toUpperCase() + p.slice(1) : '?');
+  return `<span class="plat plat-${p}">${label}</span>`;
 }
 
 function renderRows() {
@@ -838,51 +584,41 @@ function renderRows() {
     tr.dataset.index    = i;
     tr.dataset.platform = t.platform;
     tr.dataset.status   = t.status;
-    tr.className = `status-${t.status}`;
+    tr.className = 'status-' + (t.status === 'pending' ? 'pend' : t.status);
 
-    const shortUrl = t.url.replace(/^https?:\/\//, '').replace(/\?.*/, '').substring(0, 50);
+    const shortUrl = t.url
+      ? t.url.replace(/^https?:\/\//, '').replace(/\?.*/, '').substring(0, 48)
+      : '';
+    const statusCls   = STATUS_CLS[t.status]    || 'badge-pending';
+    const statusLabel = STATUS_LABELS[t.status] || '⏳ PENDING';
 
-    tr.innerHTML = `
-      <td style="font-weight:600;color:var(--gray-500);text-align:center">${i+1}</td>
-      <td><strong>${t.state}</strong></td>
-      <td>${t.county}</td>
-      <td>${platBadge(t.platform)}</td>
-      <td class="url-cell"><a href="${t.url}" target="_blank" title="${t.url}">${shortUrl}…</a></td>
-      <td>${t.searchType}</td>
-      <td>${t.sampleName}</td>
-      <td style="font-family:monospace;font-size:0.76rem">${t.sampleParcel}</td>
-      <td style="text-align:center;font-weight:600" contenteditable="true" data-placeholder="—">${t.resultCount}</td>
-      <td style="text-align:center;font-weight:600" contenteditable="true" data-placeholder="—">${t.detailFields}</td>
-      <td><span class="badge ${STATUS_CLS[t.status]}" onclick="cycleStatus(this,${i})">${STATUS_LABELS[t.status]}</span></td>
-      <td class="note-cell" contenteditable="true" data-placeholder="add notes…">${t.notes}</td>
-    `;
+    tr.innerHTML =
+      '<td style="font-weight:600;color:var(--gray-500);text-align:center">' + (i+1) + '</td>' +
+      '<td><strong>' + esc(t.state) + '</strong></td>' +
+      '<td>' + esc(t.county) + '</td>' +
+      '<td>' + platBadge(t.platform) + '</td>' +
+      (t.url
+        ? '<td class="url-cell"><a href="' + esc(t.url) + '" target="_blank" title="' + esc(t.url) + '">' + esc(shortUrl) + '…</a></td>'
+        : '<td class="url-cell" style="color:var(--gray-300)">—</td>') +
+      '<td>' + esc(t.searchType) + '</td>' +
+      '<td>' + esc(t.sampleName) + '</td>' +
+      '<td style="font-family:monospace;font-size:0.76rem">' + esc(t.sampleParcel) + '</td>' +
+      '<td style="text-align:center;font-weight:600">' + esc(t.resultCount  || '—') + '</td>' +
+      '<td style="text-align:center;font-weight:600">' + esc(t.detailFields || '—') + '</td>' +
+      '<td><span class="badge ' + statusCls + '">' + statusLabel + '</span></td>' +
+      '<td class="note-cell">' + esc(t.notes) + '</td>';
+
     tbody.appendChild(tr);
   });
   updateStats();
+  applyFilters();
 }
 
-function cycleStatus(el, idx) {
-  const next = nextStatus(TESTS[idx].status);
-  TESTS[idx].status = next;
-  el.className = `badge ${STATUS_CLS[next]}`;
-  el.textContent = STATUS_LABELS[next];
-  const tr = el.closest('tr');
-  tr.className = `status-${next}`;
-  tr.dataset.status = next;
-  updateStats();
-  saveState();
+function esc(str) {
+  return String(str || '')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
 }
-
-// Auto-save on any contenteditable change (debounced 600ms)
-let _saveTimer;
-document.addEventListener('input', e => {
-  if (e.target.closest('#test-tbody') && e.target.getAttribute('contenteditable') === 'true') {
-    clearTimeout(_saveTimer);
-    _saveTimer = setTimeout(saveState, 600);
-    const ind = document.getElementById('save-indicator');
-    if (ind) { ind.textContent = 'Unsaved…'; ind.style.color = 'var(--amber)'; }
-  }
-});
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
 function updateStats() {
@@ -945,75 +681,24 @@ function sortTable(col) {
 // ─── Export CSV ───────────────────────────────────────────────────────────────
 function exportCSV() {
   const headers = ['#','State','County','Platform','URL','Search Type','Sample Name','Sample Parcel/Acct','Result Count','Detail Fields','Status','Notes'];
-  const rows = TESTS.map((t, i) => {
-    const edits = readCellEdits(i);
-    return [i+1, t.state, t.county, t.platform, t.url,
-      t.searchType, t.sampleName, t.sampleParcel,
-      edits.resultCount  || t.resultCount,
-      edits.detailFields || t.detailFields,
-      t.status,
-      edits.notes        || t.notes,
-    ];
-  });
-  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const rows = TESTS.map((t, i) => [
+    i+1, t.state, t.county, t.platform, t.url,
+    t.searchType, t.sampleName, t.sampleParcel,
+    t.resultCount, t.detailFields, t.status, t.notes,
+  ]);
+  const csv = [headers, ...rows]
+    .map(r => r.map(v => '"' + String(v || '').replace(/"/g,'""') + '"').join(','))
+    .join('\n');
   const a = Object.assign(document.createElement('a'), {
     href: 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv),
-    download: `staging-test-tracker-${new Date().toISOString().slice(0,10)}.csv`
+    download: 'staging-test-tracker-' + new Date().toISOString().slice(0,10) + '.csv'
   });
   a.click();
 }
 
-// ─── Import CSV ───────────────────────────────────────────────────────────────
-function parseCSVLine(line) {
-  const result = []; let cur = ''; let inQ = false;
-  for (let i = 0; i < line.length; i++) {
-    const c = line[i];
-    if (c === '"') {
-      if (inQ && line[i+1] === '"') { cur += '"'; i++; } else { inQ = !inQ; }
-    } else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
-    else { cur += c; }
-  }
-  result.push(cur.trim());
-  return result;
-}
-
-function importCSV(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const lines = e.target.result.split(/\r?\n/).filter(l => l.trim());
-    let updated = 0;
-    lines.slice(1).forEach(line => {          // skip header row
-      const cols = parseCSVLine(line);
-      const rowNum = parseInt(cols[0]) - 1;   // col 0 = 1-based row #
-      if (isNaN(rowNum) || rowNum < 0 || rowNum >= TESTS.length) return;
-      const status = (cols[10] || '').toLowerCase().trim();
-      if (STATUS_CYCLE.includes(status)) TESTS[rowNum].status = status;
-      TESTS[rowNum].resultCount  = cols[8]  || '';
-      TESTS[rowNum].detailFields = cols[9]  || '';
-      TESTS[rowNum].notes        = cols[11] || '';
-      updated++;
-    });
-    renderRows();
-    saveState();
-    const ind = document.getElementById('save-indicator');
-    if (ind) { ind.textContent = `✓ Imported ${updated} rows`; ind.style.color = 'var(--green)'; }
-  };
-  reader.readAsText(file);
-  event.target.value = '';   // allow re-importing the same file
-}
-
 // ─── Init ─────────────────────────────────────────────────────────────────────
-loadState();    // apply any saved progress before rendering
-renderRows();
 document.getElementById('last-updated').textContent = new Date().toISOString().slice(0,10);
-
-// Show "Saved" indicator if state already exists
-if (localStorage.getItem(STORAGE_KEY)) {
-  const ind = document.getElementById('save-indicator');
-  if (ind) { ind.textContent = '✓ Progress loaded'; ind.style.color = 'var(--green)'; }
-}
+initFromCSV();
 </script>
 </body>
 </html>
