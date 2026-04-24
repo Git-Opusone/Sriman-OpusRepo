@@ -20,8 +20,9 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+// /docs must be registered before public static so it isn't shadowed by the SPA catch-all
 app.use('/docs', express.static(path.join(__dirname, 'docs')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── Concurrency guard ────────────────────────────────────────────────────────
 // Each search spawns a full Chromium process (~400–500 MB RAM).
@@ -237,6 +238,15 @@ app.post('/api/search', async (req, res) => {
     activeSearches--;
     console.log(`[server] REST search finished — active: ${activeSearches}/${MAX_CONCURRENT}`);
   }
+});
+
+// ─── Serve docs (explicit fallback for any /docs/* request) ──────────────────
+
+app.get('/docs/*', (req, res, next) => {
+  const rel = req.path.replace(/^\/docs\//, '');
+  const abs = path.resolve(path.join(__dirname, 'docs'), rel);
+  if (!abs.startsWith(path.join(__dirname, 'docs'))) return next();
+  res.sendFile(abs, err => { if (err && !res.headersSent) next(); });
 });
 
 // ─── Serve frontend ───────────────────────────────────────────────────────────
