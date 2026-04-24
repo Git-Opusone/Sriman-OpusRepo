@@ -19,10 +19,17 @@ const { detectFromUrl, platformLabel }  = require('./src/platformDetector');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
+// ─── Docs routes — registered FIRST, before any middleware ───────────────────
+// These must come before express.static('public') and the SPA catch-all.
+app.get('/docs/ping', (_, res) => res.json({ ok: true, version: 'docs-fix-v3' }));
+app.get('/docs/:file', (req, res, next) => {
+  const abs = path.join(__dirname, 'docs', req.params.file);
+  if (fs.existsSync(abs)) return res.sendFile(abs);
+  next();
+});
+
 app.use(cors());
 app.use(express.json());
-// /docs must be registered before public static so it isn't shadowed by the SPA catch-all
-app.use('/docs', express.static(path.join(__dirname, 'docs')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // ─── Concurrency guard ────────────────────────────────────────────────────────
