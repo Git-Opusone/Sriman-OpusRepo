@@ -789,14 +789,14 @@
       show('errorBox');
     });
 
-    // Fallback if SSE itself errors (network issue)
+    // Fallback if SSE itself errors (network issue or server refused connection)
     evtSource.onerror = () => {
       if (evtSource.readyState === EventSource.CLOSED) return;
       evtSource.close();
       hide('statusBox');
       document.getElementById('searchBtn').disabled = false;
       const box = document.getElementById('errorBox');
-      box.textContent = '⚠ Connection lost. Please try again.';
+      box.textContent = '⚠ Connection lost or server busy — please try again in a moment.';
       show('errorBox');
     };
   }
