@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orchestrate-Mortgage — Staging Test Tracker v2.2</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:        #1e2a4a;
+    --blue:        #2563eb;
+    --blue-light:  #3b82f6;
+    --blue-pale:   #dbeafe;
+    --white:       #ffffff;
+    --gray-50:     #f8fafc;
+    --gray-100:    #f1f5f9;
+    --gray-200:    #e2e8f0;
+    --gray-300:    #cbd5e1;
+    --gray-500:    #64748b;
+    --gray-700:    #334155;
+    --gray-900:    #0f172a;
+    --green:       #16a34a;
+    --green-bg:    #f0fdf4;
+    --green-border:#bbf7d0;
+    --red:         #dc2626;
+    --red-bg:      #fef2f2;
+    --red-border:  #fecaca;
+    --amber:       #d97706;
+    --amber-bg:    #fffbeb;
+    --amber-border:#fcd34d;
+    --purple:      #7c3aed;
+    --teal:        #0d9488;
+    --orange:      #ea580c;
+    --indigo:      #4338ca;
+
+    /* Platform colors */
+    --p-patriot:  #1d4ed8;
+    --p-tyler:    #0d9488;
+    --p-vision:   #7c3aed;
+    --p-qpublic:  #ea580c;
+    --p-beacon:   #16a34a;
+    --p-bis:      #be185d;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--gray-700);
+    background: var(--gray-50);
+  }
+
+  /* ── Nav ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--navy);
+    padding: 0 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+    display: flex; align-items: center; gap: 0;
+  }
+  nav .nav-brand {
+    color: var(--white); font-weight: 700; font-size: 0.9rem;
+    white-space: nowrap; padding: 1rem 1.5rem 1rem 0;
+    border-right: 1px solid rgba(255,255,255,0.2); margin-right: 1rem;
+  }
+  nav .nav-brand span { color: var(--amber); }
+  nav a {
+    color: rgba(255,255,255,0.7); text-decoration: none;
+    font-size: 0.78rem; font-weight: 500;
+    padding: 1rem 0.75rem; white-space: nowrap;
+    border-bottom: 3px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  nav a:hover { color: var(--white); border-bottom-color: var(--blue-light); }
+  .nav-spacer { flex: 1; }
+  .nav-badge {
+    background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.85); border-radius: 999px;
+    padding: 0.2rem 0.7rem; font-size: 0.72rem; font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, var(--navy) 0%, #2d3f6e 100%);
+    color: var(--white);
+    padding: 2.5rem 2rem 2rem;
+    border-bottom: 3px solid var(--blue);
+  }
+  .header h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.3rem; }
+  .header h1 span { color: var(--amber); }
+  .header p { color: rgba(255,255,255,0.65); font-size: 0.88rem; margin-top: 0.25rem; }
+
+  /* ── Summary Cards ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .summary-card {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    text-align: center;
+  }
+  .summary-card .val {
+    font-size: 2rem; font-weight: 700; line-height: 1;
+    margin-bottom: 0.25rem;
+  }
+  .summary-card .lbl { font-size: 0.72rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.05em; }
+  .summary-card.pass  { border-color: var(--green-border);  background: var(--green-bg);  }
+  .summary-card.pass  .val { color: var(--green); }
+  .summary-card.fail  { border-color: var(--red-border);    background: var(--red-bg);    }
+  .summary-card.fail  .val { color: var(--red); }
+  .summary-card.pend  { border-color: var(--amber-border);  background: var(--amber-bg);  }
+  .summary-card.pend  .val { color: var(--amber); }
+  .summary-card.total .val { color: var(--blue); }
+
+  /* ── Controls ── */
+  .controls {
+    padding: 1rem 2rem;
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+    display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center;
+  }
+  .controls label { font-size: 0.78rem; font-weight: 600; color: var(--gray-500); }
+  .controls select, .controls input[type="text"] {
+    border: 1px solid var(--gray-300); border-radius: 6px;
+    padding: 0.35rem 0.65rem; font-size: 0.82rem; color: var(--gray-700);
+    background: var(--gray-50); outline: none;
+  }
+  .controls select:focus, .controls input[type="text"]:focus {
+    border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-pale);
+  }
+  .btn {
+    padding: 0.38rem 0.9rem; border-radius: 6px; border: none; cursor: pointer;
+    font-size: 0.82rem; font-weight: 600; transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: var(--blue); color: var(--white); }
+  .btn-outline { background: transparent; color: var(--gray-700); border: 1px solid var(--gray-300); }
+  .btn-success { background: var(--green); color: var(--white); }
+
+  /* ── Table ── */
+  .table-wrap {
+    padding: 1.5rem 2rem 3rem;
+    overflow-x: auto;
+  }
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 0.82rem;
+    background: var(--white);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+  }
+  thead th {
+    background: var(--navy);
+    color: rgba(255,255,255,0.85);
+    font-weight: 600; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 0.7rem 0.75rem;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+  }
+  thead th:hover { background: #2d3f6e; }
+  thead th .sort-icon { opacity: 0.4; margin-left: 4px; }
+  thead th.sorted-asc .sort-icon::after { content: ' ▲'; opacity: 1; }
+  thead th.sorted-desc .sort-icon::after { content: ' ▼'; opacity: 1; }
+
+  tbody tr { border-bottom: 1px solid var(--gray-100); transition: background 0.12s; }
+  tbody tr:hover { background: var(--blue-pale); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 0.65rem 0.75rem; vertical-align: top; }
+
+  /* row status coloring */
+  tbody tr.status-pass   { border-left: 3px solid var(--green); }
+  tbody tr.status-fail   { border-left: 3px solid var(--red); background: #fff8f8; }
+  tbody tr.status-pend   { border-left: 3px solid var(--amber-border); }
+  tbody tr.status-skip   { border-left: 3px solid var(--gray-300); opacity: 0.6; }
+  tbody tr.status-running { border-left: 3px solid var(--blue); background: #f0f7ff; }
+
+  /* Status badges */
+  .badge {
+    display: inline-flex; align-items: center; gap: 0.3em;
+    padding: 0.2em 0.65em; border-radius: 999px;
+    font-size: 0.72rem; font-weight: 700; white-space: nowrap;
+    cursor: pointer; user-select: none;
+  }
+  .badge-pass    { background: var(--green-bg);  color: var(--green);  border: 1px solid var(--green-border); }
+  .badge-fail    { background: var(--red-bg);    color: var(--red);    border: 1px solid var(--red-border); }
+  .badge-pending { background: var(--amber-bg);  color: var(--amber);  border: 1px solid var(--amber-border); }
+  .badge-running { background: var(--blue-pale); color: var(--blue);   border: 1px solid #93c5fd; }
+  .badge-skip    { background: var(--gray-100);  color: var(--gray-500); border: 1px solid var(--gray-300); }
+
+  /* Platform pills */
+  .plat {
+    display: inline-block; padding: 0.15em 0.6em;
+    border-radius: 5px; font-size: 0.7rem; font-weight: 700;
+    color: var(--white); white-space: nowrap;
+  }
+  .plat-patriot { background: var(--p-patriot); }
+  .plat-tyler   { background: var(--p-tyler); }
+  .plat-vision  { background: var(--p-vision); }
+  .plat-qpublic { background: var(--p-qpublic); }
+  .plat-beacon  { background: var(--p-beacon); }
+  .plat-bis     { background: var(--p-bis); }
+
+  /* Editable cells */
+  [contenteditable="true"] {
+    outline: none; min-width: 40px;
+    border-radius: 4px; padding: 1px 3px;
+    transition: background 0.15s;
+  }
+  [contenteditable="true"]:focus {
+    background: #e0edff;
+    box-shadow: 0 0 0 1px var(--blue);
+  }
+  [contenteditable="true"]:empty::before {
+    content: attr(data-placeholder);
+    color: var(--gray-300);
+    pointer-events: none;
+  }
+
+  .url-cell a {
+    color: var(--blue); text-decoration: none;
+    font-size: 0.75rem; word-break: break-all;
+  }
+  .url-cell a:hover { text-decoration: underline; }
+
+  .note-cell { color: var(--gray-500); font-size: 0.76rem; }
+  .warn-note { color: var(--amber); }
+  .err-note  { color: var(--red); }
+  .ok-note   { color: var(--green); }
+
+  /* ── Legend ── */
+  .legend {
+    padding: 1rem 2rem;
+    background: var(--gray-50);
+    border-top: 1px solid var(--gray-200);
+    display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: flex-start;
+  }
+  .legend h3 { font-size: 0.75rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.4rem; }
+  .legend-group { display: flex; flex-direction: column; gap: 0.3rem; }
+  .legend-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; }
+
+  /* ── Edge Cases Section ── */
+  .edge-cases {
+    margin: 1.5rem 2rem;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .edge-cases h2 {
+    background: var(--navy); color: var(--white);
+    padding: 0.75rem 1.25rem;
+    font-size: 0.88rem; font-weight: 700;
+  }
+  .edge-list { padding: 1rem 1.25rem; }
+  .edge-item {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--gray-100);
+    font-size: 0.82rem;
+  }
+  .edge-item:last-child { border-bottom: none; }
+  .edge-plat { flex-shrink: 0; }
+  .edge-desc { flex: 1; color: var(--gray-700); }
+  .edge-desc strong { color: var(--gray-900); }
+  .edge-warn { background: var(--amber-bg); border-radius: 5px; padding: 0.1em 0.5em; color: var(--amber); font-size: 0.72rem; font-weight: 700; flex-shrink: 0; }
+
+  /* ── Export bar ── */
+  .export-bar {
+    padding: 1rem 2rem;
+    background: var(--white);
+    border-top: 1px solid var(--gray-200);
+    display: flex; align-items: center; gap: 0.75rem;
+    font-size: 0.82rem; color: var(--gray-500);
+  }
+
+  /* Hidden rows */
+  tr.hidden { display: none; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .summary-grid { grid-template-columns: repeat(3, 1fr); }
+    .table-wrap { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">Orchestrate<span>-Mortgage</span></div>
+  <a href="#summary">Summary</a>
+  <a href="#tests">Test Matrix</a>
+  <a href="#edge-cases">Edge Cases</a>
+  <div class="nav-spacer"></div>
+  <span class="nav-badge" id="nav-status">v2.2 Staging</span>
+</nav>
+
+<!-- HEADER -->
+<div class="header">
+  <h1>Staging Test Tracker — <span>v2.2</span></h1>
+  <p>Platform: Orchestrate-Mortgage Property Tax &amp; Title Search &nbsp;|&nbsp; Branch: claude/add-groq-api-integration-SE8jL &nbsp;|&nbsp; Last Updated: <span id="last-updated">2026-04-24</span></p>
+</div>
+
+<!-- SUMMARY CARDS -->
+<div class="summary-grid" id="summary">
+  <div class="summary-card total">
+    <div class="val" id="stat-total">0</div>
+    <div class="lbl">Total Tests</div>
+  </div>
+  <div class="summary-card pass">
+    <div class="val" id="stat-pass">0</div>
+    <div class="lbl">Passed</div>
+  </div>
+  <div class="summary-card fail">
+    <div class="val" id="stat-fail">0</div>
+    <div class="lbl">Failed</div>
+  </div>
+  <div class="summary-card pend">
+    <div class="val" id="stat-pend">0</div>
+    <div class="lbl">Pending</div>
+  </div>
+  <div class="summary-card">
+    <div class="val" id="stat-cov" style="color:var(--purple)">0%</div>
+    <div class="lbl">Coverage</div>
+  </div>
+  <div class="summary-card">
+    <div class="val" id="stat-plat" style="color:var(--navy)">6</div>
+    <div class="lbl">Platforms</div>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <label>Filter Platform:</label>
+  <select id="filter-platform">
+    <option value="all">All Platforms</option>
+    <option value="patriot">Patriot Properties</option>
+    <option value="tyler">Tyler iasWorld</option>
+    <option value="vision">Vision Gov Solutions</option>
+    <option value="qpublic">qPublic (Schneider)</option>
+    <option value="beacon">Beacon (Schneider)</option>
+    <option value="bis">BIS / Harris</option>
+  </select>
+
+  <label>Filter Status:</label>
+  <select id="filter-status">
+    <option value="all">All Statuses</option>
+    <option value="pass">Pass</option>
+    <option value="fail">Fail</option>
+    <option value="pending">Pending</option>
+    <option value="running">Running</option>
+    <option value="skip">Skip</option>
+  </select>
+
+  <label>Search:</label>
+  <input type="text" id="filter-text" placeholder="state, county, name…" style="width:180px">
+
+  <button class="btn btn-outline" onclick="resetFilters()">Reset</button>
+  <div style="flex:1"></div>
+  <button class="btn btn-success" onclick="exportCSV()">Export CSV</button>
+</div>
+
+<!-- TEST TABLE -->
+<div class="table-wrap" id="tests">
+  <table id="test-table">
+    <thead>
+      <tr>
+        <th onclick="sortTable(0)" title="Sort">#<span class="sort-icon"></span></th>
+        <th onclick="sortTable(1)">State<span class="sort-icon"></span></th>
+        <th onclick="sortTable(2)">County / Jurisdiction<span class="sort-icon"></span></th>
+        <th onclick="sortTable(3)">Platform<span class="sort-icon"></span></th>
+        <th>URL</th>
+        <th onclick="sortTable(5)">Search Type<span class="sort-icon"></span></th>
+        <th>Sample Name / Value</th>
+        <th>Sample Parcel / Account #</th>
+        <th onclick="sortTable(8)">Result Count<span class="sort-icon"></span></th>
+        <th onclick="sortTable(9)">Detail Fields<span class="sort-icon"></span></th>
+        <th onclick="sortTable(10)">Status<span class="sort-icon"></span></th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody id="test-tbody">
+      <!-- Rows injected by JS -->
+    </tbody>
+  </table>
+</div>
+
+<!-- EDGE CASES -->
+<div class="edge-cases" id="edge-cases">
+  <h2>Known Edge Cases &amp; Watch Items</h2>
+  <div class="edge-list">
+    <div class="edge-item">
+      <span class="edge-plat"><span class="plat plat-patriot">Patriot</span></span>
+      <div class="edge-desc"><strong>Frameset detail pages.</strong> Summary.asp?AccountNumber=N is itself a frameset — extract from summary-bottom.asp sub-frame. Must use <code>waitUntil:'load'</code> not <code>networkidle</code>.</div>
+    </div>
+    <div class="edge-item">
+      <span class="edge-plat"><span class="plat plat-patriot">Patriot</span></span>
+      <div class="edge-desc"><strong>All Patriot URLs use subdomain format.</strong> Pattern: <code>{town}[{stateCode}].patriotproperties.com</code> — e.g. <code>goshen.patriotproperties.com</code> (NH), <code>barnardvt.patriotproperties.com</code> (VT), <code>somersworthnh.patriotproperties.com</code> (NH). No <code>www.patriotproperties.com/{TOWN}/</code> main-domain entries exist in counties.json. NOTE: ME has zero Patriot counties (Vision + generic only).</div>
+      <span class="edge-warn">IMPORTANT</span>
+    </div>
+    <div class="edge-item">
+      <span class="edge-plat"><span class="plat plat-tyler">Tyler</span></span>
+      <div class="edge-desc"><strong>sIndex session consumed on row-0 click.</strong> Row 0 detail extracted during discovery; rows 1-N navigate to sIndex=N directly — do NOT navigate back to search URL (resets session).</div>
+    </div>
+    <div class="edge-item">
+      <span class="edge-plat"><span class="plat plat-tyler">Tyler</span></span>
+      <div class="edge-desc"><strong>MA public access vs standard iasWorld.</strong> mapublicaccess.tylerhost.net uses <code>id="inpOwner"</code>; standard iasWorld uses different input IDs. Handler has branch for both.</div>
+    </div>
+    <div class="edge-item">
+      <span class="edge-plat"><span class="plat plat-qpublic">qPublic</span></span>
+      <div class="edge-desc"><strong>IP block from non-US servers.</strong> GA/Gwinnett and schneidercorp.com GA/SC properties are IP-blocked from non-US IPv6. Code is correct — run GA/SC tests from US-hosted staging server.</div>
+      <span class="edge-warn">US SERVER REQUIRED</span>
+    </div>
+    <div class="edge-item">
+      <span class="edge-plat"><span class="plat plat-qpublic">qPublic</span></span>
+      <div class="edge-desc"><strong>ValidateUser.aspx redirect.</strong> Some qPublic counties show a disclaimer page before the app. Handler extracts params → clicks "Continue" → waits for JS redirect → navigates to app root.</div>
+    </div>
+    <div class="edge-item">
+      <span class="edge-plat"><span class="plat plat-beacon">Beacon</span></span>
+      <div class="edge-desc"><strong>Angular SPA content delay.</strong> Beacon/qPublic Angular renders after <code>networkidle</code>. <code>waitForAngularContent()</code> polls <code>app-parcel-summary</code> / <code>.tt-upm-parcel-detail-section</code> for &gt;80 chars before extracting.</div>
+    </div>
+    <div class="edge-item">
+      <span class="edge-plat"><span class="plat plat-beacon">Beacon</span></span>
+      <div class="edge-desc"><strong>PageTypeID= URL format.</strong> Beacon URL builder strips <code>PageTypeID=</code> and appends <code>PageType=Search</code>. Verify the correct search page is reached for <code>App=</code> style URLs.</div>
+    </div>
+    <div class="edge-item">
+      <span class="edge-plat"><span class="plat plat-vision">Vision</span></span>
+      <div class="edge-desc"><strong>Double-slash URLs.</strong> Some Vision towns (e.g. Strafford NH) have double slash in URL — <code>gis.vgsi.com/Straffordnh//</code>. Confirm platformDetector normalizes or tolerates this.</div>
+    </div>
+    <div class="edge-item">
+      <span class="edge-plat"><span class="plat plat-bis">BIS</span></span>
+      <div class="edge-desc"><strong>XHR intercept required.</strong> BIS intercepts <code>/search/SearchResults</code> response with <code>page.waitForResponse()</code> BEFORE form submit. Direct re-fetch returns HTML (session-bound) — do not re-fetch.</div>
+    </div>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-group">
+    <h3>Status</h3>
+    <div class="legend-row"><span class="badge badge-pass">✓ PASS</span> Handler returned results, detail fields extracted</div>
+    <div class="legend-row"><span class="badge badge-fail">✗ FAIL</span> Handler returned null / threw / wrong data</div>
+    <div class="legend-row"><span class="badge badge-pending">⏳ PENDING</span> Not yet run on staging</div>
+    <div class="legend-row"><span class="badge badge-running">▶ RUNNING</span> Test in progress</div>
+    <div class="legend-row"><span class="badge badge-skip">— SKIP</span> Excluded (IP-block, env issue, etc.)</div>
+  </div>
+  <div class="legend-group">
+    <h3>Tips</h3>
+    <div class="legend-row">Click a status badge to cycle through statuses</div>
+    <div class="legend-row">Click Result Count / Detail Fields / Notes cells to edit inline</div>
+    <div class="legend-row">Run: <code>node scripts/testHandler.js &lt;platform&gt; &lt;url&gt; &lt;lastName&gt;</code></div>
+  </div>
+  <div class="legend-group">
+    <h3>Platforms</h3>
+    <div class="legend-row"><span class="plat plat-patriot">Patriot</span> Classic ASP framesets — MA NH CT ME RI VT</div>
+    <div class="legend-row"><span class="plat plat-tyler">Tyler</span> iasWorld ASP.NET — TX CA AZ MA (public access)</div>
+    <div class="legend-row"><span class="plat plat-vision">Vision</span> gis.vgsi.com ASP.NET — CT NH RI ME</div>
+    <div class="legend-row"><span class="plat plat-qpublic">qPublic</span> Schneider Angular SPA — GA SC FL CO (schneidercorp.com)</div>
+    <div class="legend-row"><span class="plat plat-beacon">Beacon</span> Schneider Angular SPA — MN WI IA AR CO FL (beacon.schneidercorp.com)</div>
+    <div class="legend-row"><span class="plat plat-bis">BIS</span> BIS/Harris React SPA — ME CA (harriscomputer.com)</div>
+  </div>
+</div>
+
+<!-- EXPORT BAR -->
+<div class="export-bar">
+  <span>Tip: click any <strong>Result Count</strong>, <strong>Detail Fields</strong>, or <strong>Notes</strong> cell to edit. Click a status badge to toggle.</span>
+  <div style="flex:1"></div>
+  <button class="btn btn-outline" onclick="exportCSV()">Export CSV</button>
+</div>
+
+<script>
+// ─── Test Data ───────────────────────────────────────────────────────────────
+// Columns: state, county, platform, url, searchType, sampleName, sampleParcel, resultCount, detailFields, status, notes
+const TESTS = [
+  // ── CONFIRMED PASS ────────────────────────────────────────────────────────
+  {
+    state: 'MA', county: 'Plymouth County', platform: 'patriot',
+    url: 'https://plymouth.patriotproperties.com/default.asp',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '077C-157A-014-00AP / Acct 29507',
+    resultCount: '50', detailFields: '30', status: 'pass',
+    notes: 'Sample: SMITH DAVID E, 14 Abigail\'s Path. 30 detail fields confirmed.'
+  },
+  {
+    state: 'NH', county: 'Goshen', platform: 'patriot',
+    url: 'https://goshen.patriotproperties.com/',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '5A-0-66-0 / Acct 686',
+    resultCount: '6', detailFields: '31', status: 'pass',
+    notes: 'Sample: MORZUCH BERNARD J & SMITH CHERYL D, 53 Aberdeen Rd. 31 fields confirmed.'
+  },
+  {
+    state: 'MA', county: 'State Public Access (Tyler)', platform: 'tyler',
+    url: 'http://mapublicaccess.tylerhost.net/search/commonsearch.aspx?mode=address',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: 'sIndex=0 / 7 Bob\'s Hill',
+    resultCount: '25+', detailFields: '20+', status: 'pass',
+    notes: 'Sample: SMITH, AARON C. sIndex session confirmed. id="inpOwner" branch used.'
+  },
+  {
+    state: 'NH', county: 'Alton', platform: 'vision',
+    url: 'http://gis.vgsi.com/AltonNH/',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: 'Parcel.aspx?pid=N',
+    resultCount: '10', detailFields: '98–121', status: 'pass',
+    notes: 'async.asmx/GetData2 API confirmed. 98-121 detail fields via VGSI API.'
+  },
+  {
+    state: 'TX', county: 'Andrews County', platform: 'tyler',
+    url: 'https://esearch.andrewscad.org/',
+    searchType: 'Owner Name / Parcel ID', sampleName: '(POC test)',
+    sampleParcel: '—',
+    resultCount: '—', detailFields: '—', status: 'pass',
+    notes: 'Original POC. Search by owner name + property ID confirmed. Session-based URL.'
+  },
+
+  // ── PENDING — PATRIOT (additional NE states) ──────────────────────────────
+  {
+    state: 'VT', county: 'Barnard', platform: 'patriot',
+    url: 'https://barnardvt.patriotproperties.com/',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'VT subdomain pattern (barnardvt.patriotproperties.com). Verify detector handles subdomain.'
+  },
+  {
+    state: 'VT', county: 'Braintree', platform: 'patriot',
+    url: 'https://braintree.patriotproperties.com/',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'Second VT town — confirm multi-town consistency for subdomain format.'
+  },
+  {
+    state: 'NH', county: 'Somersworth', platform: 'patriot',
+    url: 'http://somersworthnh.patriotproperties.com/default.asp',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'NH Patriot — subdomain includes state code suffix (somersworthnh). Confirm multi-word/hyphen town handling.'
+  },
+  {
+    state: 'CT', county: 'Madison', platform: 'patriot',
+    url: 'https://www.patriotproperties.com/MADISON/default.asp',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'CT Patriot. Confirm CT coverage (counties.json shows both Patriot & qPublic in CT).'
+  },
+  {
+    state: 'RI', county: 'Charlestown', platform: 'patriot',
+    url: 'https://www.patriotproperties.com/CHARLESTOWN/default.asp',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'RI Patriot. RI also has Vision towns — confirm correct platform detection for each.'
+  },
+
+  // ── PENDING — TYLER (additional counties) ────────────────────────────────
+  {
+    state: 'AZ', county: 'Yuma County', platform: 'tyler',
+    url: 'https://yumacountyaz-assessor.tylerhost.net/assessor/web/',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'Tyler tylerhost.net pattern (AZ). Standard iasWorld — not MA public access branch.'
+  },
+  {
+    state: 'CA', county: 'Fresno County', platform: 'tyler',
+    url: 'https://fresnocountyca-web.tylerhost.net/web/',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'Tyler CA — test disclaimer page handling if present.'
+  },
+  {
+    state: 'CA', county: 'Humboldt County', platform: 'tyler',
+    url: 'https://humboldtcountyca-web.tylerhost.net/web/',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'Additional CA Tyler — verify Humboldt vs Fresno parity in field extraction.'
+  },
+
+  // ── PENDING — VISION (additional towns) ──────────────────────────────────
+  {
+    state: 'CT', county: 'Bolton', platform: 'vision',
+    url: 'http://gis.vgsi.com/BoltonCT/',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'CT Vision. Confirm VGSI async.asmx/GetData2 returns same field count as NH.'
+  },
+  {
+    state: 'CT', county: 'Bridgewater', platform: 'vision',
+    url: 'http://gis.vgsi.com/bridgewaterct/Search.aspx',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'URL includes /Search.aspx suffix — verify platformDetector accepts this form.'
+  },
+  {
+    state: 'RI', county: 'Charlestown', platform: 'vision',
+    url: 'http://gis.vgsi.com/CharlestownRI/',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'RI Vision. Note: counties.json also has Charlestown as Patriot — check correct platform.'
+  },
+  {
+    state: 'ME', county: 'Cumberland County', platform: 'vision',
+    url: 'https://gis.vgsi.com/cumberlandme/Search.aspx',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'ME Vision (HTTPS variant). Test lowercase town slug in URL.'
+  },
+  {
+    state: 'NH', county: 'Alton (2nd run)', platform: 'vision',
+    url: 'http://gis.vgsi.com/AltonNH/',
+    searchType: 'Parcel ID', sampleName: '(use known parcel from pass run)',
+    sampleParcel: '(from run #4)',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'Re-run with parcel ID search to confirm pid-based lookup returns correct detail page.'
+  },
+
+  // ── PENDING — QPUBLIC (new platform) ─────────────────────────────────────
+  {
+    state: 'SC', county: 'Abbeville County', platform: 'qpublic',
+    url: 'https://qpublic.schneidercorp.com/Application.aspx?AppID=613&LayerID=10508&PageTypeID=2&PageID=4483',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'qPublic SC — PageTypeID=2 (search page). No IP-block issue for SC.'
+  },
+  {
+    state: 'SC', county: 'Aiken County', platform: 'qpublic',
+    url: 'https://qpublic.schneidercorp.com/Application.aspx?App=AikenCountySC&Layer=Parcels&PageType=Search',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'qPublic SC — App= URL style (no numeric AppID). Verify URL builder produces correct search URL.'
+  },
+  {
+    state: 'FL', county: 'Alachua County', platform: 'qpublic',
+    url: 'https://qpublic.schneidercorp.com/Application.aspx?AppID=1081&LayerID=26490&PageTypeID=2&PageID=10768',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'FL qPublic — schneidercorp.com. No known IP-block for FL. Test Angular SPA rendering.'
+  },
+  {
+    state: 'FL', county: 'Bay County', platform: 'qpublic',
+    url: 'https://qpublic.schneidercorp.com/application.aspx?app=BayCountyFL&PageType=Search',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'qPublic FL — lowercase application.aspx. Confirm case-insensitive URL routing works.'
+  },
+  {
+    state: 'GA', county: 'Appling County', platform: 'qpublic',
+    url: 'http://www.qpublic.net/ga/appling/search.html',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'skip',
+    notes: 'SKIP from non-US dev machine — IP-blocked. Re-test from US staging server. Old qpublic.net URL (not schneidercorp.com).'
+  },
+
+  // ── PENDING — BEACON (new platform) ──────────────────────────────────────
+  {
+    state: 'MN', county: 'Benton County', platform: 'beacon',
+    url: 'http://beacon.schneidercorp.com/Application.aspx?AppID=386&LayerID=5759&PageTypeID=2&PageID=3098',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'Beacon MN — primary Beacon state. Test Angular SPA + waitForAngularContent().'
+  },
+  {
+    state: 'MN', county: 'Blue Earth County', platform: 'beacon',
+    url: 'http://beacon.schneidercorp.com/?site=BlueEarthCountyMN',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'Beacon MN — ?site= URL style. Verify URL builder correctly navigates to search page.'
+  },
+  {
+    state: 'WI', county: 'Barron County', platform: 'beacon',
+    url: 'https://beacon.schneidercorp.com/Application.aspx?App=BarronCountyWI&PageType=Map',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'Beacon WI — PageType=Map (not Search). URL builder must switch to PageType=Search.'
+  },
+  {
+    state: 'IA', county: 'Adams County', platform: 'beacon',
+    url: 'https://beacon.schneidercorp.com/Application.aspx?AppID=1136&LayerID=28790&PageTypeID=2&PageID=11979',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'Beacon IA — numeric AppID style. Third distinct Beacon state for coverage.'
+  },
+  {
+    state: 'AR', county: 'Crawford County', platform: 'beacon',
+    url: 'http://beacon.schneidercorp.com/Application.aspx?AppID=374&LayerID=5195&PageTypeID=1',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'Beacon AR — PageTypeID=1 (not 2). Verify URL builder strips and appends correct search params.'
+  },
+  {
+    state: 'CO', county: 'Park County', platform: 'beacon',
+    url: 'https://beacon.schneidercorp.com/Application.aspx?AppID=1085&LayerID=26739&PageTypeID=2&PageID=10841',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'Beacon CO — additional state for Beacon coverage.'
+  },
+
+  // ── PENDING — BIS / Harris (new platform) ────────────────────────────────
+  {
+    state: 'ME', county: 'Lisbon', platform: 'bis',
+    url: 'http://reonline.harriscomputer.com/research.aspx?ClientID=1013',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'BIS/Harris ME — harriscomputer.com. Intercept /search/SearchResults XHR. Verify {resultsList} shape.'
+  },
+  {
+    state: 'ME', county: 'North Berwick', platform: 'bis',
+    url: 'http://reonline.harriscomputer.com/research.aspx?ClientID=1028',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'BIS/Harris ME — second ClientID to confirm session-bound XHR intercept works per ClientID.'
+  },
+  {
+    state: 'CA', county: 'Ventura County', platform: 'bis',
+    url: 'https://assessor.countyofventura.org/research/research.html',
+    searchType: 'Owner Name (Last)', sampleName: 'Smith',
+    sampleParcel: '—',
+    resultCount: '', detailFields: '', status: 'pending',
+    notes: 'BIS CA — different host pattern (not harriscomputer.com). Confirm XHR intercept URL path is same.'
+  },
+];
+
+// ─── Status cycle ─────────────────────────────────────────────────────────────
+const STATUS_CYCLE = ['pending', 'running', 'pass', 'fail', 'skip'];
+const STATUS_LABELS = { pass:'✓ PASS', fail:'✗ FAIL', pending:'⏳ PENDING', running:'▶ RUNNING', skip:'— SKIP' };
+const STATUS_CLS    = { pass:'badge-pass', fail:'badge-fail', pending:'badge-pending', running:'badge-running', skip:'badge-skip' };
+
+function nextStatus(cur) {
+  const i = STATUS_CYCLE.indexOf(cur);
+  return STATUS_CYCLE[(i + 1) % STATUS_CYCLE.length];
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function platBadge(p) {
+  return `<span class="plat plat-${p}">${p === 'qpublic' ? 'qPublic' : p.charAt(0).toUpperCase()+p.slice(1)}</span>`;
+}
+
+function renderRows() {
+  const tbody = document.getElementById('test-tbody');
+  tbody.innerHTML = '';
+  TESTS.forEach((t, i) => {
+    const tr = document.createElement('tr');
+    tr.dataset.index = i;
+    tr.dataset.platform = t.platform;
+    tr.dataset.status = t.status;
+    tr.className = `status-${t.status}`;
+
+    const shortUrl = t.url.replace(/^https?:\/\//, '').replace(/\?.*/, '').substring(0, 50);
+
+    tr.innerHTML = `
+      <td style="font-weight:600;color:var(--gray-500);text-align:center">${i+1}</td>
+      <td><strong>${t.state}</strong></td>
+      <td>${t.county}</td>
+      <td>${platBadge(t.platform)}</td>
+      <td class="url-cell"><a href="${t.url}" target="_blank" title="${t.url}">${shortUrl}…</a></td>
+      <td>${t.searchType}</td>
+      <td>${t.sampleName}</td>
+      <td style="font-family:monospace;font-size:0.76rem">${t.sampleParcel}</td>
+      <td style="text-align:center;font-weight:600" contenteditable="true" data-placeholder="—">${t.resultCount}</td>
+      <td style="text-align:center;font-weight:600" contenteditable="true" data-placeholder="—">${t.detailFields}</td>
+      <td><span class="badge ${STATUS_CLS[t.status]}" onclick="cycleStatus(this,${i})">${STATUS_LABELS[t.status]}</span></td>
+      <td class="note-cell" contenteditable="true" data-placeholder="add notes…">${t.notes}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  updateStats();
+}
+
+function cycleStatus(el, idx) {
+  const cur = TESTS[idx].status;
+  const next = nextStatus(cur);
+  TESTS[idx].status = next;
+  el.className = `badge ${STATUS_CLS[next]}`;
+  el.textContent = STATUS_LABELS[next];
+  const tr = el.closest('tr');
+  tr.className = `status-${next}`;
+  tr.dataset.status = next;
+  updateStats();
+}
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+function updateStats() {
+  const all = TESTS;
+  const pass  = all.filter(t => t.status === 'pass').length;
+  const fail  = all.filter(t => t.status === 'fail').length;
+  const pend  = all.filter(t => t.status === 'pending' || t.status === 'running').length;
+  const done  = pass + fail;
+  document.getElementById('stat-total').textContent = all.length;
+  document.getElementById('stat-pass').textContent  = pass;
+  document.getElementById('stat-fail').textContent  = fail;
+  document.getElementById('stat-pend').textContent  = pend;
+  document.getElementById('stat-cov').textContent   = done === 0 ? '0%' : Math.round(done / all.length * 100) + '%';
+}
+
+// ─── Filter ───────────────────────────────────────────────────────────────────
+function applyFilters() {
+  const plat   = document.getElementById('filter-platform').value;
+  const status = document.getElementById('filter-status').value;
+  const text   = document.getElementById('filter-text').value.toLowerCase();
+  document.querySelectorAll('#test-tbody tr').forEach(tr => {
+    const pMatch = plat === 'all' || tr.dataset.platform === plat;
+    const sMatch = status === 'all' || tr.dataset.status === status;
+    const tMatch = !text || tr.textContent.toLowerCase().includes(text);
+    tr.classList.toggle('hidden', !(pMatch && sMatch && tMatch));
+  });
+}
+
+function resetFilters() {
+  document.getElementById('filter-platform').value = 'all';
+  document.getElementById('filter-status').value   = 'all';
+  document.getElementById('filter-text').value     = '';
+  applyFilters();
+}
+
+document.getElementById('filter-platform').addEventListener('change', applyFilters);
+document.getElementById('filter-status').addEventListener('change', applyFilters);
+document.getElementById('filter-text').addEventListener('input', applyFilters);
+
+// ─── Sort ─────────────────────────────────────────────────────────────────────
+let sortCol = -1, sortAsc = true;
+function sortTable(col) {
+  const tbody = document.getElementById('test-tbody');
+  const rows  = Array.from(tbody.querySelectorAll('tr'));
+  sortAsc = (sortCol === col) ? !sortAsc : true;
+  sortCol = col;
+  rows.sort((a, b) => {
+    const aT = a.cells[col]?.textContent.trim() || '';
+    const bT = b.cells[col]?.textContent.trim() || '';
+    const n  = parseFloat(aT) - parseFloat(bT);
+    const cmp = isNaN(n) ? aT.localeCompare(bT) : n;
+    return sortAsc ? cmp : -cmp;
+  });
+  rows.forEach(r => tbody.appendChild(r));
+  document.querySelectorAll('thead th').forEach((th, i) => {
+    th.classList.toggle('sorted-asc',  i === col && sortAsc);
+    th.classList.toggle('sorted-desc', i === col && !sortAsc);
+  });
+}
+
+// ─── Export CSV ───────────────────────────────────────────────────────────────
+function exportCSV() {
+  const headers = ['#','State','County','Platform','URL','Search Type','Sample Name','Sample Parcel/Acct','Result Count','Detail Fields','Status','Notes'];
+  const rows = TESTS.map((t, i) => [
+    i+1, t.state, t.county, t.platform, t.url,
+    t.searchType, t.sampleName, t.sampleParcel,
+    // pick up live edits from table cells
+    document.querySelectorAll('#test-tbody tr')[i]?.cells[8]?.textContent?.trim() || t.resultCount,
+    document.querySelectorAll('#test-tbody tr')[i]?.cells[9]?.textContent?.trim() || t.detailFields,
+    t.status,
+    document.querySelectorAll('#test-tbody tr')[i]?.cells[11]?.textContent?.trim() || t.notes,
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = Object.assign(document.createElement('a'), {
+    href: 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv),
+    download: `staging-test-tracker-${new Date().toISOString().slice(0,10)}.csv`
+  });
+  a.click();
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+renderRows();
+document.getElementById('last-updated').textContent = new Date().toISOString().slice(0,10);
+</script>
+</body>
+</html>

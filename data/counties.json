@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-04-23",
+  "lastUpdated": "2026-04-24",
   "states": {
     "AL": {
       "Autauga": {
@@ -3946,7 +3946,7 @@
         "netronlinePath": "/state/GA/county/greene"
       },
       "Gwinnett": {
-        "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=1282&LayerID=43872&PageType=Search",
+        "url": "https://qpublic.schneidercorp.com/Application.aspx?AppID=1282&LayerID=43872&PageTypeID=2&PageID=16058",
         "platform": "qpublic",
         "lastVerified": null,
         "netronlinePath": "/state/GA/county/gwinnett"
@@ -10347,7 +10347,7 @@
       "Plymouth": {
         "url": "https://plymouth.patriotproperties.com/default.asp",
         "platform": "patriot",
-        "lastVerified": null,
+        "lastVerified": "2026-04-23",
         "netronlinePath": "/state/MA/county/plymouth_township"
       },
       "Suffolk": {
@@ -11767,9 +11767,9 @@
         "netronlinePath": "/state/MA/county/plainfield_township"
       },
       "Plainville": {
-        "url": "http://www.axisgis.com/PlainvilleMA/Default.aspx?Splash=True",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://plainville.patriotproperties.com/",
+        "platform": "patriot",
+        "lastVerified": "2026-04-24",
         "netronlinePath": "/state/MA/county/plainville_township"
       },
       "Plympton": {
@@ -22945,8 +22945,8 @@
         "netronlinePath": "/state/TX/county/nacogdoches"
       },
       "Navarro": {
-        "url": "https://esearch.navarrocad.com/",
-        "platform": "bis",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/navarro"
       },
@@ -22987,8 +22987,8 @@
         "netronlinePath": "/state/TX/county/orange"
       },
       "Palo Pinto": {
-        "url": "https://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=PALOPINTOCAD",
-        "platform": "generic",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/palo_pinto"
       },
@@ -23023,8 +23023,8 @@
         "netronlinePath": "/state/TX/county/polk"
       },
       "Potter": {
-        "url": "https://www.prad.org/property-search",
-        "platform": "generic",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/potter"
       },
@@ -23041,8 +23041,8 @@
         "netronlinePath": "/state/TX/county/rains"
       },
       "Randall": {
-        "url": "https://www.prad.org/property-search",
-        "platform": "generic",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/randall"
       },
@@ -23089,8 +23089,8 @@
         "netronlinePath": "/state/TX/county/robertson"
       },
       "Rockwall": {
-        "url": "https://www.rockwallcad.com/",
-        "platform": "generic",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/rockwall"
       },
@@ -23353,8 +23353,8 @@
         "netronlinePath": "/state/TX/county/wheeler"
       },
       "Wichita": {
-        "url": "https://esearch.wadtx.com/",
-        "platform": "bis",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/wichita"
       },
@@ -23389,8 +23389,8 @@
         "netronlinePath": "/state/TX/county/winkler"
       },
       "Wise": {
-        "url": "https://esearch.wise-cad.com/",
-        "platform": "bis",
+        "url": null,
+        "platform": null,
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/wise"
       },
@@ -24049,8 +24049,8 @@
         "netronlinePath": "/state/VT/county/fletcher"
       },
       "Franklin": {
-        "url": "https://franklin.patriotproperties.com/",
-        "platform": "patriot",
+        "url": null,
+        "platform": "unknown",
         "lastVerified": null,
         "netronlinePath": "/state/VT/county/franklin"
       },

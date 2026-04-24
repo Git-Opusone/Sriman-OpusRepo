@@ -103,12 +103,28 @@ function getCountyUrl(stateCode, countyName) {
 /**
  * Update a county's URL in the local database (called after live lookup).
  */
+const TRUSTED_PLATFORMS = [
+  'schneidercorp.com', 'tylerhost.net', 'tylertech.com', 'patriotproperties.com',
+  'vgsi.com', 'visionappraisal.com', 'bisconsultants.com', 'cadcentral.com',
+  'qpublic.net',
+];
+
+function isTrustedPlatformUrl(url) {
+  const u = (url || '').toLowerCase();
+  return TRUSTED_PLATFORMS.some(d => u.includes(d));
+}
+
 function updateCountyUrl(stateCode, countyName, newUrl, platform) {
   const db    = loadDb();
   const found = findCountyEntry(db, stateCode, countyName);
   const today = new Date().toISOString().split('T')[0];
 
   if (found) {
+    // Never overwrite a known-platform URL (Patriot, Tyler, etc.) with a generic one
+    if (isTrustedPlatformUrl(found.entry.url) && !isTrustedPlatformUrl(newUrl)) {
+      console.log(`[countyDirectory] Skipping overwrite of trusted platform URL for ${stateCode}/${countyName}: ${found.entry.url} → rejected ${newUrl}`);
+      return;
+    }
     found.entry.url          = newUrl;
     found.entry.platform     = platform || found.entry.platform;
     found.entry.lastVerified = today;

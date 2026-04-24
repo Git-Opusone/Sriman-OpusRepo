@@ -109,7 +109,8 @@ async function tryFill(page, selectors, value, timeout = 5000) {
   for (const sel of selectors) {
     try {
       const el = page.locator(sel).first();
-      if (await el.count() > 0) {
+      // Check both presence AND visibility — Patriot tab forms keep hidden fields in the DOM
+      if (await el.count() > 0 && await el.isVisible({ timeout: 2000 }).catch(() => false)) {
         await el.clear({ timeout });
         await el.fill(value, { timeout });
         return sel;
@@ -297,9 +298,13 @@ async function search(page, {
   fullName = '',
   onProgress = () => {},
 }) {
+  // Pure numeric IDs (e.g. "29507") are Patriot internal AccountNumbers — not map/lot parcel IDs.
+  // They cannot be entered in the search form; navigate directly to Summary.asp?AccountNumber=N.
+  const isDirectAccountNumber = /^\d+$/.test((accountNumber || '').trim());
+
   const searchMode = accountNumber ? 'parcel' : 'owner';
-  onProgress(`Patriot Properties handler: searching by ${searchMode === 'parcel' ? 'Parcel ID' : 'Owner Name'}...`);
-  console.log(`[patriot] mode=${searchMode} startUrl=${page.url()}`);
+  onProgress(`Patriot Properties handler: searching by ${isDirectAccountNumber ? 'Account Number (direct)' : searchMode === 'parcel' ? 'Parcel ID' : 'Owner Name'}...`);
+  console.log(`[patriot] mode=${searchMode} isDirectAccountNumber=${isDirectAccountNumber} startUrl=${page.url()}`);
 
   // ── 0. CAPTCHA / bot-challenge check ──────────────────────────────────────
   const captcha = await detectCaptcha(page);
@@ -315,7 +320,57 @@ async function search(page, {
     await acceptDisclaimer(page);
   }
 
-  // ── 1b. Handle frameset (older Patriot deployments) ─────────────────────────
+  // ── 1b. Direct AccountNumber navigation (pure numeric IDs only) ─────────────
+  // Patriot internal account numbers are not searchable via the form — they appear
+  // in URLs like Summary.asp?AccountNumber=N. Navigate there and extract detail fields.
+  if (isDirectAccountNumber) {
+    const origin = new URL(page.url()).origin;
+    const summaryUrl = `${origin}/Summary.asp?AccountNumber=${accountNumber}`;
+    onProgress(`Navigating directly to account record...`);
+    console.log(`[patriot] Direct AccountNumber URL: ${summaryUrl}`);
+    await page.goto(summaryUrl, { waitUntil: 'load', timeout: 30000 });
+    await page.waitForTimeout(1500);
+
+    let detailFields = {};
+    const isDetailFs = await page.evaluate(() => !!document.querySelector('frameset')).catch(() => false);
+    if (isDetailFs) {
+      for (const df of page.frames()) {
+        if (df === page.mainFrame()) continue;
+        const txt = await df.evaluate(() => document.body?.innerText?.trim() || '').catch(() => '');
+        if (!txt || txt.length < 30) continue;
+        const ff = await extractDetailFields(df);
+        console.log(`[patriot] AccountNumber direct frame ${df.url().split('/').pop()} → ${Object.keys(ff).length} fields`);
+        Object.assign(detailFields, ff);
+      }
+    } else {
+      await page.waitForSelector('table tr', { timeout: 10000 }).catch(() => {});
+      detailFields = await extractDetailFields(page);
+    }
+
+    if (Object.keys(detailFields).length === 0) {
+      return { records: [], totalFound: 0,
+        summary: `No record found for Account Number ${accountNumber}.`,
+        searchedUrl: summaryUrl };
+    }
+
+    const rec = {
+      parcelId:         detailFields['Parcel ID'] || detailFields['Map/Lot'] || accountNumber,
+      ownerName:        detailFields['Owner Name'] || detailFields['Owner'] || '',
+      propertyAddress:  detailFields['Location'] || detailFields['Property Address'] || detailFields['Situs Address'] || '',
+      legalDescription: detailFields['Use'] || detailFields['Description'] || detailFields['Legal'] || '',
+      taxAmountDue:     detailFields['Total Value'] || detailFields['Appraised Value'] || detailFields['Total Assessment'] || '',
+      taxYear: '', paymentStatus: '', county: '', state: '',
+      additionalDetails: JSON.stringify(detailFields),
+    };
+    onProgress(`Extracted ${Object.keys(detailFields).length} fields from account ${accountNumber}.`);
+    return {
+      records: [rec], totalFound: 1,
+      summary: `Found 1 record for Account Number ${accountNumber} (Patriot Properties).`,
+      searchedUrl: summaryUrl,
+    };
+  }
+
+  // ── 1c. Handle frameset (older Patriot deployments) ─────────────────────────
   // Results load into home-bottom.asp — use Playwright frame API rather than
   // navigating to the search frame directly (which breaks the form's cross-frame target).
   let searchCtx = page;   // Page or Frame used for form interaction
@@ -379,8 +434,15 @@ async function search(page, {
   let filledSelector = null;
 
   if (searchMode === 'parcel') {
-    filledSelector = await tryFill(searchCtx, PARCEL_INPUT_SELECTORS, accountNumber);
-    if (filledSelector) console.log(`[patriot] Filled parcel: ${filledSelector}`);
+    // Patriot parcel fields accept the map/lot portion only. Strip any trailing
+    // single-letter building/unit suffix (e.g. "077C-157A-014-00AP" → "077C-157A-014-00A").
+    // The suffix is identified as a trailing letter that immediately follows another letter.
+    const parcelQuery = accountNumber.replace(/([A-Za-z])([A-Za-z])$/, '$1');
+    if (parcelQuery !== accountNumber) {
+      console.log(`[patriot] Stripped building suffix: ${accountNumber} → ${parcelQuery}`);
+    }
+    filledSelector = await tryFill(searchCtx, PARCEL_INPUT_SELECTORS, parcelQuery);
+    if (filledSelector) console.log(`[patriot] Filled parcel: ${filledSelector} = ${parcelQuery}`);
   } else {
     // Try split Last / First fields first
     const last = fullName ? fullName.split(' ').pop() : lastName;
@@ -411,35 +473,48 @@ async function search(page, {
   // ── 6. Wait for results ──────────────────────────────────────────────────────
   onProgress('Waiting for results...');
 
-  // In frameset mode the form targets home-bottom.asp — wait for that frame to navigate,
-  // then pull the main page onto the results URL so all subsequent work uses page directly.
+  // In frameset mode results may appear in any non-main frame (owner search → home-bottom,
+  // parcel search → may render inline in the search frame via POST — navigating to the frame
+  // URL would lose POST state and show a blank form). Extract the table FROM the frame object
+  // directly; never navigate the main page to get result content.
   let searchResultsUrl;
+  let resultsCtx = page; // Page or Frame from which to extract the results table
+
   if (isFrameset) {
     await page.waitForTimeout(3000);
-    // Re-fetch bottom frame (its URL should have changed after search submission)
-    const updatedFrames = page.frames();
-    const newBottom = updatedFrames.find(f => /home-bottom/i.test(f.url()) && f !== page.mainFrame())
-      || updatedFrames.find(f => {
-        const u = f.url();
-        return f !== page.mainFrame() && u !== page.url() && !/home-top|search-middle/i.test(u);
-      });
-    const resultsFrameUrl = newBottom?.url() || framesetBottomFrame?.url();
-    console.log(`[patriot] Bottom frame URL after submit: ${resultsFrameUrl}`);
-    if (resultsFrameUrl && resultsFrameUrl !== 'about:blank') {
-      await page.goto(resultsFrameUrl, { waitUntil: 'networkidle', timeout: 30000 });
+
+    let bestFrame = null;
+    let bestCount = 0;
+    for (const f of page.frames()) {
+      if (f === page.mainFrame()) continue;
+      try {
+        const linkCount = await f.evaluate(() =>
+          document.querySelectorAll('table tr a').length
+        ).catch(() => 0);
+        console.log(`[patriot] Frame ${f.url().split('/').pop()} → ${linkCount} links`);
+        if (linkCount > bestCount) { bestCount = linkCount; bestFrame = f; }
+      } catch (_) {}
     }
-    searchResultsUrl = page.url();
+
+    if (bestFrame && bestCount > 0) {
+      // Extract directly from the frame — avoids losing POST-submitted result state
+      resultsCtx = bestFrame;
+      searchResultsUrl = bestFrame.url();
+      console.log(`[patriot] Extracting results from frame: ${searchResultsUrl}`);
+    } else {
+      searchResultsUrl = page.url();
+    }
   } else {
     searchResultsUrl = page.url();
   }
 
-  await waitForResults(page);
+  await waitForResults(resultsCtx);
 
-  const preview = await page.evaluate(() => document.body.innerText.substring(0, 600));
+  const preview = await resultsCtx.evaluate(() => document.body.innerText.substring(0, 600));
   console.log(`[patriot] Results preview:\n${preview}\n---`);
 
   // ── 7. Extract results table ─────────────────────────────────────────────────
-  const tableData = await extractResultsTable(page);
+  const tableData = await extractResultsTable(resultsCtx);
   console.log('[patriot] tableData:', JSON.stringify(tableData || null).substring(0, 400));
 
   if (!tableData || tableData.rows.length === 0) {
@@ -461,16 +536,25 @@ async function search(page, {
   const baseUrl  = new URL(searchResultsUrl).origin;
   const basePath = new URL(searchResultsUrl).pathname.replace(/\/[^/]*$/, '');
 
-  for (let i = 0; i < cappedRows.length; i++) {
-    const { cells, href } = cappedRows[i];
+  // Pre-resolve all detail URLs before navigating — avoids needing to "go back" to
+  // a POST-based results page between records (which would show a blank form).
+  const resolvedRows = cappedRows.map(({ cells, href }) => {
     const obj = {};
     headers.forEach((h, idx) => { if (h) obj[h] = cells[idx] || ''; });
-
-    // Patriot columns vary but common patterns:
     const parcelId   = obj['Parcel ID'] || obj['Map/Lot/Sub'] || obj['Map-Lot'] || obj['Parcel'] || cells[0] || '';
     const ownerName  = obj['Owner Name'] || obj['Owner']       || cells[1] || '';
     const address    = obj['Location']   || obj['Address']     || obj['Property Address'] || cells[2] || '';
     const totalValue = obj['Total Value'] || obj['Appraised']  || obj['Assessment']       || '';
+    const detailUrl  = href
+      ? (href.startsWith('http') ? href
+          : href.startsWith('/') ? `${baseUrl}${href}`
+          : `${baseUrl}${basePath}/${href}`)
+      : null;
+    return { obj, parcelId, ownerName, address, totalValue, detailUrl };
+  });
+
+  for (let i = 0; i < resolvedRows.length; i++) {
+    const { obj, parcelId, ownerName, address, totalValue, detailUrl } = resolvedRows[i];
 
     const summaryRecord = {
       parcelId, ownerName, propertyAddress: address, taxAmountDue: totalValue,
@@ -480,22 +564,16 @@ async function search(page, {
 
     let detailFields = {};
     try {
-      if (href) {
-        const detailUrl = href.startsWith('http')
-          ? href
-          : href.startsWith('/')
-            ? `${baseUrl}${href}`
-            : `${baseUrl}${basePath}/${href}`;
+      if (detailUrl) {
         onProgress(`Loading detail for ${parcelId || 'record ' + (i + 1)}...`);
         console.log(`[patriot] Detail URL: ${detailUrl}`);
         await page.goto(detailUrl, { waitUntil: 'load', timeout: 30000 });
-        await page.waitForTimeout(1500); // sub-frames need time to load
+        await page.waitForTimeout(1500);
 
         // Patriot detail pages (Summary.asp) are framesets — extract from content frames
         const isDetailFrameset = await page.evaluate(() => !!document.querySelector('frameset')).catch(() => false);
         if (isDetailFrameset) {
-          const detailFrames = page.frames();
-          for (const df of detailFrames) {
+          for (const df of page.frames()) {
             if (df === page.mainFrame()) continue;
             const frameText = await df.evaluate(() => document.body?.innerText?.trim() || '').catch(() => '');
             if (!frameText || frameText.includes('no search has been executed') || frameText.length < 30) continue;
@@ -522,13 +600,6 @@ async function search(page, {
       taxAmountDue:     detailFields['Total Value']      || detailFields['Appraised Value']  || detailFields['Total Assessment'] || summaryRecord.taxAmountDue,
       additionalDetails: JSON.stringify({ ...obj, ...detailFields }),
     });
-
-    if (i < cappedRows.length - 1) {
-      try {
-        await page.goto(searchResultsUrl, { waitUntil: 'load', timeout: 30000 });
-        await page.waitForTimeout(500);
-      } catch (_) {}
-    }
   }
 
   const label    = searchMode === 'parcel' ? `Parcel ID ${accountNumber}` : (fullName || lastName);

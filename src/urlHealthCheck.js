@@ -159,9 +159,14 @@ async function findLiveUrl(stateCode, countyName) {
     if (!bestUrl && candidates.length > 0) bestUrl = candidates[0].href;
 
     if (bestUrl) {
-      const platform = detectPlatform(bestUrl);
-      updateCountyUrl(stateCode, countyName, bestUrl, platform);
-      console.log(`[urlHealthCheck] Found new URL for ${stateCode}/${countyName}: ${bestUrl}`);
+      if (isValidPropertyUrl(bestUrl)) {
+        const platform = detectPlatform(bestUrl);
+        updateCountyUrl(stateCode, countyName, bestUrl, platform);
+        console.log(`[urlHealthCheck] Found new URL for ${stateCode}/${countyName}: ${bestUrl}`);
+      } else {
+        console.log(`[urlHealthCheck] Rejected netronline URL (not a valid property search site): ${bestUrl}`);
+        return null;
+      }
     } else {
       console.log(`[urlHealthCheck] No URL found on netronline for ${stateCode}/${countyName}`);
     }
