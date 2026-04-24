@@ -528,7 +528,8 @@ async function search(page, {
   // When all hrefs are null (ASP.NET row-click navigation), discover the URL pattern
   // by clicking the first row, then build URLs for subsequent rows from the pattern.
   let detailUrlTemplate = null;
-  let detailUrlMode = null; // 'parcel' | null
+  let detailUrlMode = null; // 'parcel' | 'sindex' | null
+  let row0DetailFields = null;
   if (cappedRows.every(r => !r.href)) {
     console.log('[tyler] No hrefs in results — discovering detail URL via row click...');
     const discoveredUrl = await discoverDetailUrl(page, searchResultsUrl);
@@ -560,16 +561,23 @@ async function search(page, {
         detailUrlMode = 'parcel';
         console.log(`[tyler] Detail URL template (parcel): ${detailUrlTemplate}`);
       } else if (/[?&]sIndex=\d/i.test(discoveredUrl)) {
-        // Tyler Datalet viewer uses session-indexed sIndex= navigation.
-        // The sIndex session is consumed by discovery and cannot be reliably reused
-        // (all subsequent indices show stale data). Return results table data only.
-        console.log('[tyler] Tyler Datalet sIndex navigation detected — returning results table data only');
-        detailUrlMode = null; // no detail loading
+        // Tyler Datalet sIndex session: extract row 0 detail immediately (we're already on it),
+        // then navigate to sIndex=N directly for subsequent rows — going back to the search
+        // URL would reset the server-side session and invalidate the sIndex values.
+        console.log('[tyler] sIndex navigation — extracting row 0 detail immediately');
+        await page.waitForSelector('table, .detail, h1, h2', { timeout: 8000 }).catch(() => {});
+        row0DetailFields = await extractDetailFields(page);
+        console.log(`[tyler] Row 0 sIndex detail: ${Object.keys(row0DetailFields).length} fields`);
+        detailUrlTemplate = discoveredUrl.replace(/sIndex=\d+/i, 'sIndex=__IDX__');
+        detailUrlMode = 'sindex';
       }
 
-      // Navigate back to results (for parcel mode and the fallback case)
-      await page.goto(searchResultsUrl, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
-      await waitForResults(page);
+      // Navigate back to results only for parcel-template mode.
+      // For sIndex mode, going back to the search URL resets the session.
+      if (detailUrlMode !== 'sindex') {
+        await page.goto(searchResultsUrl, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
+        await waitForResults(page);
+      }
     }
   }
 
@@ -617,8 +625,23 @@ async function search(page, {
         console.log(`[tyler] Detail URL (parcel template): ${fullUrl}`);
         await page.goto(fullUrl, { waitUntil: 'networkidle', timeout: 30000 });
         navigated = true;
+      } else if (detailUrlMode === 'sindex' && detailUrlTemplate) {
+        if (i === 0 && row0DetailFields) {
+          // Row 0 was pre-extracted during discovery — reuse it
+          detailFields = row0DetailFields;
+          console.log(`[tyler] Using pre-extracted sIndex=0 fields (${Object.keys(detailFields).length})`);
+          navigated = true;
+        } else {
+          // Navigate directly to sIndex=N; session stays alive as long as we don't reset via search form
+          const sUrl = detailUrlTemplate.replace('__IDX__', String(i));
+          const fullUrl = sUrl.startsWith('http') ? sUrl : `${baseUrl}${sUrl}`;
+          console.log(`[tyler] sIndex URL (${i}): ${fullUrl}`);
+          await page.goto(fullUrl, { waitUntil: 'networkidle', timeout: 30000 });
+          navigated = page.url() !== searchResultsUrl;
+          console.log(`[tyler] After sIndex nav (${i}): ${page.url()}`);
+        }
       } else if (detailUrlMode === 'index') {
-        // Index-based navigation: use sIndex=N URLs directly (session stays active)
+        // Legacy index mode (kept for compatibility)
         const sUrl = detailUrlTemplate.replace('__IDX__', String(i));
         console.log(`[tyler] sIndex URL (${i}): ${sUrl}`);
         await page.goto(sUrl, { waitUntil: 'networkidle', timeout: 30000 });
@@ -653,7 +676,7 @@ async function search(page, {
       additionalDetails: JSON.stringify({ ...obj, ...detailFields }),
     });
 
-    if (i < cappedRows.length - 1 && detailUrlMode !== 'index') {
+    if (i < cappedRows.length - 1 && detailUrlMode !== 'index' && detailUrlMode !== 'sindex') {
       try {
         await page.goto(searchResultsUrl, { waitUntil: 'networkidle', timeout: 30000 });
         await waitForResults(page);

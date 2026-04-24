@@ -187,6 +187,29 @@ async function waitForResults(page) {
   }
 }
 
+async function waitForAngularContent(page) {
+  const ready = await page.waitForFunction(() => {
+    const angularEl = document.querySelector(
+      'app-parcel-summary, app-parcel-detail, app-property-detail, ' +
+      '.tt-upm-parcel-detail-section, [class*="parcel-detail" i], [class*="parcel-info" i]'
+    );
+    if (angularEl && angularEl.innerText.trim().length > 80) return true;
+
+    const rows = document.querySelectorAll('table tr');
+    if (rows.length >= 4) {
+      const text = Array.from(rows).slice(1).map(r => r.innerText.trim()).filter(Boolean).join(' ');
+      if (text.length > 100) return true;
+    }
+
+    if (document.querySelectorAll('dt').length >= 3) return true;
+    if (document.querySelectorAll('[class*="label" i]').length >= 3) return true;
+
+    return false;
+  }, { timeout: 12000 }).catch(() => null);
+
+  if (!ready) await page.waitForTimeout(1500);
+}
+
 async function extractDetailFields(page) {
   return page.evaluate(() => {
     const data = {};
@@ -213,6 +236,25 @@ async function extractDetailFields(page) {
     document.querySelectorAll('[data-label]').forEach(el => {
       const label = el.getAttribute('data-label');
       if (label) data[label] = el.innerText.trim();
+    });
+
+    // Angular/Schneider label+value adjacent-sibling pattern (tt-upm-* components)
+    document.querySelectorAll('span[class*="label" i], div[class*="label" i], p[class*="label" i]').forEach(labelEl => {
+      const label = labelEl.innerText.trim().replace(/:$/, '');
+      if (!label || label.length > 80 || label.match(/^\d+$/)) return;
+      const next = labelEl.nextElementSibling;
+      if (next) {
+        const val = next.innerText.trim();
+        if (val && val.length < 300 && !data[label]) data[label] = val;
+      }
+    });
+
+    document.querySelectorAll('[ng-reflect-label]').forEach(el => {
+      const label = el.getAttribute('ng-reflect-label') || '';
+      if (label && label.length < 80) {
+        const val = el.innerText.trim();
+        if (val && !data[label]) data[label] = val;
+      }
     });
 
     return data;
@@ -312,12 +354,19 @@ async function search(page, {
     // Try clicking the Search nav tab
     const clicked = await tryClick(page, SEARCH_NAV_SELECTORS);
     if (!clicked) {
-      // Build a search URL by manipulating the PageType param
-      const searchUrl = currentUrl.includes('PageType=')
-        ? currentUrl.replace(/PageType=[^&]*/i, 'PageType=Search')
-        : currentUrl.includes('?')
-          ? currentUrl + '&PageType=Search'
-          : currentUrl + '?PageType=Search';
+      // Build a search URL. Handle both PageType= and PageTypeID= Schneider formats.
+      let searchUrl;
+      if (/PageTypeID=/i.test(currentUrl)) {
+        searchUrl = currentUrl
+          .replace(/[?&]PageTypeID=[^&]*/i, '')
+          .replace(/[?&]PageID=[^&]*/i, '')
+          .replace(/(\?.*)/, '$1&PageType=Search')
+          .replace(/^([^?]*)$/, '$1?PageType=Search');
+      } else if (/PageType=/i.test(currentUrl)) {
+        searchUrl = currentUrl.replace(/PageType=[^&]*/i, 'PageType=Search');
+      } else {
+        searchUrl = currentUrl.includes('?') ? currentUrl + '&PageType=Search' : currentUrl + '?PageType=Search';
+      }
       try {
         await page.goto(searchUrl, { waitUntil: 'networkidle', timeout: 30000 });
         console.log(`[beacon] Navigated to search URL: ${searchUrl}`);
@@ -443,7 +492,7 @@ async function search(page, {
         onProgress(`Loading detail for ${parcelId || 'record ' + (i + 1)}...`);
         console.log(`[beacon] Detail URL: ${detailUrl}`);
         await page.goto(detailUrl, { waitUntil: 'networkidle', timeout: 30000 });
-        await page.waitForSelector('table, .detail, h1, h2', { timeout: 10000 }).catch(() => {});
+        await waitForAngularContent(page);
         detailFields = await extractDetailFields(page);
         console.log(`[beacon] Detail fields (${Object.keys(detailFields).length}):`, JSON.stringify(detailFields).substring(0, 400));
         onProgress(`Extracted ${Object.keys(detailFields).length} fields.`);

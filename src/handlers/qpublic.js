@@ -226,7 +226,44 @@ async function detectPageType(page) {
 }
 
 /**
+ * Wait for Schneider Angular SPA detail content to fully render.
+ * networkidle fires before Angular populates fields; we poll for actual content.
+ */
+async function waitForAngularContent(page) {
+  const ready = await page.waitForFunction(() => {
+    // Schneider Angular component containers with rendered content
+    const angularEl = document.querySelector(
+      'app-parcel-summary, app-parcel-detail, app-property-detail, ' +
+      '.tt-upm-parcel-detail-section, [class*="parcel-detail" i], [class*="parcel-info" i]'
+    );
+    if (angularEl && angularEl.innerText.trim().length > 80) return true;
+
+    // Non-Angular fallback: substantial table content
+    const rows = document.querySelectorAll('table tr');
+    if (rows.length >= 4) {
+      const text = Array.from(rows).slice(1).map(r => r.innerText.trim()).filter(Boolean).join(' ');
+      if (text.length > 100) return true;
+    }
+
+    // DL-based content (dt/dd pairs)
+    if (document.querySelectorAll('dt').length >= 3) return true;
+
+    // Generic: any substantial content in a label+value layout
+    const labelEls = document.querySelectorAll('[class*="label" i]');
+    if (labelEls.length >= 3) return true;
+
+    return false;
+  }, { timeout: 12000 }).catch(() => null);
+
+  if (!ready) {
+    // Last resort: give Angular a fixed grace period
+    await page.waitForTimeout(1500);
+  }
+}
+
+/**
  * Extract all labeled fields from a detail page.
+ * Handles: th/td tables, dt/dd lists, data-label attrs, and Angular label+value pairs.
  */
 async function extractDetailFields(page) {
   return page.evaluate(() => {
@@ -257,6 +294,27 @@ async function extractDetailFields(page) {
     document.querySelectorAll('[data-label]').forEach(el => {
       const label = el.getAttribute('data-label');
       if (label) data[label] = el.innerText.trim();
+    });
+
+    // Angular/Schneider label+value adjacent-sibling pattern (tt-upm-* components)
+    // Elements with "label" in their class name whose next sibling holds the value
+    document.querySelectorAll('span[class*="label" i], div[class*="label" i], p[class*="label" i]').forEach(labelEl => {
+      const label = labelEl.innerText.trim().replace(/:$/, '');
+      if (!label || label.length > 80 || label.match(/^\d+$/)) return;
+      const next = labelEl.nextElementSibling;
+      if (next) {
+        const val = next.innerText.trim();
+        if (val && val.length < 300 && !data[label]) data[label] = val;
+      }
+    });
+
+    // Angular ng-reflect-label / aria-label on value containers
+    document.querySelectorAll('[ng-reflect-label]').forEach(el => {
+      const label = el.getAttribute('ng-reflect-label') || '';
+      if (label && label.length < 80) {
+        const val = el.innerText.trim();
+        if (val && !data[label]) data[label] = val;
+      }
     });
 
     return data;
@@ -720,13 +778,7 @@ async function search(page, {
         onProgress(`Loading detail for ${parcelId || 'record ' + (i + 1)}...`);
         console.log(`[qpublic] Detail URL: ${detailUrl}`);
         await page.goto(detailUrl, { waitUntil: 'networkidle', timeout: 30000 });
-        // Wait for Angular/React content to hydrate — qPublic Schneider detail pages
-        // use client-side rendering on top of SSR, so tables may appear after networkidle
-        await page.waitForSelector(
-          'table tr td:not(:empty), [class*="parcel" i] td, [id*="ParcelID"], .tt-upm-parcel-detail-section, [class*="detail-section"]',
-          { timeout: 10000 }
-        ).catch(() => {});
-        await page.waitForTimeout(800);
+        await waitForAngularContent(page);
         detailFields = await extractDetailFields(page);
         console.log(`[qpublic] Detail fields (${Object.keys(detailFields).length}):`, JSON.stringify(detailFields).substring(0, 600));
         onProgress(`Extracted ${Object.keys(detailFields).length} detail fields.`);
