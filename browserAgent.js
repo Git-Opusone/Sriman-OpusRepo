@@ -14,14 +14,15 @@ const OpenAI = require('openai');
 // Apply stealth plugin — bypasses Cloudflare and other bot-detection systems
 chromiumExtra.use(StealthPlugin());
 
-const { detectFromUrl } = require('./src/platformDetector');
-const qpublicHandler    = require('./src/handlers/qpublic');
-const tylerHandler      = require('./src/handlers/tyler');
-const beaconHandler     = require('./src/handlers/beacon');
-const patriotHandler    = require('./src/handlers/patriot');
-const visionHandler     = require('./src/handlers/vision');
-const bisHandler        = require('./src/handlers/bis');
-const { detectCaptcha } = require('./src/captchaDetector');
+const { detectFromUrl }       = require('./src/platformDetector');
+const qpublicHandler          = require('./src/handlers/qpublic');
+const tylerHandler            = require('./src/handlers/tyler');
+const beaconHandler           = require('./src/handlers/beacon');
+const patriotHandler          = require('./src/handlers/patriot');
+const visionHandler           = require('./src/handlers/vision');
+const bisHandler              = require('./src/handlers/bis');
+const publicPortalHandler     = require('./src/handlers/publicportal');
+const { detectCaptcha }       = require('./src/captchaDetector');
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -475,6 +476,20 @@ async function runBrowserAgent({
       } catch (handlerErr) {
         console.log(`[agent] BIS handler error: ${handlerErr.message} — continuing with AI`);
         onProgress('BIS handler error — falling back to AI agent...');
+      }
+    }
+
+    if (platform === 'publicportal') {
+      onProgress('Detected Public Portal (Aumentum) platform — using dedicated handler...');
+      try {
+        const handlerResult = await publicPortalHandler.search(page, {
+          accountNumber, firstName, lastName, fullName, onProgress,
+        });
+        if (handlerResult) return handlerResult;
+        onProgress('Public Portal handler fell back — continuing with AI agent...');
+      } catch (handlerErr) {
+        console.log(`[agent] Public Portal handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('Public Portal handler error — falling back to AI agent...');
       }
     }
 

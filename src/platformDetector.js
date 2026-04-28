@@ -7,33 +7,41 @@
  * Returns a platform key used to select the right Playwright handler.
  *
  * Platforms supported:
- *   bis      – BIS Consultants  (TX heavy, esearch.*.org)         ✅ handler built
- *   qpublic  – qPublic.net      (SE states: GA, FL, SC, NC, LA)   handler planned
- *   tyler    – Tyler iasWorld   (nationwide, tylerhost.net)        handler planned
- *   beacon   – Beacon/Schneider (Midwest: IA, MN, WI, OH)         handler planned
- *   patriot  – Patriot Props    (NE: MA, NH, CT, ME)              handler planned
- *   vision   – Vision Gov       (NE states)                       handler planned
- *   generic  – everything else  (AI fallback)
+ *   bis          – BIS Consultants          (TX heavy, esearch.*.org)         ✅ handler built
+ *   qpublic      – qPublic.net              (SE states: GA, FL, SC, NC, LA)   ✅ handler built
+ *   tyler        – Tyler iasWorld           (nationwide, tylerhost.net)        ✅ handler built
+ *   beacon       – Beacon/Schneider         (Midwest: IA, MN, WI, OH)         ✅ handler built
+ *   patriot      – Patriot Props            (NE: MA, NH, CT, ME)              ✅ handler built
+ *   vision       – Vision Gov               (NE states)                       ✅ handler built
+ *   publicportal – Public Portal (Aumentum) (TX: {county}cad.net)             ✅ handler built
+ *   generic      – everything else          (AI fallback)
  */
 
 const PLATFORM_RULES = [
   // ── URL hostname patterns ──────────────────────────────────────────────────
   // qpublic MUST come before beacon — qpublic.schneidercorp.com is qPublic, not Beacon
-  { platform: 'qpublic',  test: u => /qpublic\.net/i.test(u)                        },
-  { platform: 'qpublic',  test: u => /qpublic\.schneidercorp\.com/i.test(u)         },
-  { platform: 'beacon',   test: u => /beacon\.schneidercorp\.com/i.test(u)          },
-  { platform: 'beacon',   test: u => /\.schneidercorp\.com/i.test(u)                },
-  { platform: 'tyler',    test: u => /tylerhost\.net/i.test(u)                      },
-  { platform: 'tyler',    test: u => /iasworld/i.test(u)                            },
-  { platform: 'tyler',    test: u => /tylertech\.com/i.test(u)                      },
-  { platform: 'patriot',  test: u => /patriotproperties\.com/i.test(u)              },
-  { platform: 'vision',   test: u => /visionappraisal\.com/i.test(u)                },
-  { platform: 'vision',   test: u => /vgsi\.com/i.test(u)                           },
-  { platform: 'bis',      test: u => /esearch\.[a-z]+cad\.org/i.test(u)             },
-  { platform: 'bis',      test: u => /bisconsultants\.com/i.test(u)                 },
-  { platform: 'bis',      test: u => /cadcentral\.com/i.test(u)                     },
+  { platform: 'qpublic',      test: u => /qpublic\.net/i.test(u)                        },
+  { platform: 'qpublic',      test: u => /qpublic\.schneidercorp\.com/i.test(u)         },
+  { platform: 'beacon',       test: u => /beacon\.schneidercorp\.com/i.test(u)          },
+  { platform: 'beacon',       test: u => /\.schneidercorp\.com/i.test(u)                },
+  { platform: 'tyler',        test: u => /tylerhost\.net/i.test(u)                      },
+  { platform: 'tyler',        test: u => /iasworld/i.test(u)                            },
+  { platform: 'tyler',        test: u => /tylertech\.com/i.test(u)                      },
+  { platform: 'patriot',      test: u => /patriotproperties\.com/i.test(u)              },
+  { platform: 'vision',       test: u => /visionappraisal\.com/i.test(u)                },
+  { platform: 'vision',       test: u => /vgsi\.com/i.test(u)                           },
+  // BIS rules MUST come before publicportal — esearch.fallscad.net is BIS, not Public Portal
+  { platform: 'bis',          test: u => /esearch\.[a-z]+cad\.(org|net)/i.test(u)       },
+  { platform: 'bis',          test: u => /bisconsultants\.com/i.test(u)                 },
+  { platform: 'bis',          test: u => /cadcentral\.com/i.test(u)                     },
+  // Public Portal (Aumentum Technologies) — Texas CADs with {county}cad.net domains
+  { platform: 'publicportal', test: u => /andersoncad\.net/i.test(u)                    },
+  { platform: 'publicportal', test: u => /harrisoncad\.net/i.test(u)                    },
+  { platform: 'publicportal', test: u => /somervellcad\.net/i.test(u)                   },
+  { platform: 'publicportal', test: u => /woodcad\.net/i.test(u)                        },
+  { platform: 'publicportal', test: u => /tylercad\.net/i.test(u)                       },
   // ── Path / query patterns ─────────────────────────────────────────────────
-  { platform: 'qpublic',  test: u => /\/qpublic\//i.test(u)                         },
+  { platform: 'qpublic',      test: u => /\/qpublic\//i.test(u)                         },
 ];
 
 /**
@@ -67,6 +75,9 @@ function detectFromHtml(html) {
   if (h.includes('visionappraisal') || h.includes('vgsi'))               return 'vision';
   if (h.includes('bisconsultants') || h.includes('bis consultants') ||
       h.includes('powered by: bis'))                                      return 'bis';
+  // Public Portal (Aumentum): SPA with minimal initial HTML; title is literally "Public Portal"
+  if (h.includes('public portal') && (h.includes('cad') || h.includes('appraisal')))
+                                                                          return 'publicportal';
 
   return 'generic';
 }
@@ -86,13 +97,14 @@ function detectPlatform(url, html) {
  */
 function platformLabel(platform) {
   const labels = {
-    bis:     'BIS Consultants',
-    qpublic: 'qPublic',
-    tyler:   'Tyler iasWorld',
-    beacon:  'Beacon / Schneider',
-    patriot: 'Patriot Properties',
-    vision:  'Vision Government Solutions',
-    generic: 'Generic (AI-assisted)',
+    bis:          'BIS Consultants',
+    qpublic:      'qPublic',
+    tyler:        'Tyler iasWorld',
+    beacon:       'Beacon / Schneider',
+    patriot:      'Patriot Properties',
+    vision:       'Vision Government Solutions',
+    publicportal: 'Public Portal (Aumentum)',
+    generic:      'Generic (AI-assisted)',
   };
   return labels[platform] || 'Unknown';
 }

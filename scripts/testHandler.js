@@ -21,12 +21,13 @@ if (!URL_ARG) {
 }
 
 const HANDLER_MAP = {
-  qpublic: require('../src/handlers/qpublic'),
-  tyler:   require('../src/handlers/tyler'),
-  beacon:  require('../src/handlers/beacon'),
-  patriot: require('../src/handlers/patriot'),
-  vision:  require('../src/handlers/vision'),
-  bis:     require('../src/handlers/bis'),
+  qpublic:      require('../src/handlers/qpublic'),
+  tyler:        require('../src/handlers/tyler'),
+  beacon:       require('../src/handlers/beacon'),
+  patriot:      require('../src/handlers/patriot'),
+  vision:       require('../src/handlers/vision'),
+  bis:          require('../src/handlers/bis'),
+  publicportal: require('../src/handlers/publicportal'),
 };
 
 async function main() {

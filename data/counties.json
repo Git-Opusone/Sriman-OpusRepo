@@ -21902,7 +21902,7 @@
     "TX": {
       "Anderson": {
         "url": "http://www.andersoncad.net/",
-        "platform": "generic",
+        "platform": "publicportal",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/anderson"
       },
@@ -22508,7 +22508,7 @@
       },
       "Harrison": {
         "url": "https://harrisoncad.net/",
-        "platform": "generic",
+        "platform": "publicportal",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/harrison"
       },
@@ -23174,7 +23174,7 @@
       },
       "Somervell": {
         "url": "http://www.somervellcad.net/",
-        "platform": "generic",
+        "platform": "publicportal",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/somervell"
       },
@@ -23270,7 +23270,7 @@
       },
       "Tyler": {
         "url": "http://www.tylercad.net/",
-        "platform": "generic",
+        "platform": "publicportal",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/tyler"
       },
@@ -23396,7 +23396,7 @@
       },
       "Wood": {
         "url": "http://www.woodcad.net/",
-        "platform": "generic",
+        "platform": "publicportal",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/wood"
       },
