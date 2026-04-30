@@ -240,6 +240,105 @@ function mapApiItem(item) {
   };
 }
 
+// ─── Property detail page extraction ─────────────────────────────────────────
+// Navigates to /property-detail/{pid}/{year} and extracts deep data tables
+
+async function extractPropertyDetail(page, pid, year, origin) {
+  const detailUrl = `${origin}/property-detail/${pid}/${year}`;
+  console.log(`[publicportal] navigating to detail: ${detailUrl}`);
+  try {
+    await page.goto(detailUrl, { waitUntil: 'networkidle', timeout: 30000 });
+  } catch (_) {
+    try { await page.goto(detailUrl, { waitUntil: 'load', timeout: 20000 }); } catch (_2) {}
+  }
+  await page.waitForTimeout(2500);
+
+  return page.evaluate(() => {
+    function extractRegularTable(tbl) {
+      const rows = Array.from(tbl.querySelectorAll('tr'));
+      if (rows.length < 2) return null;
+      const data = rows.map(r =>
+        Array.from(r.querySelectorAll('td,th')).map(c => (c.innerText || '').trim())
+      ).filter(r => r.some(c => c.length > 0));
+      return data.length >= 2 ? data : null;
+    }
+
+    function extractAgGrid(container) {
+      const headerEls = Array.from(container.querySelectorAll('.ag-header-cell-text'));
+      if (!headerEls.length) return null;
+      const headers = headerEls.map(el => el.innerText.trim()).filter(h => h.length > 0);
+      const rows = Array.from(container.querySelectorAll('.ag-row:not(.ag-row-loading)'))
+        .sort((a, b) => Number(a.getAttribute('row-index') || 0) - Number(b.getAttribute('row-index') || 0))
+        .map(row =>
+          Array.from(row.querySelectorAll('.ag-cell'))
+            .sort((a, b) => Number(a.getAttribute('aria-colindex') || 0) - Number(b.getAttribute('aria-colindex') || 0))
+            .map(c => c.innerText.trim())
+        ).filter(r => r.some(c => c.length > 0));
+      return rows.length > 0 ? [headers, ...rows] : null;
+    }
+
+    const result = {};
+
+    // AG Grids (primary on this React SPA)
+    for (const grid of Array.from(document.querySelectorAll('.ag-root-wrapper'))) {
+      const data = extractAgGrid(grid);
+      if (!data || data.length < 2) continue;
+      const hStr = data[0].join('|').toLowerCase();
+      if (!result.valueHistory && /year|land|improvement|appraised/.test(hStr)) {
+        result.valueHistory = data;
+      } else if (!result.taxingUnits && /entity|taxable/.test(hStr)) {
+        result.taxingUnits = data;
+      } else if (!result.deedHistory && /deed|grantor|grantee|instrument/.test(hStr)) {
+        result.deedHistory = data;
+      } else if (!result.landData && /land.*type|land.*class|use.*code|acre|sqft/.test(hStr)) {
+        result.landData = data;
+      } else if (!result.improvementData && /improvement|imprv|section/.test(hStr)) {
+        result.improvementData = data;
+      }
+    }
+
+    // HTML tables fallback
+    for (const tbl of Array.from(document.querySelectorAll('table'))) {
+      const data = extractRegularTable(tbl);
+      if (!data) continue;
+      const hStr = (data[0] || []).join('|').toLowerCase();
+      if (!result.valueHistory && /year|land|improvement|appraised/.test(hStr)) {
+        result.valueHistory = data;
+      } else if (!result.taxingUnits && /entity|taxable/.test(hStr)) {
+        result.taxingUnits = data;
+      } else if (!result.deedHistory && /deed|grantor|grantee|instrument/.test(hStr)) {
+        result.deedHistory = data;
+      } else if (!result.landData && /acre|sqft|land.*type/.test(hStr)) {
+        result.landData = data;
+      }
+    }
+
+    // Key-value fields from page text
+    const bodyText = (document.body.innerText || '').replace(/\s{2,}/g, ' ');
+
+    const ownerM = bodyText.match(/Owner(?:\s*Name)?\s*[:\s]\s*([A-Z][A-Z\s&%'.,-]{3,60}?)(?:\s{2,}|\s+(?:GEO|Type|Address|Legal|Acct))/);
+    if (ownerM) result.ownerName = ownerM[1].trim();
+
+    const geoM = bodyText.match(/GEO\s*ID\s*[:\s]*([A-Z0-9/-]{4,30})/i);
+    if (geoM) result.geoId = geoM[1].trim();
+
+    const netApprM = bodyText.match(/Net\s*Appraised(?:\s*Value)?\s*\$?\s*([\d,]+)/i);
+    if (netApprM) result.netAppraisedValue = `$${netApprM[1]}`;
+
+    const landMktM = bodyText.match(/Land\s*(?:Market\s*)?Value\s*\$?\s*([\d,]+)/i);
+    if (landMktM) result.landMarketValue = `$${landMktM[1]}`;
+
+    const imprvM = bodyText.match(/Improvement\s*(?:Market\s*)?Value\s*\$?\s*([\d,]+)/i);
+    if (imprvM) result.improvementValue = `$${imprvM[1]}`;
+
+    result.detailUrl = window.location.href;
+    return result;
+  }).catch(err => {
+    console.log(`[publicportal] detail extract error: ${err.message}`);
+    return { detailUrl: page.url() };
+  });
+}
+
 // ─── Main export ─────────────────────────────────────────────────────────────
 
 async function search(page, {
@@ -338,6 +437,41 @@ async function search(page, {
 
       const MAX = searchMode === 'account' ? items.length : Math.min(items.length, 20);
       const records = items.slice(0, MAX).map(mapApiItem);
+
+      // For account-number searches, drill into the property detail page for deep data
+      if (searchMode === 'account' && records.length > 0) {
+        try {
+          const firstItem = items[0];
+          const pid  = String(firstItem.pid  || records[0].parcelId || '');
+          const year = String(firstItem.pYear || new Date().getFullYear());
+          if (pid) {
+            onProgress('Loading property detail page...');
+            const origin = new URL(searchResultsUrl).origin;
+            const detail = await extractPropertyDetail(page, pid, year, origin);
+            if (detail && Object.keys(detail).length > 1) {
+              const existingDetails = JSON.parse(records[0].additionalDetails || '{}');
+              records[0].additionalDetails = JSON.stringify({
+                ...existingDetails,
+                valueHistory:     detail.valueHistory     || null,
+                taxingUnits:      detail.taxingUnits      || null,
+                landData:         detail.landData         || null,
+                improvementData:  detail.improvementData  || null,
+                deedHistory:      detail.deedHistory      || null,
+                netAppraisedValue: detail.netAppraisedValue || '',
+                landMarketValue:   detail.landMarketValue   || '',
+                improvementValue:  detail.improvementValue  || '',
+                detailPageUrl:     detail.detailUrl         || '',
+              });
+              // Update top-level fields from detail page if richer
+              if (detail.ownerName && !records[0].ownerName) records[0].ownerName = detail.ownerName;
+              if (detail.geoId)           { const d = JSON.parse(records[0].additionalDetails); d.geoId = detail.geoId; records[0].additionalDetails = JSON.stringify(d); }
+            }
+          }
+        } catch (de) {
+          console.log(`[publicportal] detail drill-in error: ${de.message}`);
+        }
+      }
+
       const totalStr = totalCount > MAX
         ? `${totalCount} total, showing first ${records.length}`
         : `${records.length}`;

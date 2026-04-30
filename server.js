@@ -265,6 +265,103 @@ app.get('/api/search/stream', async (req, res) => {
   }
 });
 
+// ─── Dual Search (Appraisal + Tax Office) — Anderson County TX Phase 1 ────────
+//
+// Runs two parallel browser searches:
+//   1. Appraisal data  → andersoncad.net     (Public Portal / Aumentum)
+//   2. Tax bill data   → tax.co.anderson.tx.us (Anderson County Tax Office)
+//
+// Emits separate SSE events: appraisalResults + taxResults, then done.
+// Progress from each search is tagged [Appraisal] / [Tax] in the log.
+//
+// Phase 1: Anderson County, TX only.  Property ID required.
+// Future: generalise to any county that has both a CAD URL and a Tax URL.
+
+app.get('/api/search/dual/stream', async (req, res) => {
+  const { accountNumber, firstName, lastName, fullName } = req.query;
+
+  if (!accountNumber && !firstName && !lastName && !fullName) {
+    return res.status(400).json({ error: 'Provide accountNumber (Property ID) or owner name.' });
+  }
+
+  // Dual search counts as 2 concurrent browser instances
+  if (activeSearches + 2 > MAX_CONCURRENT) {
+    return res.status(503).json({
+      error: `Server busy — ${activeSearches} searches running (max ${MAX_CONCURRENT}). Please try again shortly.`,
+    });
+  }
+
+  // ── SSE setup ────────────────────────────────────────────────────────────
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
+
+  const sendEvent = (event, data) => {
+    res.write(`event: ${event}\n`);
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+    if (typeof res.flush === 'function') res.flush();
+  };
+
+  const heartbeat = setInterval(() => res.write(': heartbeat\n\n'), 15000);
+  req.on('close', () => clearInterval(heartbeat));
+
+  const APPRAISAL_URL = 'https://andersoncad.net';
+  const TAX_URL       = 'http://tax.co.anderson.tx.us';
+
+  activeSearches += 2;
+  console.log(`[server] dual search started — active: ${activeSearches}/${MAX_CONCURRENT}`);
+
+  // CAD uses numeric IDs (60110); Tax Office uses "R" prefix (R60110).
+  // Strip the prefix for the appraisal search so the full-text API matches correctly.
+  const cadAccountNumber = (accountNumber || '').replace(/^[rR]/, '');
+
+  const commonParams = { firstName: firstName || '', lastName: lastName || '', fullName: fullName || '' };
+
+  try {
+    sendEvent('status', { message: 'Starting dual search: Appraisal (CAD) + Tax Office...' });
+
+    const [appraisalResult, taxResult] = await Promise.all([
+      runBrowserAgentWithTimeout({
+        url: APPRAISAL_URL,
+        ...commonParams,
+        accountNumber: cadAccountNumber,
+        onProgress: (msg) => sendEvent('progress', { message: `[Appraisal] ${msg}`, source: 'appraisal' }),
+      }).catch(err => ({
+        records: [], totalFound: 0,
+        summary: `Appraisal search error: ${err.message}`,
+        searchedUrl: APPRAISAL_URL,
+        error: err.message,
+      })),
+
+      runBrowserAgentWithTimeout({
+        url: TAX_URL,
+        ...commonParams,
+        accountNumber: accountNumber || '',
+        onProgress: (msg) => sendEvent('progress', { message: `[Tax] ${msg}`, source: 'tax' }),
+      }).catch(err => ({
+        records: [], totalFound: 0,
+        summary: `Tax search error: ${err.message}`,
+        searchedUrl: TAX_URL,
+        error: err.message,
+      })),
+    ]);
+
+    sendEvent('appraisalResults', appraisalResult);
+    sendEvent('taxResults',       taxResult);
+    sendEvent('done', { success: true, isDual: true });
+  } catch (err) {
+    console.error('[server] dual search error:', err.message);
+    sendEvent('error', { message: err.message || 'Unexpected error during dual search' });
+  } finally {
+    activeSearches -= 2;
+    console.log(`[server] dual search finished — active: ${activeSearches}/${MAX_CONCURRENT}`);
+    clearInterval(heartbeat);
+    res.end();
+  }
+});
+
 // ─── REST fallback ────────────────────────────────────────────────────────────
 
 app.post('/api/search', async (req, res) => {

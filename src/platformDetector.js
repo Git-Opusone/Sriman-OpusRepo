@@ -19,6 +19,8 @@
 
 const PLATFORM_RULES = [
   // ── URL hostname patterns ──────────────────────────────────────────────────
+  // Anderson County Tax Office — must be checked before any generic rules
+  { platform: 'andersontax',  test: u => /tax\.co\.anderson\.tx\.us/i.test(u)           },
   // qpublic MUST come before beacon — qpublic.schneidercorp.com is qPublic, not Beacon
   { platform: 'qpublic',      test: u => /qpublic\.net/i.test(u)                        },
   { platform: 'qpublic',      test: u => /qpublic\.schneidercorp\.com/i.test(u)         },
@@ -97,6 +99,7 @@ function detectPlatform(url, html) {
  */
 function platformLabel(platform) {
   const labels = {
+    andersontax:  'Anderson County Tax Office',
     bis:          'BIS Consultants',
     qpublic:      'qPublic',
     tyler:        'Tyler iasWorld',

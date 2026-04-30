@@ -22,6 +22,7 @@ const patriotHandler          = require('./src/handlers/patriot');
 const visionHandler           = require('./src/handlers/vision');
 const bisHandler              = require('./src/handlers/bis');
 const publicPortalHandler     = require('./src/handlers/publicportal');
+const andersonTaxHandler      = require('./src/handlers/andersontax');
 const { detectCaptcha }       = require('./src/captchaDetector');
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -490,6 +491,20 @@ async function runBrowserAgent({
       } catch (handlerErr) {
         console.log(`[agent] Public Portal handler error: ${handlerErr.message} — continuing with AI`);
         onProgress('Public Portal handler error — falling back to AI agent...');
+      }
+    }
+
+    if (platform === 'andersontax') {
+      onProgress('Detected Anderson County Tax Office — using dedicated handler...');
+      try {
+        const handlerResult = await andersonTaxHandler.search(page, {
+          accountNumber, firstName, lastName, fullName, onProgress,
+        });
+        if (handlerResult) return handlerResult;
+        onProgress('Anderson Tax handler fell back — continuing with AI agent...');
+      } catch (handlerErr) {
+        console.log(`[agent] Anderson Tax handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('Anderson Tax handler error — falling back to AI agent...');
       }
     }
 
