@@ -734,12 +734,15 @@
       .replace(/"/g, '&quot;');
   }
 
-  // Fields already shown prominently — exclude from the detail grid
+  // Fields already shown prominently or rendered as deep tables — exclude from the detail grid
   const PRIMARY_FIELDS = new Set([
     'owner name','ownername','owner','property address','situs address','address','situs',
     'legal description','legal desc','tax amount due','amount due','appraised',
     'market value','assessed value','mineral value','tax year','payment status',
     'county','state','property id','propertyid','parcel id',
+    // deep table keys — these are rendered as proper tables, not key-value rows
+    'valuehistory','taxingunits','landdata','improvementdata','deedhistory',
+    'detailpageurl','detailurl',
   ]);
 
   function renderDetailGrid(details) {
@@ -768,9 +771,11 @@
       if (rows) html += `<div class="det-section"><div class="det-section-title">${section}</div><table class="det-table">${rows}</table></div>`;
     }
 
-    // Everything else not already shown
+    // Everything else not already shown — skip arrays (rendered as proper tables elsewhere)
     const extras = Object.entries(parsed)
-      .filter(([k, v]) => !shown.has(k) && v != null && v !== '' && !PRIMARY_FIELDS.has(k.toLowerCase()))
+      .filter(([k, v]) => !shown.has(k) && v != null && v !== ''
+        && !PRIMARY_FIELDS.has(k.toLowerCase())
+        && !Array.isArray(v) && typeof v !== 'object')
       .map(([k, v]) => `<tr><td class="det-label">${escHtml(k)}</td><td class="det-value">${escHtml(String(v))}</td></tr>`)
       .join('');
     if (extras) html += `<div class="det-section"><div class="det-section-title">Other Fields</div><table class="det-table">${extras}</table></div>`;
@@ -814,24 +819,29 @@
     const landData        = parsed['landData']        || null;
     const improvementData = parsed['improvementData'] || null;
     const deedHistory     = parsed['deedHistory']     || null;
-    const netAppr  = parsed['netAppraisedValue'] || '';
-    const landMkt  = parsed['landMarketValue']   || '';
-    const imprvVal = parsed['improvementValue']  || '';
-    const hasDeepData = valueHistory || taxingUnits || landData || deedHistory;
+    const netAppr    = parsed['netAppraisedValue'] || '';
+    const landMkt    = parsed['landMarketValue']   || '';
+    const imprvVal   = parsed['improvementValue']  || '';
+    const legalDesc  = rec.legalDescription || parsed['legalDescription'] || '';
+    const legalAcres = parsed['legalAcreage'] || '';
+    const propType   = parsed['propertyType'] || parsed['type'] || '';
+    const neighborhood = parsed['neighborhoodCode'] || '';
+    const mailingAddr  = parsed['mailingAddress'] || '';
+    const hasDeepData  = valueHistory || taxingUnits || landData || improvementData || deedHistory;
 
-    // Value pills for key amounts when deep data is present
+    // Value pills — show for both basic and deep-data modes when amounts available
+    const pillNetAppr = netAppr || (hasDeepData ? appraisedVal || marketValue : '');
     let pillsHtml = '';
-    if (hasDeepData && (netAppr || landMkt || imprvVal)) {
-      const pills = [
-        { label: 'Net Appraised', value: netAppr || appraisedVal || marketValue },
-        { label: 'Land Market',   value: landMkt  },
-        { label: 'Improvement',   value: imprvVal  },
-      ].filter(p => p.value);
-      if (pills.length) {
-        pillsHtml = `<div class="appr-value-pills">${
-          pills.map(p => `<div class="appr-pill"><span class="pill-label">${escHtml(p.label)}</span><span class="pill-value">${escHtml(p.value)}</span></div>`).join('')
-        }</div>`;
-      }
+    const pills = [
+      { label: 'Net Appraised', value: pillNetAppr },
+      { label: 'Land Market',   value: landMkt  },
+      { label: 'Improvement',   value: imprvVal  },
+      { label: 'Market Value',  value: !hasDeepData ? '' : marketValue },
+    ].filter(p => p.value);
+    if (pills.length) {
+      pillsHtml = `<div class="appr-value-pills">${
+        pills.map(p => `<div class="appr-pill"><span class="pill-label">${escHtml(p.label)}</span><span class="pill-value">${escHtml(p.value)}</span></div>`).join('')
+      }</div>`;
     }
 
     const detailLink = detailPageUrl
@@ -854,15 +864,19 @@
             ${fieldHtml('Property Address', rec.propertyAddress, 'addr')}
             ${!hasDeepData ? fieldHtml('Market / Assessed Value', marketValue, 'large') : ''}
             ${!hasDeepData && appraisedVal ? fieldHtml('Appraised Value', appraisedVal) : ''}
-            ${taxYear ? fieldHtml('Tax Year', taxYear) : ''}
-            ${payStatus ? fieldHtml('Payment Status', payStatus) : ''}
-            ${rec.county ? fieldHtml('County', rec.county) : ''}
-            ${rec.state  ? fieldHtml('State',  rec.state)  : ''}
-            ${rec.legalDescription ? fieldHtml('Legal Description', rec.legalDescription) : ''}
+            ${taxYear      ? fieldHtml('Tax Year',          taxYear)     : ''}
+            ${legalDesc    ? fieldHtml('Legal Description', legalDesc)   : ''}
+            ${legalAcres   ? fieldHtml('Legal Acreage',     legalAcres)  : ''}
+            ${propType     ? fieldHtml('Property Type',     propType)    : ''}
+            ${neighborhood ? fieldHtml('Neighborhood',      neighborhood): ''}
+            ${mailingAddr  ? fieldHtml('Mailing Address',   mailingAddr) : ''}
+            ${payStatus    ? fieldHtml('Payment Status',    payStatus)   : ''}
+            ${rec.county   ? fieldHtml('County',            rec.county)  : ''}
+            ${rec.state    ? fieldHtml('State',             rec.state)   : ''}
           </div>
           ${pillsHtml}
           ${detailLink}
-          ${hasDeepData ? '' : detail}
+          ${detail}
           ${renderApprDetailTable('Value History', valueHistory)}
           ${renderApprDetailTable('Taxing Units', taxingUnits)}
           ${renderApprDetailTable('Land', landData)}

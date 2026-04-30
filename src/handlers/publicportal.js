@@ -241,18 +241,195 @@ function mapApiItem(item) {
 }
 
 // ─── Property detail page extraction ─────────────────────────────────────────
-// Navigates to /property-detail/{pid}/{year} and extracts deep data tables
+// Navigates to /property-detail/{pid}/{year}, intercepts TrueProdigy API
+// responses for deep data, and falls back to AG Grid DOM extraction.
+
+/**
+ * Convert a TrueProdigy API array-of-objects into a 2D table (headers + rows).
+ * e.g. [{year:2026, landValue:5000, ...}, ...] → [['Year','Land Value',...], ['2026','5000',...]]
+ */
+function apiArrayToTable(arr) {
+  if (!Array.isArray(arr) || arr.length === 0) return null;
+  const keys = Object.keys(arr[0]);
+  if (keys.length === 0) return null;
+  const headers = keys.map(k => k.replace(/([A-Z])/g, ' $1').trim()
+    .replace(/^./, c => c.toUpperCase()));
+  const rows = arr.map(item => keys.map(k => {
+    const v = item[k];
+    return v == null ? '' : String(v);
+  }));
+  return [headers, ...rows];
+}
+
+/**
+ * Classify a top-level array by sniffing the keys of the first item.
+ * TrueProdigy fires separate API requests per data section; each response
+ * IS the array (not wrapped inside a named property).
+ * Returns the matching detail key, or null if unrecognised.
+ */
+function classifyArray(arr) {
+  if (!Array.isArray(arr) || arr.length === 0) return null;
+  const keys = Object.keys(arr[0]).map(k => k.toLowerCase());
+  const has = (...words) => words.some(w => keys.some(k => k.includes(w)));
+
+  if (has('grantor', 'grantee', 'instrument', 'deed', 'transfer', 'filed'))
+    return 'deedHistory';
+  if (has('entity', 'taxunit', 'levy', 'taxrate', 'taxable') && !has('year'))
+    return 'taxingUnits';
+  if (has('landtype', 'landclass', 'usecode', 'landdesc') ||
+      (has('acreage', 'sqft') && !has('yearbuilt', 'improvement', 'section')))
+    return 'landData';
+  if (has('yearbuilt', 'stories', 'imprv', 'improvement', 'section', 'structure'))
+    return 'improvementData';
+  if (has('year') && has('land', 'improvement', 'appraised', 'market', 'value'))
+    return 'valueHistory';
+  return null;
+}
+
+/**
+ * Map a TrueProdigy detail API response into our structured detail shape.
+ * Handles three layouts:
+ *   1. Top-level array (each detail request returns its own array)
+ *   2. Wrapped object  { property: {...}, improvements: [...], ... }
+ *   3. Flat property record { pid, geoID, improvements: [...], ... }
+ */
+function mapDetailApiResponse(data) {
+  const result = {};
+
+  // ── Layout 1: top-level array ────────────────────────────────────────────
+  if (Array.isArray(data)) {
+    const key = classifyArray(data);
+    if (key) result[key] = apiArrayToTable(data);
+    return result;
+  }
+
+  // ── Layout 2/3: object — unwrap common envelope shapes ──────────────────
+  const prop = data.property || data.propertyDetail || data.result || data;
+
+  // Named sub-arrays inside the object
+  const candidates = {
+    valueHistory:    ['valueHistory', 'values', 'appraisalHistory', 'valuations', 'history'],
+    taxingUnits:     ['taxingUnits', 'taxEntities', 'taxingEntities', 'entities', 'taxUnits', 'taxingUnit'],
+    landData:        ['land', 'landDetails', 'landRecords', 'lands', 'landSegments'],
+    improvementData: ['improvements', 'improvement', 'improvementDetails', 'structures', 'imprv', 'improvementSegments'],
+    deedHistory:     ['deeds', 'deedHistory', 'deedRecords', 'transfers', 'deedTransactions'],
+  };
+
+  for (const [key, names] of Object.entries(candidates)) {
+    for (const name of names) {
+      if (Array.isArray(prop[name]) && prop[name].length > 0) {
+        result[key] = apiArrayToTable(prop[name]);
+        break;
+      }
+    }
+    // Also check top-level arrays if not found inside prop
+    if (!result[key]) {
+      for (const name of names) {
+        if (Array.isArray(data[name]) && data[name].length > 0) {
+          result[key] = apiArrayToTable(data[name]);
+          break;
+        }
+      }
+    }
+  }
+
+  // Scalar value fields from the primary property record
+  const dollar = v => (v != null && v !== '') ? `$${Number(v).toLocaleString()}` : undefined;
+  result.netAppraisedValue = dollar(prop.netAppraisedValue || prop.netAppraised  || prop.totalAppraisedValue  || prop.appraisedValue);
+  result.landMarketValue   = dollar(prop.landMarketValue   || prop.landValue     || prop.landMktVal);
+  result.improvementValue  = dollar(prop.improvementValue  || prop.improvementMarketValue || prop.imprValue || prop.imprMktVal);
+  result.ownerName         = prop.ownerName || prop.name   || prop.displayName   || '';
+  result.geoId             = prop.geoID     || prop.geoId  || prop.geo_id        || '';
+  result.legalDescription  = prop.legalDescription || prop.legal || '';
+  result.legalAcreage      = prop.legalAcreage != null ? String(prop.legalAcreage) : '';
+  result.propertyType      = prop.propType  || prop.propertyType || prop.type    || '';
+  result.neighborhoodCode  = prop.neighborhoodCode || prop.neighborhood          || '';
+  result.stateCode         = prop.stateCode || prop.stateCd || '';
+
+  // Strip undefined/null/empty
+  for (const k of Object.keys(result)) {
+    if (result[k] == null || result[k] === '') delete result[k];
+  }
+
+  return result;
+}
 
 async function extractPropertyDetail(page, pid, year, origin) {
   const detailUrl = `${origin}/property-detail/${pid}/${year}`;
   console.log(`[publicportal] navigating to detail: ${detailUrl}`);
+
+  // Capture ALL JSON API responses on the detail page.
+  // TrueProdigy fires several per section: the main prod-container.trueprodigyapi.com
+  // domain AND same-origin /api/ calls. We skip only the search endpoints already captured.
+  const apiCaptures = [];
+  const respHandler = async (resp) => {
+    if (resp.status() !== 200) return;
+    const url = resp.url();
+    const ct  = resp.headers()['content-type'] || '';
+    if (!ct.includes('json')) return;
+    if (/searchfulltext|searchbyname|searchresults/i.test(url)) return;
+    // Skip static assets / analytics
+    if (/\.(js|css|png|svg|ico|woff|ttf)(\?|$)/i.test(url)) return;
+    try {
+      const data = await resp.json();
+      // Only keep responses that are arrays or plain objects (not empty)
+      if (data == null || (typeof data === 'object' && Object.keys(data).length === 0)) return;
+      console.log(`[publicportal] detail API: ${url.replace(/^https?:\/\/[^/]+/, '')}`);
+      apiCaptures.push({ url, data });
+    } catch (_) {}
+  };
+  page.on('response', respHandler);
+
   try {
-    await page.goto(detailUrl, { waitUntil: 'networkidle', timeout: 30000 });
+    await page.goto(detailUrl, { waitUntil: 'networkidle', timeout: 35000 });
   } catch (_) {
     try { await page.goto(detailUrl, { waitUntil: 'load', timeout: 20000 }); } catch (_2) {}
   }
-  await page.waitForTimeout(2500);
+  // Give the React SPA extra time to fire deferred sub-requests (AG Grid lazy-loads)
+  await page.waitForTimeout(5000);
 
+  page.off('response', respHandler);
+  console.log(`[publicportal] detail: captured ${apiCaptures.length} API responses`);
+  if (apiCaptures.length > 0) {
+    apiCaptures.forEach(c => console.log(`  → ${c.url.replace(/^https?:\/\/[^/]+/, '')}`));
+  }
+
+  // ── Merge all captured API responses ────────────────────────────────────────
+  if (apiCaptures.length > 0) {
+    const merged = {};
+    const tableKeys = ['valueHistory', 'taxingUnits', 'landData', 'improvementData', 'deedHistory'];
+
+    // First pass: find the primary property record (flat object with pid / geoID)
+    const primary = apiCaptures.find(c => {
+      const d = c.data?.property || c.data?.propertyDetail || c.data?.result || c.data;
+      return d && !Array.isArray(d) &&
+        (d.pid != null || d.propId != null || d.geoID != null || d.geoId != null);
+    });
+    if (primary) Object.assign(merged, mapDetailApiResponse(primary.data));
+
+    // Second pass: every response contributes whatever tables it can provide
+    for (const cap of apiCaptures) {
+      const sub = mapDetailApiResponse(cap.data);
+      // Scalars: only fill in if not already set
+      for (const k of ['ownerName','geoId','legalDescription','legalAcreage',
+                        'netAppraisedValue','landMarketValue','improvementValue',
+                        'propertyType','neighborhoodCode','stateCode']) {
+        if (!merged[k] && sub[k]) merged[k] = sub[k];
+      }
+      // Tables: first winner per key
+      for (const k of tableKeys) {
+        if (!merged[k] && sub[k]) merged[k] = sub[k];
+      }
+    }
+
+    if (Object.keys(merged).length > 0) {
+      merged.detailUrl = page.url();
+      return merged;
+    }
+  }
+
+  // ── DOM fallback: AG Grids + HTML tables ────────────────────────────────────
+  console.log('[publicportal] detail: no API data captured — falling back to DOM');
   return page.evaluate(() => {
     function extractRegularTable(tbl) {
       const rows = Array.from(tbl.querySelectorAll('tr'));
@@ -279,62 +456,43 @@ async function extractPropertyDetail(page, pid, year, origin) {
 
     const result = {};
 
-    // AG Grids (primary on this React SPA)
     for (const grid of Array.from(document.querySelectorAll('.ag-root-wrapper'))) {
       const data = extractAgGrid(grid);
       if (!data || data.length < 2) continue;
       const hStr = data[0].join('|').toLowerCase();
-      if (!result.valueHistory && /year|land|improvement|appraised/.test(hStr)) {
-        result.valueHistory = data;
-      } else if (!result.taxingUnits && /entity|taxable/.test(hStr)) {
-        result.taxingUnits = data;
-      } else if (!result.deedHistory && /deed|grantor|grantee|instrument/.test(hStr)) {
-        result.deedHistory = data;
-      } else if (!result.landData && /land.*type|land.*class|use.*code|acre|sqft/.test(hStr)) {
-        result.landData = data;
-      } else if (!result.improvementData && /improvement|imprv|section/.test(hStr)) {
-        result.improvementData = data;
-      }
+      if (!result.valueHistory    && /year|land|improvement|appraised/.test(hStr)) result.valueHistory = data;
+      else if (!result.taxingUnits     && /entity|taxable/.test(hStr))              result.taxingUnits = data;
+      else if (!result.deedHistory     && /deed|grantor|grantee|instrument/.test(hStr)) result.deedHistory = data;
+      else if (!result.landData        && /land.*type|land.*class|use.*code|acre|sqft/.test(hStr)) result.landData = data;
+      else if (!result.improvementData && /improvement|imprv|section/.test(hStr))   result.improvementData = data;
     }
 
-    // HTML tables fallback
     for (const tbl of Array.from(document.querySelectorAll('table'))) {
       const data = extractRegularTable(tbl);
       if (!data) continue;
       const hStr = (data[0] || []).join('|').toLowerCase();
-      if (!result.valueHistory && /year|land|improvement|appraised/.test(hStr)) {
-        result.valueHistory = data;
-      } else if (!result.taxingUnits && /entity|taxable/.test(hStr)) {
-        result.taxingUnits = data;
-      } else if (!result.deedHistory && /deed|grantor|grantee|instrument/.test(hStr)) {
-        result.deedHistory = data;
-      } else if (!result.landData && /acre|sqft|land.*type/.test(hStr)) {
-        result.landData = data;
-      }
+      if (!result.valueHistory && /year|land|improvement|appraised/.test(hStr))  result.valueHistory = data;
+      else if (!result.taxingUnits && /entity|taxable/.test(hStr))                result.taxingUnits = data;
+      else if (!result.deedHistory && /deed|grantor|grantee|instrument/.test(hStr)) result.deedHistory = data;
+      else if (!result.landData    && /acre|sqft|land.*type/.test(hStr))           result.landData = data;
     }
 
-    // Key-value fields from page text
     const bodyText = (document.body.innerText || '').replace(/\s{2,}/g, ' ');
-
-    const ownerM = bodyText.match(/Owner(?:\s*Name)?\s*[:\s]\s*([A-Z][A-Z\s&%'.,-]{3,60}?)(?:\s{2,}|\s+(?:GEO|Type|Address|Legal|Acct))/);
+    const ownerM   = bodyText.match(/Owner(?:\s*Name)?\s*[:\s]\s*([A-Z][A-Z\s&%'.,-]{3,60}?)(?:\s{2,}|\s+(?:GEO|Type|Address|Legal|Acct))/);
     if (ownerM) result.ownerName = ownerM[1].trim();
-
     const geoM = bodyText.match(/GEO\s*ID\s*[:\s]*([A-Z0-9/-]{4,30})/i);
     if (geoM) result.geoId = geoM[1].trim();
-
     const netApprM = bodyText.match(/Net\s*Appraised(?:\s*Value)?\s*\$?\s*([\d,]+)/i);
     if (netApprM) result.netAppraisedValue = `$${netApprM[1]}`;
-
     const landMktM = bodyText.match(/Land\s*(?:Market\s*)?Value\s*\$?\s*([\d,]+)/i);
     if (landMktM) result.landMarketValue = `$${landMktM[1]}`;
-
     const imprvM = bodyText.match(/Improvement\s*(?:Market\s*)?Value\s*\$?\s*([\d,]+)/i);
     if (imprvM) result.improvementValue = `$${imprvM[1]}`;
 
     result.detailUrl = window.location.href;
     return result;
   }).catch(err => {
-    console.log(`[publicportal] detail extract error: ${err.message}`);
+    console.log(`[publicportal] detail DOM extract error: ${err.message}`);
     return { detailUrl: page.url() };
   });
 }
@@ -438,37 +596,47 @@ async function search(page, {
       const MAX = searchMode === 'account' ? items.length : Math.min(items.length, 20);
       const records = items.slice(0, MAX).map(mapApiItem);
 
-      // For account-number searches, drill into the property detail page for deep data
-      if (searchMode === 'account' && records.length > 0) {
-        try {
-          const firstItem = items[0];
-          const pid  = String(firstItem.pid  || records[0].parcelId || '');
-          const year = String(firstItem.pYear || new Date().getFullYear());
-          if (pid) {
-            onProgress('Loading property detail page...');
-            const origin = new URL(searchResultsUrl).origin;
+      // Drill into detail page for every account search and for owner searches
+      // that return a small result set (≤5 records) — same as single-match lookups.
+      const shouldDrillDetail = searchMode === 'account' || records.length <= 5;
+      if (shouldDrillDetail && records.length > 0) {
+        const origin = new URL(searchResultsUrl).origin;
+        // For owner searches with multiple results, drill each record (up to 5)
+        const drillCount = searchMode === 'account' ? records.length : Math.min(records.length, 5);
+        for (let i = 0; i < drillCount; i++) {
+          try {
+            const item = items[i];
+            const pid  = String(item.pid  || records[i].parcelId || '');
+            const year = String(item.pYear || new Date().getFullYear());
+            if (!pid) continue;
+            onProgress(`Loading property detail${drillCount > 1 ? ` (${i + 1}/${drillCount})` : ''}...`);
             const detail = await extractPropertyDetail(page, pid, year, origin);
-            if (detail && Object.keys(detail).length > 1) {
-              const existingDetails = JSON.parse(records[0].additionalDetails || '{}');
-              records[0].additionalDetails = JSON.stringify({
-                ...existingDetails,
-                valueHistory:     detail.valueHistory     || null,
-                taxingUnits:      detail.taxingUnits      || null,
-                landData:         detail.landData         || null,
-                improvementData:  detail.improvementData  || null,
-                deedHistory:      detail.deedHistory      || null,
-                netAppraisedValue: detail.netAppraisedValue || '',
-                landMarketValue:   detail.landMarketValue   || '',
-                improvementValue:  detail.improvementValue  || '',
-                detailPageUrl:     detail.detailUrl         || '',
-              });
-              // Update top-level fields from detail page if richer
-              if (detail.ownerName && !records[0].ownerName) records[0].ownerName = detail.ownerName;
-              if (detail.geoId)           { const d = JSON.parse(records[0].additionalDetails); d.geoId = detail.geoId; records[0].additionalDetails = JSON.stringify(d); }
+            if (!detail || Object.keys(detail).length <= 1) continue;
+            const existingDetails = JSON.parse(records[i].additionalDetails || '{}');
+            records[i].additionalDetails = JSON.stringify({
+              ...existingDetails,
+              valueHistory:      detail.valueHistory      || null,
+              taxingUnits:       detail.taxingUnits       || null,
+              landData:          detail.landData          || null,
+              improvementData:   detail.improvementData   || null,
+              deedHistory:       detail.deedHistory       || null,
+              netAppraisedValue: detail.netAppraisedValue || '',
+              landMarketValue:   detail.landMarketValue   || '',
+              improvementValue:  detail.improvementValue  || '',
+              legalDescription:  detail.legalDescription  || existingDetails.legalDescription || '',
+              legalAcreage:      detail.legalAcreage      || existingDetails.legalAcreage || '',
+              detailPageUrl:     detail.detailUrl         || '',
+            });
+            if (detail.ownerName && !records[i].ownerName) records[i].ownerName = detail.ownerName;
+            if (detail.legalDescription && !records[i].legalDescription) records[i].legalDescription = detail.legalDescription;
+            if (detail.geoId) {
+              const d = JSON.parse(records[i].additionalDetails);
+              d.geoId = detail.geoId;
+              records[i].additionalDetails = JSON.stringify(d);
             }
+          } catch (de) {
+            console.log(`[publicportal] detail drill-in error (record ${i}): ${de.message}`);
           }
-        } catch (de) {
-          console.log(`[publicportal] detail drill-in error: ${de.message}`);
         }
       }
 
