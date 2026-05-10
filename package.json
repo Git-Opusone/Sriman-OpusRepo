@@ -1,7 +1,7 @@
 {
   "name": "mortgage-search-service",
   "version": "1.0.0",
-  "description": "AI-powered Mortgage Title & Tax Search microservice using browser automation",
+  "description": "AI-powered Mortgage Title & Tax Search microservice using browser automation and OpenAI (GPT-4o-mini vision)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -9,13 +9,17 @@
     "setup": "npm install && npx playwright install chromium"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
+    "axios": "^1.15.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "playwright": "^1.44.0"
+    "openai": "^4.104.0",
+    "playwright": "^1.44.0",
+    "playwright-extra": "^4.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
   },
   "devDependencies": {
+    "cheerio": "^1.2.0",
     "nodemon": "^3.1.0"
   }
 }
