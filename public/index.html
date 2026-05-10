@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mortgage Title &amp; Tax Search</title>
+  <title>Orchestrate-Mortgage Title &amp; Tax Search</title>
   <style>
     /* ── Reset & Base ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -19,6 +19,7 @@
       --gray-100:   #f3f4f6;
       --gray-200:   #e5e7eb;
       --gray-400:   #9ca3af;
+      --gray-500:   #6b7280;
       --gray-600:   #4b5563;
       --gray-700:   #374151;
       --gray-900:   #111827;
@@ -40,6 +41,17 @@
       color: #fff;
       padding: 28px 24px;
       text-align: center;
+      position: relative;
+    }
+    header .author-tag {
+      position: absolute;
+      bottom: 10px;
+      right: 16px;
+      font-size: .78rem;
+      font-weight: 600;
+      color: #f5c842;
+      letter-spacing: .03em;
+      opacity: .9;
     }
     header .badge {
       display: inline-block;
@@ -51,6 +63,13 @@
       letter-spacing: .04em;
       text-transform: uppercase;
       margin-bottom: 10px;
+    }
+    header .logo {
+      display: block;
+      margin: 0 auto 14px;
+      height: 52px;
+      width: auto;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,.4));
     }
     header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -.02em; }
     header p  { margin-top: 6px; font-size: .95rem; opacity: .85; }
@@ -100,6 +119,29 @@
     }
     label .req { color: var(--red); margin-left: 2px; }
     .hint { font-size: .77rem; color: var(--gray-400); margin-top: 4px; }
+
+    select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 7px;
+      font-size: .95rem;
+      color: var(--gray-900);
+      background: #fff;
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+      cursor: pointer;
+    }
+    select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(26,86,219,.12);
+    }
+    select:disabled { background: var(--gray-50); color: var(--gray-400); cursor: not-allowed; }
+
+    .url-alive    { background:#d1fae5; color:#065f46; }
+    .url-refreshed{ background:#fef3c7; color:#92400e; }
+    .url-dead     { background:#fee2e2; color:#991b1b; }
+    .url-checking { background:#e0e7ff; color:#3730a3; }
 
     input[type="text"], input[type="url"] {
       width: 100%;
@@ -194,6 +236,32 @@
       font-size: .9rem;
     }
 
+    #captchaBox {
+      display: none;
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      font-size: .9rem;
+    }
+    #captchaBox .captcha-title {
+      font-weight: 600;
+      color: #92400e;
+      margin-bottom: 6px;
+    }
+    #captchaBox .captcha-body {
+      color: #78350f;
+      line-height: 1.5;
+    }
+    #captchaBox .captcha-note {
+      margin-top: 10px;
+      font-size: .82rem;
+      color: #92400e;
+      border-top: 1px solid #fcd34d;
+      padding-top: 8px;
+    }
+
     /* ── Results ── */
     #resultsSection { display: none; }
 
@@ -226,10 +294,11 @@
       background: linear-gradient(90deg, #1e3a8a, #1a56db);
       color: #fff;
       padding: 12px 18px;
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+      display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 6px;
     }
-    .record-owner { font-size: 1rem; font-weight: 700; }
-    .record-parcel { font-size: .8rem; opacity: .85; }
+    .record-header-info { min-width: 0; flex: 1; }
+    .record-owner { font-size: 1rem; font-weight: 700; word-break: break-word; overflow-wrap: anywhere; }
+    .record-parcel { font-size: .8rem; opacity: .85; word-break: break-word; overflow-wrap: anywhere; }
     .status-badge {
       display: inline-block;
       padding: 3px 10px;
@@ -254,29 +323,30 @@
     .field-value.addr  { font-size: .88rem; color: var(--gray-700); }
     .field-value.empty { color: var(--gray-400); font-style: italic; }
 
-    .additional-details {
-      margin-top: 14px;
-      padding-top: 14px;
-      border-top: 1px solid var(--gray-100);
+    /* Property detail grid (replaces old accordion) */
+    .property-detail-grid {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 2px solid var(--gray-100);
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
     }
-    .additional-details summary {
-      font-size: .82rem; font-weight: 600;
-      color: var(--gray-600); cursor: pointer;
-      list-style: none; display: flex; align-items: center; gap: 6px;
+    .det-section { }
+    .det-section-title {
+      font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--gray-500);
+      margin-bottom: 6px; padding-bottom: 4px;
+      border-bottom: 1px solid var(--gray-200);
     }
-    .additional-details summary::before { content: '▶'; font-size: .6rem; }
-    details[open] summary::before { content: '▼'; }
-    .additional-details table {
-      width: 100%; border-collapse: collapse;
-      margin-top: 8px; font-size: .82rem;
+    .det-table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+    .det-label {
+      padding: 4px 8px 4px 0; color: var(--gray-500);
+      font-weight: 500; vertical-align: top; width: 45%;
     }
-    .additional-details td {
-      padding: 5px 8px; border: 1px solid var(--gray-100);
-      vertical-align: top;
-    }
-    .additional-details td:first-child {
-      font-weight: 600; color: var(--gray-600);
-      width: 40%; background: var(--gray-50);
+    .det-value {
+      padding: 4px 0; color: #111827;
+      font-weight: 600; vertical-align: top;
     }
 
     /* No results */
@@ -287,6 +357,152 @@
     }
     .no-results .icon { font-size: 2.5rem; margin-bottom: 12px; }
     .no-results p { font-size: .95rem; }
+
+    /* ── Dual-search info banner ── */
+    #dualSearchBanner {
+      display: none;
+      background: linear-gradient(135deg, #f0fdf4, #ebf3ff);
+      border: 1px solid #a7f3d0;
+      border-radius: var(--radius);
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      font-size: .85rem;
+      color: var(--gray-700);
+    }
+    #dualSearchBanner strong { color: var(--blue); }
+
+    /* ── Result tabs ── */
+    .result-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid var(--gray-200);
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      padding: 10px 22px;
+      font-size: .9rem;
+      font-weight: 600;
+      color: var(--gray-500);
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tab-btn:hover { color: var(--blue); }
+    .tab-btn.active {
+      color: var(--blue);
+      border-bottom-color: var(--blue);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Tax bill history table */
+    .bill-history-section {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 2px solid var(--gray-100);
+      width: 100%;
+    }
+    .bill-history-title {
+      font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--gray-500);
+      margin-bottom: 12px;
+    }
+    .bill-year-block { margin-bottom: 20px; overflow-x: auto; width: 100%; }
+    .bill-year-label {
+      font-size: .82rem; font-weight: 800; color: #1a56db;
+      background: #eff6ff; border-left: 3px solid #1a56db;
+      padding: 4px 10px; margin-bottom: 4px; border-radius: 0 4px 4px 0;
+      display: inline-block;
+    }
+    .bill-table {
+      width: 100%; min-width: 540px; border-collapse: collapse; font-size: .8rem;
+      margin-bottom: 0;
+    }
+    .bill-table th {
+      background: var(--gray-100); color: var(--gray-600);
+      font-weight: 600; text-align: left;
+      padding: 5px 10px; border-bottom: 1px solid var(--gray-200);
+      font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .bill-table td {
+      padding: 5px 10px; border-bottom: 1px solid var(--gray-100);
+      color: var(--gray-900);
+    }
+    .bill-table tr.totals-row td {
+      font-weight: 700; background: var(--gray-50); border-top: 1px solid var(--gray-300);
+    }
+    .bill-table tr.paid-row td { color: #065f46; }
+    .bill-table tr.unpaid-row td { color: var(--gray-900); }
+    .bill-table td.balance-due  { color: var(--red) !important; font-weight: 700; }
+    .bill-table td.balance-paid { color: var(--green) !important; }
+    .bill-table td.date-paid    { color: #6b7280; }
+
+    /* Appraisal detail sections (Value History, Taxing Units, Land, Deed History) */
+    .appr-detail-section {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 2px solid var(--gray-100);
+      overflow-x: auto;
+      width: 100%;
+    }
+    .appr-detail-title {
+      font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--gray-500);
+      margin-bottom: 10px;
+    }
+    .appr-detail-table {
+      width: 100%; min-width: 420px; border-collapse: collapse; font-size: .8rem; margin-bottom: 6px;
+    }
+    .appr-detail-table th {
+      background: var(--gray-100); color: var(--gray-600); font-weight: 600;
+      text-align: left; padding: 6px 10px;
+      font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .appr-detail-table td {
+      padding: 5px 10px; border-bottom: 1px solid var(--gray-100); color: var(--gray-900);
+    }
+    .appr-detail-table tr:last-child td { border-bottom: none; }
+    .appr-value-pills {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; margin-bottom: 4px;
+    }
+    .appr-pill {
+      background: var(--blue-light); border: 1px solid #bfdbfe;
+      border-radius: 8px; padding: 6px 14px; font-size: .82rem;
+    }
+    .appr-pill .pill-label {
+      font-size: .65rem; font-weight: 700; text-transform: uppercase;
+      color: var(--gray-500); letter-spacing: .05em; display: block; margin-bottom: 2px;
+    }
+    .appr-pill .pill-value { font-weight: 700; color: var(--blue-dark); }
+
+    /* Tax summary card */
+    .tax-summary-box {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 12px;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 14px 0;
+    }
+    .tax-summary-item .tax-label {
+      font-size: .68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--gray-400); margin-bottom: 3px;
+    }
+    .tax-summary-item .tax-value {
+      font-size: 1rem; font-weight: 700; color: var(--gray-900);
+      word-break: break-word;
+    }
+    .tax-summary-item .tax-value.amount-due { color: var(--red); }
+    .tax-summary-item .tax-value.amount-paid { color: var(--green); }
+    .tax-summary-item.wide { grid-column: 1 / -1; }
 
     /* ── Footer ── */
     footer {
@@ -300,9 +516,11 @@
 <body>
 
 <header>
+  <img src="/OpusOne-Svg.svg" alt="OpusOne" class="logo" />
   <div class="badge">AI-Powered</div>
-  <h1>Mortgage Title &amp; Tax Search</h1>
+  <h1>Orchestrate-Mortgage Title &amp; Tax Search</h1>
   <p>Intelligent county property &amp; tax record lookup via browser automation</p>
+  <span class="author-tag">-- Sriman .S</span>
 </header>
 
 <main>
@@ -313,14 +531,46 @@
       <span class="icon">🔍</span> Search Parameters
     </div>
 
-    <!-- County URL -->
-    <div class="form-group">
-      <label for="countyUrl">County Search URL <span class="req">*</span></label>
-      <input type="url" id="countyUrl"
-        placeholder="https://esearch.andrewscad.org/"
-        value="https://esearch.andrewscad.org/" />
-      <p class="hint">Paste the county CAD / tax assessor search URL. Find county URLs at publicrecords.netronline.com</p>
+    <!-- State + County selectors -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="stateSelect">State <span class="req">*</span></label>
+        <select id="stateSelect" onchange="onStateChange()">
+          <option value="">— Select State —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="countySelect">County <span class="req">*</span></label>
+        <select id="countySelect" onchange="onCountyChange()" disabled>
+          <option value="">— Select County —</option>
+        </select>
+      </div>
     </div>
+
+    <!-- Resolved URL (read-only, shown after county selected) -->
+    <div class="form-group" id="urlRow" style="display:none;">
+      <label>County Search URL
+        <span id="urlStatusBadge" style="margin-left:8px;font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:10px;"></span>
+      </label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="url" id="countyUrl" readonly
+          style="background:var(--gray-50);color:var(--gray-600);font-size:.82rem;" />
+        <span id="platformBadge" style="white-space:nowrap;font-size:.75rem;color:var(--gray-400);"></span>
+      </div>
+      <p class="hint" id="urlHint"></p>
+    </div>
+
+    <!-- Manual URL override (collapsed by default) -->
+    <details style="margin-bottom:12px;">
+      <summary style="font-size:.8rem;color:var(--gray-400);cursor:pointer;user-select:none;">
+        Enter URL manually (override)
+      </summary>
+      <div class="form-group" style="margin-top:10px;">
+        <input type="url" id="manualUrl"
+          placeholder="https://esearch.andrewscad.org/" />
+        <p class="hint">Overrides the auto-looked-up URL above</p>
+      </div>
+    </details>
 
     <div class="divider">Owner / Taxpayer Name</div>
 
@@ -350,6 +600,17 @@
       <p class="hint">Optional — enter if you know the exact parcel or account number</p>
     </div>
 
+    <!-- Dual-search mode banner (shown when Anderson TX is selected) -->
+    <div id="dualSearchBanner">
+      <strong>Dual Search Mode</strong> — Anderson County, TX has two data sources:<br>
+      🏠 <strong>Appraisal (CAD)</strong> → andersoncad.net &nbsp;|&nbsp;
+      💰 <strong>Tax Office</strong> → tax.co.anderson.tx.us<br>
+      <span style="font-size:.8rem;color:var(--gray-500);margin-top:4px;display:block;">
+        Both sources will be searched in parallel. Results appear in separate tabs below.
+        <em>Property ID search recommended (e.g. 60110 or R60110).</em>
+      </span>
+    </div>
+
     <button class="btn btn-primary" id="searchBtn" onclick="startSearch()">
       <span>&#128269;</span> Search County Records
     </button>
@@ -368,23 +629,61 @@
   <!-- ── Error ── -->
   <div id="errorBox"></div>
 
+  <!-- ── CAPTCHA warning ── -->
+  <div id="captchaBox">
+    <div class="captcha-title">⚠ Search Blocked — CAPTCHA Challenge Detected</div>
+    <div class="captcha-body" id="captchaBody"></div>
+    <div class="captcha-note">
+      <strong>Order note:</strong> This search could not be completed automatically because the county website
+      presented a CAPTCHA challenge that requires human verification. Please note this order for manual
+      follow-up or contact the county assessor's office directly. A future upgrade will add automated
+      CAPTCHA resolution.
+    </div>
+  </div>
+
   <!-- ── Results ── -->
   <section id="resultsSection">
     <div class="card-title" style="margin-bottom:12px;">
       <span class="icon">📋</span> Search Results
     </div>
-    <div class="results-summary">
-      <span id="countBadge" class="badge-count"></span>
-      <span id="sourceUrl" class="badge-url"></span>
+
+    <!-- Tab navigation (visible for dual search only) -->
+    <div class="result-tabs" id="resultTabsNav" style="display:none;">
+      <button class="tab-btn active" id="tabBtnAppraisal" onclick="switchResultTab('appraisal')">
+        🏠 Appraisal (CAD)
+        <span id="appraisalTabBadge" style="font-size:.75rem;font-weight:700;padding:1px 8px;border-radius:10px;background:var(--blue-light);color:var(--blue);"></span>
+      </button>
+      <button class="tab-btn" id="tabBtnTax" onclick="switchResultTab('tax')">
+        💰 Tax Office
+        <span id="taxTabBadge" style="font-size:.75rem;font-weight:700;padding:1px 8px;border-radius:10px;background:var(--blue-light);color:var(--blue);"></span>
+      </button>
     </div>
-    <div id="summaryText" style="font-size:.88rem;color:var(--gray-600);margin-bottom:16px;"></div>
-    <div id="recordsContainer"></div>
+
+    <!-- Appraisal tab panel (also used for single/non-dual searches) -->
+    <div id="appraisalTabPanel" class="tab-panel active">
+      <div class="results-summary">
+        <span id="countBadge" class="badge-count"></span>
+        <span id="sourceUrl" class="badge-url"></span>
+      </div>
+      <div id="summaryText" style="font-size:.88rem;color:var(--gray-600);margin-bottom:16px;"></div>
+      <div id="recordsContainer"></div>
+    </div>
+
+    <!-- Tax Office tab panel (dual search only) -->
+    <div id="taxTabPanel" class="tab-panel">
+      <div class="results-summary">
+        <span id="taxCountBadge" class="badge-count"></span>
+        <span id="taxSourceUrl" class="badge-url"></span>
+      </div>
+      <div id="taxSummaryText" style="font-size:.88rem;color:var(--gray-600);margin-bottom:16px;"></div>
+      <div id="taxRecordsContainer"></div>
+    </div>
   </section>
 
 </main>
 
 <footer>
-  <p>Mortgage Title &amp; Tax Search &mdash; Powered by Claude claude-opus-4-6 + Playwright</p>
+  <p>Orchestrate-Mortgage Title &amp; Tax Search &mdash; Powered by Claude claude-opus-4-6 + Playwright</p>
 </footer>
 
 <script>
@@ -435,58 +734,389 @@
       .replace(/"/g, '&quot;');
   }
 
-  function renderAdditional(details) {
-    if (!details || typeof details !== 'object') return '';
-    const entries = Object.entries(details).filter(([, v]) => v != null && v !== '');
-    if (entries.length === 0) return '';
-    const rows = entries
-      .map(([k, v]) => `<tr><td>${escHtml(k)}</td><td>${escHtml(String(v))}</td></tr>`)
+  // Fields already shown prominently or rendered as deep tables — exclude from the detail grid
+  const PRIMARY_FIELDS = new Set([
+    'owner name','ownername','owner','property address','situs address','address','situs',
+    'legal description','legal desc','tax amount due','amount due','appraised',
+    'market value','assessed value','mineral value','tax year','payment status',
+    'county','state','property id','propertyid','parcel id',
+    // deep table keys — these are rendered as proper tables, not key-value rows
+    'valuehistory','taxingunits','landdata','improvementdata','deedhistory',
+    'detailpageurl','detailurl',
+  ]);
+
+  function renderDetailGrid(details) {
+    let parsed = details;
+    if (typeof details === 'string') {
+      try { parsed = JSON.parse(details); } catch (_) { return ''; }
+    }
+    if (!parsed || typeof parsed !== 'object') return '';
+
+    // Separate into key sections based on common CAD field names
+    const sections = {
+      'Account': ['Property ID','Geographic ID','Geo ID','Type','Zoning','Property Use'],
+      'Location': ['Situs Address','Address','Map ID','Mapsco','Legal Description','Abstract/Subdivision','Neighborhood'],
+      'Owner': ['Owner Name','Owner','Owner ID','Mailing Address','Exemptions'],
+      'Property Values': ['Mineral Value','Market Value','Assessed Value','Appraised','Land Value','Improvement Value'],
+    };
+
+    const shown = new Set();
+    let html = '';
+
+    for (const [section, keys] of Object.entries(sections)) {
+      const rows = keys
+        .filter(k => parsed[k] != null && parsed[k] !== '')
+        .map(k => { shown.add(k); return `<tr><td class="det-label">${escHtml(k)}</td><td class="det-value">${escHtml(String(parsed[k]))}</td></tr>`; })
+        .join('');
+      if (rows) html += `<div class="det-section"><div class="det-section-title">${section}</div><table class="det-table">${rows}</table></div>`;
+    }
+
+    // Everything else not already shown — skip arrays (rendered as proper tables elsewhere)
+    const extras = Object.entries(parsed)
+      .filter(([k, v]) => !shown.has(k) && v != null && v !== ''
+        && !PRIMARY_FIELDS.has(k.toLowerCase())
+        && !Array.isArray(v) && typeof v !== 'object')
+      .map(([k, v]) => `<tr><td class="det-label">${escHtml(k)}</td><td class="det-value">${escHtml(String(v))}</td></tr>`)
       .join('');
-    return `
-      <details class="additional-details">
-        <summary>Additional Details (${entries.length})</summary>
-        <table>${rows}</table>
-      </details>`;
+    if (extras) html += `<div class="det-section"><div class="det-section-title">Other Fields</div><table class="det-table">${extras}</table></div>`;
+
+    return html ? `<div class="property-detail-grid">${html}</div>` : '';
+  }
+
+  function renderApprDetailTable(title, tableData) {
+    if (!tableData || tableData.length < 2) return '';
+    const [headers, ...rows] = tableData;
+    let html = `<div class="appr-detail-section">
+      <div class="appr-detail-title">${escHtml(title)}</div>
+      <table class="appr-detail-table"><thead><tr>`;
+    headers.forEach(h => { html += `<th>${escHtml(h)}</th>`; });
+    html += '</tr></thead><tbody>';
+    rows.forEach(row => {
+      html += '<tr>';
+      row.forEach(cell => { html += `<td>${escHtml(cell)}</td>`; });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    return html;
   }
 
   function renderRecord(rec, index) {
+    const detail = renderDetailGrid(rec.additionalDetails);
+    // Pull key values from detail data too
+    let parsed = {};
+    if (rec.additionalDetails) {
+      try { parsed = typeof rec.additionalDetails === 'string' ? JSON.parse(rec.additionalDetails) : rec.additionalDetails; } catch (_) {}
+    }
+    const marketValue   = parsed['Market Value']   || parsed['Assessed Value'] || rec.taxAmountDue || '';
+    const appraisedVal  = parsed['Appraised']       || parsed['netAppraisedValue'] || '';
+    const taxYear       = rec.taxYear || parsed['Tax Year'] || parsed['year'] || '';
+    const payStatus     = rec.paymentStatus || parsed['Payment Status'] || '';
+    const detailPageUrl = parsed['detailPageUrl'] || '';
+
+    // Deep appraisal data (from property detail page navigation)
+    const valueHistory    = parsed['valueHistory']    || null;
+    const taxingUnits     = parsed['taxingUnits']     || null;
+    const landData        = parsed['landData']        || null;
+    const improvementData = parsed['improvementData'] || null;
+    const deedHistory     = parsed['deedHistory']     || null;
+    const netAppr    = parsed['netAppraisedValue'] || '';
+    const landMkt    = parsed['landMarketValue']   || '';
+    const imprvVal   = parsed['improvementValue']  || '';
+    const legalDesc  = rec.legalDescription || parsed['legalDescription'] || '';
+    const legalAcres = parsed['legalAcreage'] || '';
+    const propType   = parsed['propertyType'] || parsed['type'] || '';
+    const neighborhood = parsed['neighborhoodCode'] || '';
+    const mailingAddr  = parsed['mailingAddress'] || '';
+    const hasDeepData  = valueHistory || taxingUnits || landData || improvementData || deedHistory;
+
+    // Value pills — show for both basic and deep-data modes when amounts available
+    const pillNetAppr = netAppr || (hasDeepData ? appraisedVal || marketValue : '');
+    let pillsHtml = '';
+    const pills = [
+      { label: 'Net Appraised', value: pillNetAppr },
+      { label: 'Land Market',   value: landMkt  },
+      { label: 'Improvement',   value: imprvVal  },
+      { label: 'Market Value',  value: !hasDeepData ? '' : marketValue },
+    ].filter(p => p.value);
+    if (pills.length) {
+      pillsHtml = `<div class="appr-value-pills">${
+        pills.map(p => `<div class="appr-pill"><span class="pill-label">${escHtml(p.label)}</span><span class="pill-value">${escHtml(p.value)}</span></div>`).join('')
+      }</div>`;
+    }
+
+    const detailLink = detailPageUrl
+      ? `<a href="${escHtml(detailPageUrl)}" target="_blank" rel="noopener"
+           style="font-size:.78rem;color:var(--blue);text-decoration:none;margin-top:4px;display:inline-block;">
+           View full detail ↗</a>`
+      : '';
+
     return `
       <div class="record-card">
         <div class="record-header">
-          <div>
+          <div class="record-header-info">
             <div class="record-owner">${escHtml(rec.ownerName || 'Unknown Owner')}</div>
             ${rec.parcelId ? `<div class="record-parcel">Parcel / Account: ${escHtml(rec.parcelId)}</div>` : ''}
           </div>
-          ${statusPill(rec.paymentStatus)}
+          ${statusPill(payStatus)}
         </div>
         <div class="record-body">
           <div class="fields-grid">
             ${fieldHtml('Property Address', rec.propertyAddress, 'addr')}
-            ${fieldHtml('Tax Amount Due', rec.taxAmountDue, 'large')}
-            ${fieldHtml('Tax Year', rec.taxYear)}
-            ${fieldHtml('Payment Status', rec.paymentStatus)}
-            ${fieldHtml('County', rec.county)}
-            ${fieldHtml('State', rec.state)}
-            ${rec.legalDescription ? fieldHtml('Legal Description', rec.legalDescription) : ''}
+            ${!hasDeepData ? fieldHtml('Market / Assessed Value', marketValue, 'large') : ''}
+            ${!hasDeepData && appraisedVal ? fieldHtml('Appraised Value', appraisedVal) : ''}
+            ${taxYear      ? fieldHtml('Tax Year',          taxYear)     : ''}
+            ${legalDesc    ? fieldHtml('Legal Description', legalDesc)   : ''}
+            ${legalAcres   ? fieldHtml('Legal Acreage',     legalAcres)  : ''}
+            ${propType     ? fieldHtml('Property Type',     propType)    : ''}
+            ${neighborhood ? fieldHtml('Neighborhood',      neighborhood): ''}
+            ${mailingAddr  ? fieldHtml('Mailing Address',   mailingAddr) : ''}
+            ${payStatus    ? fieldHtml('Payment Status',    payStatus)   : ''}
+            ${rec.county   ? fieldHtml('County',            rec.county)  : ''}
+            ${rec.state    ? fieldHtml('State',             rec.state)   : ''}
           </div>
-          ${renderAdditional(rec.additionalDetails)}
+          ${pillsHtml}
+          ${detailLink}
+          ${detail}
+          ${renderApprDetailTable('Value History', valueHistory)}
+          ${renderApprDetailTable('Taxing Units', taxingUnits)}
+          ${renderApprDetailTable('Land', landData)}
+          ${renderApprDetailTable('Improvements', improvementData)}
+          ${renderApprDetailTable('Deed History', deedHistory)}
         </div>
       </div>`;
+  }
+
+  // ── Tab switching ────────────────────────────────────────────────────────
+
+  function switchResultTab(tab) {
+    const isAppraisal = tab === 'appraisal';
+    document.getElementById('appraisalTabPanel').classList.toggle('active', isAppraisal);
+    document.getElementById('taxTabPanel').classList.toggle('active', !isAppraisal);
+    document.getElementById('tabBtnAppraisal').classList.toggle('active', isAppraisal);
+    document.getElementById('tabBtnTax').classList.toggle('active', !isAppraisal);
+  }
+
+  // ── Tax record renderer ──────────────────────────────────────────────────
+
+  function renderTaxRecord(rec) {
+    let parsed = {};
+    try {
+      parsed = typeof rec.additionalDetails === 'string'
+        ? JSON.parse(rec.additionalDetails) : (rec.additionalDetails || {});
+    } catch (_) {}
+
+    const totalDue    = parsed['Total Taxes Due'] || rec.taxAmountDue || '';
+    const currentDue  = parsed['Current Due']     || '';
+    const pastDue     = parsed['Past Years Due']  || '';
+    const assessed    = parsed['Assessed Value']  || '';
+    const detailUrl   = parsed['Detail URL']      || '';
+    const billTables  = parsed['Bill Tables']     || [];
+    const yearHeaders = parsed['Year Headers']    || [];
+    const acctNum     = parsed['Account']         || '';
+    const legalDesc   = parsed['Legal Description'] || '';
+    const propStatus  = parsed['Property Status']   || '';
+    const propType    = parsed['Property Type']     || '';
+
+    // Strip boilerplate disclaimer text from display fields
+    const DISCLAIMER_RX = /disclaimer|every effort|anderson county tax office makes/i;
+    const ownerDisplay  = (rec.ownerName    || '').length > 80 || DISCLAIMER_RX.test(rec.ownerName    || '') ? '' : rec.ownerName;
+    const addrDisplay   = (rec.propertyAddress || '').length > 120 || DISCLAIMER_RX.test(rec.propertyAddress || '') ? '' : rec.propertyAddress;
+
+    const payStatus = rec.paymentStatus || '';
+    let payClass = 'status-default';
+    if (payStatus.toLowerCase().includes('paid') && !payStatus.toLowerCase().includes('balance')) payClass = 'status-paid';
+    else if (payStatus.toLowerCase().includes('balance') || payStatus.toLowerCase().includes('due') || payStatus.toLowerCase().includes('past')) payClass = 'status-unpaid';
+
+    // ── Summary grid ──────────────────────────────────────────────────────────
+    const amtCls = (v) => v && parseFloat(v.replace(/[^0-9.]/g,'')) > 0 ? 'amount-due' : (v ? 'amount-paid' : '');
+    const summaryItems = [
+      { label: 'Property ID',     value: rec.parcelId  },
+      { label: 'Account',         value: acctNum       },
+      { label: 'Assessed Value',  value: assessed      },
+      { label: 'Total Taxes Due', value: totalDue,  cls: amtCls(totalDue)  },
+      { label: 'Current Due',     value: currentDue, cls: amtCls(currentDue) },
+      { label: 'Past Years Due',  value: pastDue,   cls: amtCls(pastDue)   },
+      { label: 'Status',          value: propStatus  },
+      { label: 'Type',            value: propType    },
+      { label: 'Legal',           value: legalDesc, wide: true },
+    ].filter(i => i.value);
+
+    const summaryHtml = summaryItems.map(i =>
+      `<div class="tax-summary-item${i.wide ? ' wide' : ''}">
+        <div class="tax-label">${i.label}</div>
+        <div class="tax-value ${i.cls || ''}">${escHtml(String(i.value))}</div>
+      </div>`
+    ).join('');
+
+    // ── Bill history ──────────────────────────────────────────────────────────
+    let billHtml = '';
+    if (billTables.length > 0) {
+      billHtml = `<div class="bill-history-section">
+        <div class="bill-history-title">Tax Bill History (${billTables.length} year${billTables.length !== 1 ? 's' : ''})</div>`;
+
+      billTables.forEach((tableRows, idx) => {
+        if (!tableRows || tableRows.length < 2) return;
+        const yr = yearHeaders[idx] || '';
+        const yearLabel = yr ? `<span class="bill-year-label">${escHtml(yr)}</span>` : '';
+        const [header, ...dataRows] = tableRows;
+
+        billHtml += `<div class="bill-year-block">${yearLabel}
+          <table class="bill-table"><thead><tr>`;
+        header.forEach(h => { billHtml += `<th>${escHtml(h)}</th>`; });
+        billHtml += '</tr></thead><tbody>';
+
+        dataRows.forEach(row => {
+          const isTotals  = /^TOTALS?$/i.test(row[0] || '');
+          // Balance is last column; Date Paid is typically column index 2
+          const lastIdx   = row.length - 1;
+          const balVal    = parseFloat((row[lastIdx] || '').replace(/[^0-9.]/g, ''));
+          const isPaidRow = !isTotals && row.some((c, i) => i > 0 && i < lastIdx && /\d{1,2}-\d{1,2}-\d{4}/.test(c));
+
+          let rowCls = isTotals ? 'totals-row' : (isPaidRow ? 'paid-row' : '');
+          billHtml += `<tr class="${rowCls}">`;
+          row.forEach((cell, ci) => {
+            let cls = '';
+            if (ci === lastIdx) {
+              cls = (cell && balVal > 0) ? 'balance-due' : (cell && cell.includes('$') ? 'balance-paid' : '');
+            } else if (ci === 2 && /\d{1,2}-\d{1,2}-\d{4}/.test(cell)) {
+              cls = 'date-paid';
+            }
+            billHtml += `<td class="${cls}">${escHtml(cell)}</td>`;
+          });
+          billHtml += '</tr>';
+        });
+        billHtml += '</tbody></table></div>';
+      });
+      billHtml += '</div>';
+    }
+
+    const detailLink = detailUrl
+      ? `<a href="${escHtml(detailUrl)}" target="_blank" rel="noopener"
+           style="font-size:.78rem;color:var(--blue);text-decoration:none;">
+           View on Tax Office site ↗</a>`
+      : '';
+
+    return `
+      <div class="record-card">
+        <div class="record-header">
+          <div class="record-header-info">
+            <div class="record-owner">${escHtml(ownerDisplay || rec.parcelId || 'Tax Record')}</div>
+            ${addrDisplay ? `<div class="record-parcel">${escHtml(addrDisplay)}</div>` : ''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+            ${payStatus ? `<span class="status-badge ${payClass}">${escHtml(payStatus)}</span>` : ''}
+            ${detailLink}
+          </div>
+        </div>
+        <div class="record-body">
+          <div class="tax-summary-box">${summaryHtml}</div>
+          ${billHtml}
+        </div>
+      </div>`;
+  }
+
+  // ── State / County directory ─────────────────────────────────────────────
+
+  async function loadStates() {
+    try {
+      const states = await fetch('/api/states').then(r => r.json());
+      const sel = document.getElementById('stateSelect');
+      states.forEach(({ code, name }) => {
+        const opt = document.createElement('option');
+        opt.value = code; opt.textContent = name;
+        sel.appendChild(opt);
+      });
+    } catch (_) {}
+  }
+
+  async function onStateChange() {
+    const state  = val('stateSelect');
+    const cSel   = document.getElementById('countySelect');
+    cSel.innerHTML = '<option value="">— Select County —</option>';
+    cSel.disabled  = true;
+    hide('urlRow');
+    hide('dualSearchBanner');
+    if (!state) return;
+
+    try {
+      const counties = await fetch(`/api/counties?state=${state}`).then(r => r.json());
+      counties.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        cSel.appendChild(opt);
+      });
+      cSel.disabled = false;
+    } catch (_) {}
+  }
+
+  function isAndersonTX() {
+    return val('stateSelect') === 'TX' && val('countySelect').toLowerCase() === 'anderson';
+  }
+
+  async function onCountyChange() {
+    const state  = val('stateSelect');
+    const county = val('countySelect');
+    if (!state || !county) { hide('urlRow'); hide('dualSearchBanner'); return; }
+
+    // Show dual-search banner for Anderson, TX
+    if (isAndersonTX()) {
+      show('dualSearchBanner');
+    } else {
+      hide('dualSearchBanner');
+    }
+
+    const badge = document.getElementById('urlStatusBadge');
+    const hint  = document.getElementById('urlHint');
+    const urlInput = document.getElementById('countyUrl');
+    badge.textContent = 'checking…';
+    badge.className   = 'url-checking';
+    urlInput.value    = '';
+    document.getElementById('platformBadge').textContent = '';
+    show('urlRow');
+
+    try {
+      const data = await fetch(`/api/county-url?state=${encodeURIComponent(state)}&county=${encodeURIComponent(county)}`).then(r => r.json());
+      urlInput.value = data.url || '';
+      document.getElementById('platformBadge').textContent = data.platformLabel ? `Platform: ${data.platformLabel}` : '';
+
+      if (data.status === 'alive') {
+        badge.textContent = '✓ Active'; badge.className = 'url-alive';
+        hint.textContent  = 'URL verified active.';
+      } else if (data.status === 'refreshed') {
+        badge.textContent = '↻ Updated'; badge.className = 'url-refreshed';
+        hint.textContent  = data.message;
+      } else if (data.status === 'dead') {
+        badge.textContent = '✗ Inactive'; badge.className = 'url-dead';
+        hint.textContent  = data.message || 'URL may be inactive. Try the manual override below.';
+      } else {
+        badge.textContent = 'Not found'; badge.className = 'url-dead';
+        hint.textContent  = data.message || 'County not in directory. Use manual URL below.';
+      }
+    } catch (_) {
+      badge.textContent = 'Error'; badge.className = 'url-dead';
+      hint.textContent  = 'Could not resolve county URL.';
+    }
   }
 
   // ── Main search ──────────────────────────────────────────────────────────
 
   function startSearch() {
-    const url         = val('countyUrl');
-    const firstName   = val('firstName');
-    const lastName    = val('lastName');
-    const fullName    = val('fullName');
+    const state         = val('stateSelect');
+    const county        = val('countySelect');
+    const manualUrl     = val('manualUrl');
+    const resolvedUrl   = val('countyUrl');
+    const firstName     = val('firstName');
+    const lastName      = val('lastName');
+    const fullName      = val('fullName');
     const accountNumber = val('accountNumber');
 
+    const url = manualUrl || resolvedUrl;
+    const dual = isAndersonTX() && !manualUrl; // dual mode: Anderson TX, no manual override
+
     // Validate
-    if (!url) {
-      alert('Please enter the County Search URL.');
-      document.getElementById('countyUrl').focus();
+    if (!dual && !url && !state) {
+      alert('Please select a State and County, or enter a URL manually.');
+      document.getElementById('stateSelect').focus();
       return;
     }
     if (!firstName && !lastName && !fullName && !accountNumber) {
@@ -497,34 +1127,78 @@
 
     // Reset UI
     hide('errorBox');
+    hide('captchaBox');
     hide('resultsSection');
     document.getElementById('progressLog').innerHTML = '';
+    document.getElementById('resultTabsNav').style.display = 'none';
+    // Reset tab panels
+    document.getElementById('appraisalTabPanel').classList.add('active');
+    document.getElementById('taxTabPanel').classList.remove('active');
+    document.getElementById('tabBtnAppraisal').classList.add('active');
+    document.getElementById('tabBtnTax').classList.remove('active');
+    document.getElementById('appraisalTabBadge').textContent = '';
+    document.getElementById('taxTabBadge').textContent = '';
+    document.getElementById('taxRecordsContainer').innerHTML = '';
+    document.getElementById('taxCountBadge').textContent = '';
+    document.getElementById('taxSourceUrl').textContent = '';
+    document.getElementById('taxSummaryText').textContent = '';
     show('statusBox');
     document.getElementById('searchBtn').disabled = true;
 
-    // Build query string
     const params = new URLSearchParams();
-    params.set('url', url);
     if (firstName)     params.set('firstName', firstName);
     if (lastName)      params.set('lastName', lastName);
     if (fullName)      params.set('fullName', fullName);
     if (accountNumber) params.set('accountNumber', accountNumber);
 
-    const evtSource = new EventSource(`/api/search/stream?${params.toString()}`);
+    let endpoint;
+    if (dual) {
+      // Anderson TX dual search — no URL needed, server hardcodes both URLs
+      endpoint = `/api/search/dual/stream?${params.toString()}`;
+    } else {
+      // Standard single-source search
+      if (url)    params.set('url', url);
+      if (state)  params.set('state', state);
+      if (county) params.set('county', county);
+      endpoint = `/api/search/stream?${params.toString()}`;
+    }
 
-    evtSource.addEventListener('status', (e) => {
+    const evtSource = new EventSource(endpoint);
+
+    evtSource.addEventListener('status',   (e) => { log(JSON.parse(e.data).message); });
+    evtSource.addEventListener('progress', (e) => { log(JSON.parse(e.data).message); });
+
+    evtSource.addEventListener('captcha', (e) => {
       const d = JSON.parse(e.data);
-      log(d.message);
+      document.getElementById('captchaBody').textContent =
+        `${d.type} was detected at: ${d.searchedUrl || url}`;
+      show('captchaBox');
+      log(`⚠ CAPTCHA detected (${d.type}) — search blocked.`);
     });
 
-    evtSource.addEventListener('progress', (e) => {
-      const d = JSON.parse(e.data);
-      log(d.message);
-    });
-
+    // Standard single-source results
     evtSource.addEventListener('results', (e) => {
+      renderResults(JSON.parse(e.data), url);
+    });
+
+    // Dual: appraisal results
+    evtSource.addEventListener('appraisalResults', (e) => {
       const data = JSON.parse(e.data);
-      renderResults(data, url);
+      renderResults(data, 'https://andersoncad.net');
+      // Update appraisal tab badge
+      const n = (data.records || []).length;
+      document.getElementById('appraisalTabBadge').textContent = n > 0 ? String(n) : '';
+      // Show tabs nav
+      document.getElementById('resultTabsNav').style.display = 'flex';
+    });
+
+    // Dual: tax results
+    evtSource.addEventListener('taxResults', (e) => {
+      const data = JSON.parse(e.data);
+      renderTaxResults(data);
+      const n = (data.records || []).length;
+      document.getElementById('taxTabBadge').textContent = n > 0 ? String(n) : '';
+      document.getElementById('resultTabsNav').style.display = 'flex';
     });
 
     evtSource.addEventListener('done', () => {
@@ -544,14 +1218,13 @@
       show('errorBox');
     });
 
-    // Fallback if SSE itself errors (network issue)
     evtSource.onerror = () => {
       if (evtSource.readyState === EventSource.CLOSED) return;
       evtSource.close();
       hide('statusBox');
       document.getElementById('searchBtn').disabled = false;
       const box = document.getElementById('errorBox');
-      box.textContent = '⚠ Connection lost. Please try again.';
+      box.textContent = '⚠ Connection lost or server busy — please try again in a moment.';
       show('errorBox');
     };
   }
@@ -568,7 +1241,14 @@
     document.getElementById('summaryText').textContent = summary;
 
     const container = document.getElementById('recordsContainer');
-    if (records.length === 0) {
+    if (records.length === 0 && data.rawText) {
+      container.innerHTML = `
+        <div style="margin-bottom:10px;padding:8px 12px;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;font-size:.82rem;color:#5d4037;">
+          ℹ️ The AI agent reached the results page but could not parse structured records.
+          Raw page content is shown below.
+        </div>
+        <pre style="white-space:pre-wrap;word-break:break-word;font-family:monospace;font-size:.8rem;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;padding:16px;max-height:600px;overflow-y:auto;">${escHtml(data.rawText)}</pre>`;
+    } else if (records.length === 0) {
       container.innerHTML = `
         <div class="no-results">
           <div class="icon">📭</div>
@@ -582,14 +1262,62 @@
     show('resultsSection');
   }
 
+  function renderTaxResults(data) {
+    const records = data.records || [];
+    const total   = data.totalFound ?? records.length;
+    const summary = data.summary || '';
+
+    document.getElementById('taxCountBadge').textContent =
+      total === 0 ? 'No tax records found' : `${total} tax record${total !== 1 ? 's' : ''} found`;
+    document.getElementById('taxSourceUrl').textContent = data.searchedUrl || 'tax.co.anderson.tx.us';
+    document.getElementById('taxSummaryText').textContent = summary;
+
+    const container = document.getElementById('taxRecordsContainer');
+    if (data.error) {
+      container.innerHTML = `<div class="no-results"><div class="icon">⚠️</div><p>Tax search error: ${escHtml(data.error)}</p></div>`;
+    } else if (records.length === 0) {
+      container.innerHTML = `
+        <div class="no-results">
+          <div class="icon">📭</div>
+          <p>No tax records found for the given property.</p>
+          <p style="margin-top:8px;font-size:.82rem;">Verify the Property ID (e.g. 60110 or R60110).</p>
+        </div>`;
+    } else {
+      container.innerHTML = records.map(renderTaxRecord).join('');
+    }
+
+    show('resultsSection');
+  }
+
   function clearAll() {
-    ['countyUrl', 'firstName', 'lastName', 'fullName', 'accountNumber'].forEach((id) => {
-      document.getElementById(id).value = id === 'countyUrl' ? 'https://esearch.andrewscad.org/' : '';
+    ['countyUrl', 'manualUrl', 'firstName', 'lastName', 'fullName', 'accountNumber'].forEach((id) => {
+      document.getElementById(id).value = '';
     });
+    document.getElementById('stateSelect').value = '';
+    const cSel = document.getElementById('countySelect');
+    cSel.innerHTML = '<option value="">— Select County —</option>';
+    cSel.disabled = true;
+    hide('urlRow');
+    hide('dualSearchBanner');
+    document.getElementById('urlStatusBadge').textContent = '';
+    document.getElementById('platformBadge').textContent  = '';
+    document.getElementById('urlHint').textContent        = '';
     hide('statusBox');
     hide('errorBox');
+    hide('captchaBox');
     hide('resultsSection');
-    document.getElementById('progressLog').innerHTML = '';
+    document.getElementById('progressLog').innerHTML      = '';
+    document.getElementById('resultTabsNav').style.display = 'none';
+    document.getElementById('appraisalTabPanel').classList.add('active');
+    document.getElementById('taxTabPanel').classList.remove('active');
+    document.getElementById('tabBtnAppraisal').classList.add('active');
+    document.getElementById('tabBtnTax').classList.remove('active');
+    document.getElementById('appraisalTabBadge').textContent = '';
+    document.getElementById('taxTabBadge').textContent       = '';
+    document.getElementById('taxRecordsContainer').innerHTML = '';
+    document.getElementById('taxCountBadge').textContent     = '';
+    document.getElementById('taxSourceUrl').textContent      = '';
+    document.getElementById('taxSummaryText').textContent    = '';
     document.getElementById('searchBtn').disabled = false;
   }
 
@@ -597,6 +1325,9 @@
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.target.tagName === 'INPUT') startSearch();
   });
+
+  // Initialise state dropdown on load
+  loadStates();
 </script>
 </body>
 </html>
