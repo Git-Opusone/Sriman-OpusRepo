@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  opus-one:
+    build: .
+    container_name: opus-one-local
+    ports:
+      - "3000:3000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=gpt-4o-mini
+      - PORT=3000
+      - BROWSER_HEADLESS=true
+      - MAX_CONCURRENT_SEARCHES=2
+      - SEARCH_TIMEOUT_MS=180000
+      - CACHE_TTL_HOURS=4
+      - CACHE_MAX_SIZE=1000
+    env_file:
+      - .env
+    restart: unless-stopped
+    # Playwright needs shared memory
+    shm_size: '2gb'
