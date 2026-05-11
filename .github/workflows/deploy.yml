@@ -108,18 +108,28 @@ jobs:
 
             # ── Deploy / refresh monitoring stack (Alloy + node-exporter) ──────────
             cd ~/opus-monitoring
-            cat > .env <<EOF
-            GRAFANA_PROM_URL=${{ secrets.GRAFANA_PROM_URL }}
-            GRAFANA_PROM_USER=${{ secrets.GRAFANA_PROM_USER }}
-            GRAFANA_LOKI_URL=${{ secrets.GRAFANA_LOKI_URL }}
-            GRAFANA_LOKI_USER=${{ secrets.GRAFANA_LOKI_USER }}
-            GRAFANA_API_KEY=${{ secrets.GRAFANA_API_KEY }}
-            EOF
+
+            # Write .env without leading whitespace (heredoc indentation breaks parsing)
+            printf '%s\n' \
+              "GRAFANA_PROM_URL=${{ secrets.GRAFANA_PROM_URL }}" \
+              "GRAFANA_PROM_USER=${{ secrets.GRAFANA_PROM_USER }}" \
+              "GRAFANA_LOKI_URL=${{ secrets.GRAFANA_LOKI_URL }}" \
+              "GRAFANA_LOKI_USER=${{ secrets.GRAFANA_LOKI_USER }}" \
+              "GRAFANA_API_KEY=${{ secrets.GRAFANA_API_KEY }}" \
+              > .env
+
             docker compose -f docker-compose.yml --env-file .env pull --quiet
             docker compose -f docker-compose.yml --env-file .env up -d --remove-orphans
 
             # ── Clean up old images ────────────────────────────────────────────────
             docker image prune -f
 
-            echo "Deployment complete. Running containers:"
+            # ── Diagnostics ───────────────────────────────────────────────────────
+            echo ""
+            echo "=== Running containers ==="
             docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+            echo ""
+            echo "=== Alloy startup logs ==="
+            sleep 5
+            docker logs opus-alloy --tail=30 2>&1 || echo "opus-alloy not found"
