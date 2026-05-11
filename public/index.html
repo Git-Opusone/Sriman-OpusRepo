@@ -53,6 +53,38 @@
       letter-spacing: .03em;
       opacity: .9;
     }
+
+    /* ── Header nav buttons ── */
+    .header-nav {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+    .header-nav-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 20px;
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius: 24px;
+      color: #fff;
+      font-size: .85rem;
+      font-weight: 600;
+      text-decoration: none;
+      letter-spacing: .01em;
+      transition: background .2s, border-color .2s, transform .1s;
+      white-space: nowrap;
+    }
+    .header-nav-btn:hover {
+      background: rgba(255,255,255,.28);
+      border-color: rgba(255,255,255,.6);
+      transform: translateY(-1px);
+    }
+    .header-nav-btn:active { transform: translateY(0); }
+    .header-nav-btn .btn-icon { font-size: 1rem; }
     header .badge {
       display: inline-block;
       background: rgba(255,255,255,.18);
@@ -520,6 +552,18 @@
   <div class="badge">AI-Powered</div>
   <h1>Orchestrate-Mortgage Title &amp; Tax Search</h1>
   <p>Intelligent county property &amp; tax record lookup via browser automation</p>
+
+  <nav class="header-nav">
+    <a href="https://opusone-ai.orchestrate.com/docs/staging-test-tracker.html"
+       target="_blank" rel="noopener" class="header-nav-btn">
+      <span class="btn-icon">📋</span> Staging Test Tracker
+    </a>
+    <a href="https://srimanopusoneai.grafana.net/public-dashboards/5599a7a5ae9b43afac030c60dee2e90f"
+       target="_blank" rel="noopener" class="header-nav-btn">
+      <span class="btn-icon">📊</span> Live Monitoring Dashboard
+    </a>
+  </nav>
+
   <span class="author-tag">-- Sriman .S</span>
 </header>
 
