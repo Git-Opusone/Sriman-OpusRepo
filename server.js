@@ -15,6 +15,7 @@ const { runBrowserAgent }               = require('./browserAgent');
 const { getAllStates, getCountiesForState, getCountyUrl } = require('./src/countyDirectory');
 const { resolveCountyUrl }              = require('./src/urlHealthCheck');
 const { detectFromUrl, platformLabel }  = require('./src/platformDetector');
+const metrics = require('./src/metrics');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -31,6 +32,24 @@ app.get('/docs/:file', (req, res, next) => {
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ─── HTTP instrumentation middleware ─────────────────────────────────────────
+app.use((req, res, next) => {
+  const end = metrics.httpRequestDurationSeconds.startTimer();
+  res.on('finish', () => {
+    const route = req.route ? req.baseUrl + req.route.path : req.path;
+    const labels = { method: req.method, route, status_code: res.statusCode };
+    metrics.httpRequestsTotal.inc(labels);
+    end(labels);
+  });
+  next();
+});
+
+// ─── Prometheus metrics endpoint ──────────────────────────────────────────────
+app.get('/metrics', async (_req, res) => {
+  res.set('Content-Type', metrics.register.contentType);
+  res.end(await metrics.register.metrics());
+});
 
 // ─── Concurrency guard ────────────────────────────────────────────────────────
 // Each search spawns a full Chromium process (~400–500 MB RAM).
@@ -59,9 +78,10 @@ function _buildCacheKey({ url, firstName, lastName, fullName, accountNumber }) {
 
 function _cacheGet(key) {
   const entry = _searchCache.get(key);
-  if (!entry) return null;
-  if (Date.now() - entry.cachedAt > CACHE_TTL_MS) { _searchCache.delete(key); return null; }
+  if (!entry) { metrics.cacheMissesTotal.inc(); return null; }
+  if (Date.now() - entry.cachedAt > CACHE_TTL_MS) { _searchCache.delete(key); metrics.cacheMissesTotal.inc(); return null; }
   entry.hits++;
+  metrics.cacheHitsTotal.inc();
   return entry.result;
 }
 
@@ -71,6 +91,7 @@ function _cacheSet(key, result) {
     _searchCache.delete(_searchCache.keys().next().value); // evict oldest (LRU-lite)
   }
   _searchCache.set(key, { result, cachedAt: Date.now(), hits: 0 });
+  metrics.cacheSizeGauge.set(_searchCache.size);
   console.log(`[cache] stored key (size=${_searchCache.size}/${CACHE_MAX_SIZE})`);
 }
 
@@ -175,6 +196,7 @@ app.get('/api/search/stream', async (req, res) => {
 
   // ── Concurrency check — reject before opening SSE stream ─────────────────
   if (activeSearches >= MAX_CONCURRENT) {
+    metrics.concurrencyRejectedTotal.inc();
     return res.status(503).json({
       error: `Server busy — ${activeSearches} searches already running (max ${MAX_CONCURRENT}). Please try again in a moment.`,
     });
@@ -197,7 +219,10 @@ app.get('/api/search/stream', async (req, res) => {
   req.on('close', () => clearInterval(heartbeat));
 
   activeSearches++;
+  metrics.activeSearchesGauge.set(activeSearches);
   console.log(`[server] search started — active: ${activeSearches}/${MAX_CONCURRENT}`);
+
+  const searchTimer = metrics.searchDurationSeconds.startTimer({ endpoint: 'stream' });
 
   try {
     sendEvent('status', { message: 'Starting search...' });
@@ -246,19 +271,26 @@ app.get('/api/search/stream', async (req, res) => {
     _cacheSet(cacheKey, results); // store for future identical searches
 
     if (results.captchaBlocked) {
+      metrics.searchesTotal.inc({ endpoint: 'stream', status: 'captcha' });
       sendEvent('captcha', {
         type:        results.captchaType || 'CAPTCHA',
         message:     results.summary,
         searchedUrl: results.searchedUrl,
       });
+    } else {
+      metrics.searchesTotal.inc({ endpoint: 'stream', status: 'success' });
     }
     sendEvent('results', results);
     sendEvent('done', { success: true });
   } catch (err) {
     console.error('[server] Search error:', err.message);
+    const status = err.message.includes('timed out') ? 'timeout' : 'error';
+    metrics.searchesTotal.inc({ endpoint: 'stream', status });
     sendEvent('error', { message: err.message || 'An unexpected error occurred' });
   } finally {
+    searchTimer();
     activeSearches--;
+    metrics.activeSearchesGauge.set(activeSearches);
     console.log(`[server] search finished — active: ${activeSearches}/${MAX_CONCURRENT}`);
     clearInterval(heartbeat);
     res.end();
@@ -286,6 +318,7 @@ app.get('/api/search/dual/stream', async (req, res) => {
 
   // Dual search counts as 2 concurrent browser instances
   if (activeSearches + 2 > MAX_CONCURRENT) {
+    metrics.concurrencyRejectedTotal.inc();
     return res.status(503).json({
       error: `Server busy — ${activeSearches} searches running (max ${MAX_CONCURRENT}). Please try again shortly.`,
     });
@@ -311,6 +344,7 @@ app.get('/api/search/dual/stream', async (req, res) => {
   const TAX_URL       = 'http://tax.co.anderson.tx.us';
 
   activeSearches += 2;
+  metrics.activeSearchesGauge.set(activeSearches);
   console.log(`[server] dual search started — active: ${activeSearches}/${MAX_CONCURRENT}`);
 
   // CAD uses numeric IDs (60110); Tax Office uses "R" prefix (R60110).
@@ -318,6 +352,8 @@ app.get('/api/search/dual/stream', async (req, res) => {
   const cadAccountNumber = (accountNumber || '').replace(/^[rR]/, '');
 
   const commonParams = { firstName: firstName || '', lastName: lastName || '', fullName: fullName || '' };
+
+  const dualTimer = metrics.searchDurationSeconds.startTimer({ endpoint: 'dual' });
 
   try {
     sendEvent('status', { message: 'Starting dual search: Appraisal (CAD) + Tax Office...' });
@@ -348,14 +384,20 @@ app.get('/api/search/dual/stream', async (req, res) => {
       })),
     ]);
 
+    const hadError = appraisalResult.error || taxResult.error;
+    metrics.searchesTotal.inc({ endpoint: 'dual', status: hadError ? 'error' : 'success' });
+
     sendEvent('appraisalResults', appraisalResult);
     sendEvent('taxResults',       taxResult);
     sendEvent('done', { success: true, isDual: true });
   } catch (err) {
     console.error('[server] dual search error:', err.message);
+    metrics.searchesTotal.inc({ endpoint: 'dual', status: 'error' });
     sendEvent('error', { message: err.message || 'Unexpected error during dual search' });
   } finally {
+    dualTimer();
     activeSearches -= 2;
+    metrics.activeSearchesGauge.set(activeSearches);
     console.log(`[server] dual search finished — active: ${activeSearches}/${MAX_CONCURRENT}`);
     clearInterval(heartbeat);
     res.end();
@@ -369,6 +411,7 @@ app.post('/api/search', async (req, res) => {
   if (!url) return res.status(400).json({ error: 'url is required' });
 
   if (activeSearches >= MAX_CONCURRENT) {
+    metrics.concurrencyRejectedTotal.inc();
     return res.status(503).json({
       success: false,
       error: `Server busy — ${activeSearches} searches already running (max ${MAX_CONCURRENT}). Please try again in a moment.`,
@@ -376,6 +419,7 @@ app.post('/api/search', async (req, res) => {
   }
 
   activeSearches++;
+  metrics.activeSearchesGauge.set(activeSearches);
   console.log(`[server] REST search started — active: ${activeSearches}/${MAX_CONCURRENT}`);
 
   try {
@@ -405,6 +449,7 @@ app.post('/api/search', async (req, res) => {
     _cacheSet(cacheKey, results);
 
     if (results.captchaBlocked) {
+      metrics.searchesTotal.inc({ endpoint: 'rest', status: 'captcha' });
       return res.status(422).json({
         success: false,
         captchaBlocked: true,
@@ -414,13 +459,16 @@ app.post('/api/search', async (req, res) => {
       });
     }
 
+    metrics.searchesTotal.inc({ endpoint: 'rest', status: 'success' });
     res.json({ success: true, results });
   } catch (err) {
     console.error('[server] REST search error:', err.message);
     const isTimeout = err.message.includes('timed out');
+    metrics.searchesTotal.inc({ endpoint: 'rest', status: isTimeout ? 'timeout' : 'error' });
     res.status(isTimeout ? 504 : 500).json({ success: false, error: err.message });
   } finally {
     activeSearches--;
+    metrics.activeSearchesGauge.set(activeSearches);
     console.log(`[server] REST search finished — active: ${activeSearches}/${MAX_CONCURRENT}`);
   }
 });

@@ -1,0 +1,99 @@
+// ─── Grafana Alloy config — opus-one production monitoring ───────────────────
+// Ships: app metrics + node metrics → Grafana Cloud Prometheus (Mimir)
+//        Docker container logs      → Grafana Cloud Loki
+//
+// Required env vars (set in monitoring/.env or GitHub Secrets):
+//   GRAFANA_PROM_URL      e.g. https://prometheus-prod-XX.grafana.net/api/prom/push
+//   GRAFANA_PROM_USER     numeric ID shown in Grafana Cloud → My Stack → Prometheus
+//   GRAFANA_LOKI_URL      e.g. https://logs-prod-XX.grafana.net/loki/api/v1/push
+//   GRAFANA_LOKI_USER     numeric ID shown in Grafana Cloud → My Stack → Loki
+//   GRAFANA_API_KEY       service account token (MetricsPublisher + LogsPublisher roles)
+
+// ─── 1. Scrape the app /metrics endpoint ─────────────────────────────────────
+prometheus.scrape "opus_app" {
+  targets = [
+    { __address__ = "opus-one-app:3000", job = "opus-one" },
+  ]
+  scrape_interval = "15s"
+  metrics_path    = "/metrics"
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+// ─── 2. Scrape node_exporter (system metrics) ────────────────────────────────
+prometheus.scrape "node_exporter" {
+  targets = [
+    { __address__ = "node-exporter:9100", job = "node-exporter" },
+  ]
+  scrape_interval = "15s"
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+// ─── 3. Remote write → Grafana Cloud Prometheus (Mimir) ──────────────────────
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = env("GRAFANA_PROM_URL")
+
+    basic_auth {
+      username = env("GRAFANA_PROM_USER")
+      password = env("GRAFANA_API_KEY")
+    }
+
+    queue_config {
+      max_samples_per_send = 1000
+      batch_send_deadline  = "5s"
+    }
+  }
+}
+
+// ─── 4. Discover Docker containers ───────────────────────────────────────────
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+
+  filter {
+    name   = "status"
+    values = ["running"]
+  }
+}
+
+// ─── 5. Collect Docker container logs → Loki ─────────────────────────────────
+loki.source.docker "container_logs" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.containers.targets
+  forward_to = [loki.write.grafana_cloud.receiver]
+
+  relabel_rules = loki.relabel.docker_meta.rules
+}
+
+// ─── 6. Enrich log labels from Docker metadata ───────────────────────────────
+loki.relabel "docker_meta" {
+  forward_to = []
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  rule {
+    action       = "replace"
+    replacement  = "opus-one-ec2"
+    target_label = "host"
+  }
+}
+
+// ─── 7. Remote write → Grafana Cloud Loki ────────────────────────────────────
+loki.write "grafana_cloud" {
+  endpoint {
+    url = env("GRAFANA_LOKI_URL")
+
+    basic_auth {
+      username = env("GRAFANA_LOKI_USER")
+      password = env("GRAFANA_API_KEY")
+    }
+  }
+}

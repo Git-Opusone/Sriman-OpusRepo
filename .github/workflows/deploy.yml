@@ -56,6 +56,19 @@ jobs:
     needs: build-and-push
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy monitoring config to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "monitoring/"
+          target: "~/opus-monitoring/"
+          strip_components: 1
+
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -63,21 +76,25 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            # Login to ECR
+            # ── Shared Docker network (app + monitoring agents communicate over it) ──
+            docker network create opus-monitoring 2>/dev/null || true
+
+            # ── Login to ECR ───────────────────────────────────────────────────────
             aws ecr get-login-password --region ${{ env.AWS_REGION }} | \
               docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}
 
-            # Pull latest image
+            # ── Pull latest image ──────────────────────────────────────────────────
             docker pull ${{ secrets.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
 
-            # Stop and remove existing container (ignore errors if not running)
+            # ── Stop and remove existing container ─────────────────────────────────
             docker stop ${{ env.CONTAINER_NAME }} || true
             docker rm ${{ env.CONTAINER_NAME }} || true
 
-            # Start new container with environment variables
+            # ── Start app container (joined to monitoring network) ─────────────────
             docker run -d \
               --name ${{ env.CONTAINER_NAME }} \
               --restart unless-stopped \
+              --network opus-monitoring \
               -p 3000:3000 \
               -e OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
               -e OPENAI_MODEL="gpt-4o-mini" \
@@ -89,8 +106,20 @@ jobs:
               -e CACHE_MAX_SIZE="1000" \
               ${{ secrets.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
 
-            # Clean up old images to save disk space
+            # ── Deploy / refresh monitoring stack (Alloy + node-exporter) ──────────
+            cd ~/opus-monitoring
+            cat > .env <<EOF
+            GRAFANA_PROM_URL=${{ secrets.GRAFANA_PROM_URL }}
+            GRAFANA_PROM_USER=${{ secrets.GRAFANA_PROM_USER }}
+            GRAFANA_LOKI_URL=${{ secrets.GRAFANA_LOKI_URL }}
+            GRAFANA_LOKI_USER=${{ secrets.GRAFANA_LOKI_USER }}
+            GRAFANA_API_KEY=${{ secrets.GRAFANA_API_KEY }}
+            EOF
+            docker compose -f docker-compose.yml --env-file .env pull --quiet
+            docker compose -f docker-compose.yml --env-file .env up -d --remove-orphans
+
+            # ── Clean up old images ────────────────────────────────────────────────
             docker image prune -f
 
-            echo "Deployment complete. Container status:"
-            docker ps | grep ${{ env.CONTAINER_NAME }}
+            echo "Deployment complete. Running containers:"
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"

@@ -1,0 +1,66 @@
+version: '3.8'
+
+# ─── Monitoring stack for opus-one ───────────────────────────────────────────
+# Runs alongside the app on the same EC2 host.
+# Alloy collects metrics + logs and ships to Grafana Cloud.
+#
+# Usage:
+#   docker-compose -f monitoring/docker-compose.yml --env-file monitoring/.env up -d
+#
+# Required monitoring/.env vars:
+#   GRAFANA_PROM_URL, GRAFANA_PROM_USER
+#   GRAFANA_LOKI_URL, GRAFANA_LOKI_USER
+#   GRAFANA_API_KEY
+
+networks:
+  opus-monitoring:
+    name: opus-monitoring
+    external: true   # created by deploy.yml before the app starts
+
+services:
+
+  # ── Grafana Alloy — unified telemetry agent ───────────────────────────────
+  alloy:
+    image: grafana/alloy:latest
+    container_name: opus-alloy
+    restart: unless-stopped
+    networks:
+      - opus-monitoring
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy-data:/var/lib/alloy
+    environment:
+      - GRAFANA_PROM_URL=${GRAFANA_PROM_URL}
+      - GRAFANA_PROM_USER=${GRAFANA_PROM_USER}
+      - GRAFANA_LOKI_URL=${GRAFANA_LOKI_URL}
+      - GRAFANA_LOKI_USER=${GRAFANA_LOKI_USER}
+      - GRAFANA_API_KEY=${GRAFANA_API_KEY}
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --stability.level=generally-available
+    ports:
+      - "12345:12345"   # Alloy UI (local only — not exposed externally)
+
+  # ── node_exporter — host system metrics (CPU, memory, disk, network) ──────
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: opus-node-exporter
+    restart: unless-stopped
+    networks:
+      - opus-monitoring
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --path.rootfs=/rootfs
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+
+volumes:
+  alloy-data:
