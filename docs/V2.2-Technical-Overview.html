@@ -1,0 +1,2305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orchestrate-Mortgage: V2.2 Technical Architecture</title>
+<style>
+  /* ── Reset & Base ──────────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:   #1e2a4a;
+    --blue:   #2563eb;
+    --blue-light: #3b82f6;
+    --blue-pale:  #dbeafe;
+    --white:  #ffffff;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-500: #64748b;
+    --gray-700: #334155;
+    --gray-900: #0f172a;
+    --amber:  #fbbf24;
+    --amber-bg: #fffbeb;
+    --amber-border: #fcd34d;
+    --green:  #16a34a;
+    --green-bg: #f0fdf4;
+    --green-border: #bbf7d0;
+    --red:    #dc2626;
+    --purple: #7c3aed;
+    --teal:   #0d9488;
+    --orange: #ea580c;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--gray-700);
+    background: var(--gray-50);
+  }
+
+  /* ── Nav Bar ───────────────────────────────────────────────────────────── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--navy);
+    padding: 0 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.35);
+    display: flex;
+    align-items: center;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  nav .nav-brand {
+    color: var(--white);
+    font-weight: 700;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    padding: 1rem 1.5rem 1rem 0;
+    border-right: 1px solid rgba(255,255,255,0.2);
+    margin-right: 0.5rem;
+    letter-spacing: 0.03em;
+  }
+
+  nav a {
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 1rem 0.75rem;
+    white-space: nowrap;
+    border-bottom: 3px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  nav a:hover {
+    color: var(--white);
+    border-bottom-color: var(--blue-light);
+  }
+
+  /* ── Page Container ────────────────────────────────────────────────────── */
+  .page { max-width: 1200px; margin: 0 auto; padding: 0 2rem 4rem; }
+
+  /* ── Section Wrapper ───────────────────────────────────────────────────── */
+  .section {
+    background: var(--white);
+    border-radius: 16px;
+    margin: 2.5rem 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06);
+    overflow: hidden;
+    page-break-inside: avoid;
+  }
+
+  .section-header {
+    background: linear-gradient(135deg, var(--navy) 0%, #243460 100%);
+    padding: 1.75rem 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .section-header .section-num {
+    background: var(--blue);
+    color: var(--white);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .section-header h2 {
+    color: var(--white);
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  .section-header .section-sub {
+    color: rgba(255,255,255,0.65);
+    font-size: 0.85rem;
+    font-weight: 400;
+    margin-top: 0.15rem;
+  }
+
+  .section-body { padding: 2.5rem; }
+
+  /* ── Hero ──────────────────────────────────────────────────────────────── */
+  .hero {
+    background: linear-gradient(160deg, var(--navy) 0%, #162040 50%, #1a2d6b 100%);
+    padding: 5rem 3rem 4rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -20%;
+    width: 140%;
+    height: 200%;
+    background: radial-gradient(ellipse at center, rgba(37,99,235,0.15) 0%, transparent 65%);
+    pointer-events: none;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(37,99,235,0.25);
+    border: 1px solid rgba(37,99,235,0.5);
+    color: var(--blue-light);
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero h1 {
+    color: var(--white);
+    font-size: clamp(1.44rem, 3.2vw, 2.4rem);
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+  }
+
+  .hero h1 span { color: var(--blue-light); }
+
+  .hero-subtitle {
+    color: rgba(255,255,255,0.75);
+    font-size: 1.15rem;
+    font-weight: 500;
+    margin-bottom: 1rem;
+  }
+
+  .hero-tagline {
+    color: #fbbf24;
+    font-size: 1.35rem;
+    font-style: italic;
+    font-weight: 600;
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+    text-shadow: 0 2px 12px rgba(251,191,36,0.25);
+    max-width: 820px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .hero-tagline em {
+    font-style: normal;
+    color: #fde68a;
+    display: inline-block;
+    margin-top: 6px;
+  }
+
+  .hero-meta {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .hero-meta-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .hero-meta-item .label {
+    color: rgba(255,255,255,0.45);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .hero-meta-item .value {
+    color: var(--white);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .hero-meta-item .value.status {
+    background: var(--green);
+    padding: 0.2rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+  }
+
+  .meta-divider {
+    width: 1px;
+    background: rgba(255,255,255,0.15);
+    align-self: stretch;
+  }
+
+  /* ── Metric Cards ──────────────────────────────────────────────────────── */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .metric-card {
+    background: linear-gradient(135deg, var(--navy) 0%, #243460 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .metric-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--blue);
+  }
+
+  .metric-card .metric-value {
+    color: var(--white);
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 0.4rem;
+  }
+
+  .metric-card .metric-label {
+    color: rgba(255,255,255,0.65);
+    font-size: 0.8rem;
+    line-height: 1.3;
+  }
+
+  .metric-card .metric-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    display: block;
+  }
+
+  /* ── Exec Summary Text ─────────────────────────────────────────────────── */
+  .exec-summary {
+    background: var(--blue-pale);
+    border-left: 4px solid var(--blue);
+    border-radius: 0 8px 8px 0;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+  }
+
+  .exec-summary p {
+    color: var(--gray-700);
+    font-size: 1.05rem;
+    line-height: 1.7;
+  }
+
+  /* ── Timeline ──────────────────────────────────────────────────────────── */
+  .timeline {
+    position: relative;
+    padding: 2rem 0;
+  }
+
+  .timeline-track {
+    position: absolute;
+    top: 4rem;
+    left: 5%;
+    right: 5%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--blue) 0%, var(--blue-light) 100%);
+    border-radius: 2px;
+  }
+
+  .timeline-phases {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .phase {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .phase-bubble {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--navy);
+    border: 4px solid var(--blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.2;
+    box-shadow: 0 0 0 6px var(--white), 0 4px 16px rgba(37,99,235,0.3);
+    flex-shrink: 0;
+  }
+
+  .phase-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: center;
+  }
+
+  .phase-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--navy);
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .phase-body {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 1rem;
+    font-size: 0.83rem;
+    color: var(--gray-700);
+    line-height: 1.6;
+    width: 100%;
+  }
+
+  .phase-body ul { padding-left: 1.1rem; }
+  .phase-body li { margin-bottom: 0.3rem; }
+
+  /* ── Architecture Flowchart ────────────────────────────────────────────── */
+  .flow-container {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 2rem;
+    overflow-x: auto;
+  }
+
+  .flow-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+    margin-bottom: 0.5rem;
+  }
+
+  .flow-box {
+    background: var(--navy);
+    color: var(--white);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    min-width: 120px;
+    box-shadow: 0 2px 8px rgba(30,42,74,0.25);
+  }
+
+  .flow-box.blue { background: var(--blue); }
+  .flow-box.green { background: var(--green); }
+  .flow-box.amber { background: #d97706; }
+  .flow-box.red { background: var(--red); }
+  .flow-box.purple { background: var(--purple); }
+  .flow-box.teal { background: var(--teal); }
+  .flow-box.orange { background: var(--orange); }
+  .flow-box.light {
+    background: var(--gray-100);
+    color: var(--gray-700);
+    border: 1px solid var(--gray-300);
+  }
+
+  .flow-decision {
+    background: var(--amber);
+    color: var(--gray-900);
+    border-radius: 8px;
+    padding: 0.6rem 1rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-align: center;
+    transform: rotate(0deg);
+    white-space: nowrap;
+    border: 2px solid #d97706;
+  }
+
+  .flow-arrow {
+    color: var(--gray-400);
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .flow-arrow-down {
+    display: flex;
+    justify-content: center;
+    color: var(--blue-light);
+    font-size: 1.4rem;
+    margin: 0.25rem 0;
+  }
+
+  .flow-label {
+    font-size: 0.68rem;
+    color: var(--gray-500);
+    font-style: italic;
+    text-align: center;
+    margin-bottom: 0.25rem;
+  }
+
+  .flow-split {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.4rem;
+    margin: 0.5rem 0;
+  }
+
+  .flow-split .flow-box {
+    min-width: 0;
+    font-size: 0.7rem;
+    padding: 0.5rem 0.4rem;
+  }
+
+  .flow-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  /* ── Agent Diagram ─────────────────────────────────────────────────────── */
+  .agent-diagram {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  .agent-master {
+    background: linear-gradient(135deg, var(--navy) 0%, #243460 100%);
+    border: 3px solid var(--blue);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    color: var(--white);
+    min-width: 180px;
+    box-shadow: 0 8px 32px rgba(37,99,235,0.25);
+  }
+
+  .agent-master .agent-icon { font-size: 2.5rem; margin-bottom: 0.5rem; display: block; }
+  .agent-master .agent-title { font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .agent-master .agent-sub { font-size: 0.75rem; color: rgba(255,255,255,0.6); }
+
+  .agent-right { display: flex; flex-direction: column; gap: 1rem; }
+
+  .agent-task {
+    background: var(--blue-pale);
+    border: 1px solid var(--blue);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    font-size: 0.85rem;
+    color: var(--navy);
+    position: relative;
+  }
+
+  .agent-task::before {
+    content: '';
+    position: absolute;
+    left: -12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 2px;
+    background: var(--blue);
+  }
+
+  .agent-task::after {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    background: var(--blue);
+    border-radius: 50%;
+  }
+
+  .agent-task strong { display: block; margin-bottom: 0.25rem; color: var(--navy); font-size: 0.9rem; }
+
+  .state-agents-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .state-agent-chip {
+    background: var(--navy);
+    color: var(--white);
+    border-radius: 6px;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-align: center;
+    border: 1px solid var(--blue);
+  }
+
+  .result-badge {
+    background: var(--green);
+    color: var(--white);
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-align: center;
+    margin-top: 1rem;
+  }
+
+  /* ── Handler Cards ─────────────────────────────────────────────────────── */
+  .handlers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .handler-card {
+    border: 1px solid var(--gray-200);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+  }
+
+  .handler-card:hover {
+    box-shadow: 0 8px 32px rgba(30,42,74,0.12);
+  }
+
+  .handler-card-header {
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .handler-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .handler-card-header .handler-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 0.2rem;
+  }
+
+  .handler-card-header .handler-vendor {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    margin-bottom: 0.4rem;
+  }
+
+  .coverage-badge {
+    display: inline-flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+  }
+
+  .state-tag {
+    background: var(--blue-pale);
+    color: var(--blue);
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    border: 1px solid rgba(37,99,235,0.2);
+  }
+
+  .handler-card-body {
+    padding: 0 1.5rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .handler-tech {
+    background: var(--gray-100);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.78rem;
+    color: var(--gray-700);
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+  }
+
+  .handler-section-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gray-500);
+    margin-bottom: 0.2rem;
+  }
+
+  .challenge-box {
+    background: #fff7ed;
+    border-left: 3px solid var(--orange);
+    border-radius: 0 6px 6px 0;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.8rem;
+    color: #7c2d12;
+    line-height: 1.5;
+  }
+
+  .solution-box {
+    background: var(--green-bg);
+    border-left: 3px solid var(--green);
+    border-radius: 0 6px 6px 0;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.8rem;
+    color: #14532d;
+    line-height: 1.5;
+  }
+
+  /* ── CAPTCHA Section ───────────────────────────────────────────────────── */
+  .captcha-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .captcha-option {
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 2px solid var(--gray-200);
+    position: relative;
+  }
+
+  .captcha-option.current {
+    border-color: var(--green);
+    background: var(--green-bg);
+  }
+
+  .captcha-option.future {
+    border-color: var(--blue);
+    background: var(--blue-pale);
+  }
+
+  .captcha-option.rejected {
+    border-color: var(--gray-300);
+    background: var(--gray-50);
+    opacity: 0.75;
+  }
+
+  .captcha-option-badge {
+    position: absolute;
+    top: -10px;
+    left: 1rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .badge-current { background: var(--green); color: white; }
+  .badge-future  { background: var(--blue);  color: white; }
+  .badge-rejected{ background: var(--gray-500); color: white; }
+
+  .captcha-option h4 { font-size: 0.95rem; font-weight: 700; color: var(--navy); margin-bottom: 0.5rem; }
+  .captcha-option p  { font-size: 0.82rem; color: var(--gray-700); line-height: 1.5; }
+
+  /* ── Tables ────────────────────────────────────────────────────────────── */
+  .styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  }
+
+  .styled-table thead th {
+    background: var(--navy);
+    color: var(--white);
+    padding: 0.9rem 1rem;
+    text-align: left;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .styled-table tbody tr:nth-child(even) { background: var(--gray-50); }
+  .styled-table tbody tr:hover { background: var(--blue-pale); }
+
+  .styled-table tbody td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--gray-200);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  .styled-table tbody td:first-child { font-weight: 600; color: var(--navy); }
+
+  /* ── Checklist ─────────────────────────────────────────────────────────── */
+  .checklist {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 2rem;
+  }
+
+  .check-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    background: var(--green-bg);
+    border: 1px solid var(--green-border);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 0.85rem;
+    color: var(--gray-700);
+    line-height: 1.4;
+  }
+
+  .check-icon {
+    color: var(--green);
+    font-size: 1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 0.05rem;
+  }
+
+  /* ── ENV Box ───────────────────────────────────────────────────────────── */
+  .env-box {
+    background: var(--gray-900);
+    border-radius: 10px;
+    padding: 1.5rem 2rem;
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    font-size: 0.83rem;
+    color: #a5f3fc;
+    line-height: 2;
+    overflow-x: auto;
+  }
+
+  .env-box .env-comment { color: #6b7280; }
+  .env-box .env-key { color: #fde68a; }
+  .env-box .env-val { color: #a5f3fc; }
+
+  /* ── Tech Stack ────────────────────────────────────────────────────────── */
+  .tech-stack-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+  }
+
+  .tech-category h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--blue);
+  }
+
+  .tech-list { list-style: none; }
+
+  .tech-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--gray-100);
+    font-size: 0.88rem;
+    color: var(--gray-700);
+  }
+
+  .tech-list li:last-child { border-bottom: none; }
+
+  .tech-bullet {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--blue);
+    flex-shrink: 0;
+    margin-top: 0.45rem;
+  }
+
+  .tech-name { font-weight: 600; color: var(--navy); }
+
+  /* ── Code Inline ───────────────────────────────────────────────────────── */
+  code {
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    border-radius: 4px;
+    padding: 0.05em 0.4em;
+    font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+    font-size: 0.82em;
+    color: var(--navy);
+  }
+
+  /* ── Info Box ──────────────────────────────────────────────────────────── */
+  .info-box {
+    background: var(--blue-pale);
+    border: 1px solid rgba(37,99,235,0.3);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    margin-top: 1.5rem;
+    font-size: 0.88rem;
+    color: #1e3a8a;
+    line-height: 1.6;
+  }
+
+  .info-box strong { color: var(--navy); }
+
+  /* ── Footer ────────────────────────────────────────────────────────────── */
+  footer {
+    background: var(--navy);
+    color: rgba(255,255,255,0.55);
+    text-align: center;
+    padding: 2rem;
+    font-size: 0.8rem;
+    margin-top: 3rem;
+    letter-spacing: 0.03em;
+  }
+
+  footer strong { color: rgba(255,255,255,0.85); }
+
+  /* ── Utility ───────────────────────────────────────────────────────────── */
+  .label-tag {
+    display: inline-block;
+    background: var(--blue);
+    color: white;
+    border-radius: 4px;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    vertical-align: middle;
+    margin-left: 0.3rem;
+  }
+
+  .label-tag.green { background: var(--green); }
+  .label-tag.amber { background: #d97706; }
+  .label-tag.purple { background: var(--purple); }
+  .label-tag.teal { background: var(--teal); }
+  .label-tag.orange { background: var(--orange); }
+  .label-tag.red { background: var(--red); }
+
+  p + p { margin-top: 0.75rem; }
+  h3 { color: var(--navy); font-size: 1.1rem; margin-bottom: 0.75rem; }
+  h4 { color: var(--navy); font-size: 0.95rem; margin-bottom: 0.5rem; }
+
+  /* ── Print ─────────────────────────────────────────────────────────────── */
+  @media print {
+    nav { display: none; }
+    .section { page-break-inside: avoid; box-shadow: none; border: 1px solid #ccc; }
+    .hero { page-break-after: always; }
+    body { font-size: 13px; }
+    .metrics-grid { grid-template-columns: repeat(3, 1fr); }
+    .handlers-grid { grid-template-columns: repeat(2, 1fr); }
+    .captcha-options { grid-template-columns: repeat(3, 1fr); }
+    .timeline-phases { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  @media (max-width: 768px) {
+    .section-body { padding: 1.5rem; }
+    .timeline-phases { grid-template-columns: repeat(2, 1fr); }
+    .timeline-track { display: none; }
+    .captcha-options { grid-template-columns: 1fr; }
+    .tech-stack-grid { grid-template-columns: 1fr; }
+    .flow-split { grid-template-columns: repeat(4, 1fr); }
+    .agent-diagram { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     NAV BAR
+     ══════════════════════════════════════════════════════════════════════════ -->
+<nav>
+  <div class="nav-brand">ORCHESTRATE-MORTGAGE</div>
+  <a href="#executive">Executive Summary</a>
+  <a href="#journey">Dev Journey</a>
+  <a href="#architecture">Architecture</a>
+  <a href="#one-agent">One Agent</a>
+  <a href="#handlers">Handlers</a>
+  <a href="#captcha">CAPTCHA</a>
+  <a href="#challenges">Challenges</a>
+  <a href="#staging">Staging</a>
+  <a href="#techstack">Tech Stack</a>
+  <a href="#ai-engine">AI Engine</a>
+  <a href="#cache">Search Cache</a>
+</nav>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECTION 1: HERO
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="hero">
+  <div class="hero-badge">Internal Development &amp; Document &mdash; by Sriman S.</div>
+  <h1>Orchestrate-Mortgage:<br><span>Property Tax &amp; Title Search 🤖 Agentic AI-Platform</span></h1>
+  <div class="hero-subtitle">V2.2 Technical Architecture &amp; Development Journey</div>
+  <div class="hero-tagline">"From a single county search to a nationwide AI-powered property intelligence platform — <em>The "One Agent → Many Agents" Concept</em>"</div>
+  <div class="hero-meta">
+    <div class="hero-meta-item">
+      <span class="label">Date</span>
+      <span class="value">April 2026</span>
+    </div>
+    <div class="meta-divider"></div>
+    <div class="hero-meta-item">
+      <span class="label">Version</span>
+      <span class="value">2.2</span>
+    </div>
+    <div class="meta-divider"></div>
+    <div class="hero-meta-item">
+      <span class="label">Status</span>
+      <span class="value status">Ready for Staging</span>
+    </div>
+    <div class="meta-divider"></div>
+    <div class="hero-meta-item">
+      <span class="label">Package</span>
+      <span class="value">mortgage-search-service</span>
+    </div>
+  </div>
+</div>
+
+
+<div class="page">
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECTION 2: EXECUTIVE SUMMARY
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" id="executive">
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <div>
+      <h2>Executive Summary</h2>
+      <div class="section-sub">For directors and stakeholders — what the system does and what it has achieved</div>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="exec-summary">
+      <p>
+        <strong>Orchestrate-Mortgage</strong> is a fully automated property tax and title search platform. Given an owner name or property identifier, the system autonomously navigates county assessor websites across the United States, extracts structured property records (owner, parcel ID, address, assessed value, tax status), and returns results to the caller — all without a human touching a keyboard.
+      </p>
+      <p style="margin-top:0.75rem;">
+        The platform uses a combination of <strong>deterministic Playwright browser automation</strong> for the six dominant county software platforms and an <strong>AI fallback agent</strong> (GPT-4o-mini with vision and tool calling) for edge cases — ensuring coverage across every county regardless of platform.
+      </p>
+    </div>
+
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <span class="metric-icon">&#127759;</span>
+        <div class="metric-value">3,200+</div>
+        <div class="metric-label">US Counties Covered in counties.json</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">&#9881;</span>
+        <div class="metric-value">6</div>
+        <div class="metric-label">Specialized Platform Handlers Built &amp; Tested</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">&#9989;</span>
+        <div class="metric-value">6 States</div>
+        <div class="metric-label">NE States at 100% URL Coverage (MA, NH, CT, ME, RI, VT)</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">&#129302;</span>
+        <div class="metric-value">AI+</div>
+        <div class="metric-label">OpenAI GPT-4o-mini Vision + Tool Calling Fallback</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">&#10067;</span>
+        <div class="metric-value">&lt; 3 min</div>
+        <div class="metric-label">Per-Search Timeout (configurable, default 180s)</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">&#128274;</span>
+        <div class="metric-value">5 max</div>
+        <div class="metric-label">Concurrent Browser Processes (concurrency cap)</div>
+      </div>
+    </div>
+
+    <p style="font-size:0.9rem; color:var(--gray-500);">
+      All major county CAD platforms — qPublic, Tyler iasWorld, Beacon, Patriot Properties, Vision Government Solutions, and BIS Consultants — are supported with deterministic handlers. Unrecognized platforms fall back to an AI agent that reasons about the page visually.
+    </p>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECTION 3: DEVELOPMENT JOURNEY
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" id="journey">
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <div>
+      <h2>Development Journey &amp; Timeline</h2>
+      <div class="section-sub">Four phases from single-county proof of concept to a production-hardened nationwide platform</div>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="timeline">
+      <div class="timeline-track"></div>
+      <div class="timeline-phases">
+
+        <div class="phase">
+          <div class="phase-bubble">Phase<br>1</div>
+          <div class="phase-label">Proof of Concept</div>
+          <div class="phase-title">Andrews County, TX</div>
+          <div class="phase-body">
+            <ul>
+              <li>Started with a <strong>single hardcoded URL</strong>: Andrews County, TX CAD</li>
+              <li>Single AI agent: Groq / OpenAI LLM driving Playwright</li>
+              <li>Tested: first name search, last name search, property ID / account number search</li>
+              <li>Screenshot-based vision loop guided form interaction</li>
+              <li><strong>Result:</strong> confirmed the full end-to-end approach works — AI can navigate real county sites without hard-coded selectors</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-bubble">Phase<br>2</div>
+          <div class="phase-label">One Agent Builds Many</div>
+          <div class="phase-title">"Agent of Agents" County Discovery</div>
+          <div class="phase-body">
+            <ul>
+              <li><strong>Key insight:</strong> the same AI agent strategy used to search one county could discover all counties</li>
+              <li>Master AI agent tasked to crawl <em>netronline.com</em> for all US county assessor URLs</li>
+              <li>Agent spawned <strong>sub-agents per state</strong> (50 states)</li>
+              <li>Each sub-agent: crawl netronline, identify counties, find assessor URLs</li>
+              <li>Built <code>data/counties.json</code>: all states, all counties, URLs, platform labels</li>
+              <li><strong>Result:</strong> 3,200+ counties mapped with URL + platform classification</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-bubble">Phase<br>3</div>
+          <div class="phase-label">Specialized Handlers</div>
+          <div class="phase-title">Deterministic Platform Code</div>
+          <div class="phase-body">
+            <ul>
+              <li>Identified <strong>6 dominant county assessor software platforms</strong></li>
+              <li>Built dedicated Playwright handlers for each platform</li>
+              <li>Handlers are <strong>faster</strong>, more <strong>reliable</strong>, return structured data</li>
+              <li>Replaced AI guesswork with deterministic selector strategies</li>
+              <li>AI agent retained as intelligent fallback for unrecognized platforms</li>
+              <li><code>platformDetector.js</code>: URL + HTML fingerprinting to route requests</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="phase">
+          <div class="phase-bubble">Phase<br>4</div>
+          <div class="phase-label">Production Hardening</div>
+          <div class="phase-title">V2.2 Staging Ready</div>
+          <div class="phase-body">
+            <ul>
+              <li><strong>CAPTCHA detection</strong> across all handlers + AI loop; amber warning card on frontend</li>
+              <li><strong>Concurrency cap:</strong> MAX_CONCURRENT_SEARCHES=5 — 503 when exceeded</li>
+              <li><strong>Per-request timeout:</strong> SEARCH_TIMEOUT_MS=180000 (3 min) — 504 on expiry</li>
+              <li>Angular SPA timing fixes (<code>waitForAngularContent()</code>)</li>
+              <li>Frameset architecture fixes for Patriot Properties</li>
+              <li>SSL / self-signed certificate support via <code>--ignore-certificate-errors</code></li>
+              <li>Tyler sIndex session handling hardened</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECTION 4: SYSTEM ARCHITECTURE
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" id="architecture">
+  <div class="section-header">
+    <div class="section-num">4</div>
+    <div>
+      <h2>System Architecture — End-to-End Request Flow</h2>
+      <div class="section-sub">Complete data flow from user input to structured property records</div>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="flow-container">
+
+      <!-- Row 1: User → Frontend → API -->
+      <div class="flow-row">
+        <div class="flow-box light">&#128100; User<br><span style="font-size:0.65rem;font-weight:400;">enters owner / parcel</span></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box blue">index.html<br><span style="font-size:0.65rem;font-weight:400;">Frontend SPA (Vanilla JS)</span></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box">POST + SSE<br><span style="font-size:0.65rem;font-weight:400;">/api/search/stream</span></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box blue">server.js<br><span style="font-size:0.65rem;font-weight:400;">Express + SSE stream</span></div>
+      </div>
+
+      <div class="flow-arrow-down">&#8595;</div>
+
+      <!-- Concurrency check -->
+      <div class="flow-row">
+        <div class="flow-decision">Concurrency Check<br><span style="font-size:0.65rem;">activeSearches &lt; MAX_CONCURRENT?</span></div>
+      </div>
+
+      <div class="flow-row" style="gap:3rem; margin-top:0.5rem;">
+        <div style="text-align:center;">
+          <div class="flow-label">NO</div>
+          <div class="flow-box red">503 Server Busy<br><span style="font-size:0.65rem;font-weight:400;">returns JSON error</span></div>
+        </div>
+        <div style="text-align:center;">
+          <div class="flow-label">YES — proceed</div>
+          <div class="flow-box green">resolveCountyUrl()<br><span style="font-size:0.65rem;font-weight:400;">health check; netronline refresh if dead</span></div>
+        </div>
+      </div>
+
+      <div class="flow-arrow-down">&#8595;</div>
+
+      <!-- Browser launch -->
+      <div class="flow-row">
+        <div class="flow-box purple">runBrowserAgent()<br><span style="font-size:0.65rem;font-weight:400;">browserAgent.js</span></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box">Playwright Chromium<br><span style="font-size:0.65rem;font-weight:400;">playwright-extra + stealth plugin</span></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box light">page.goto(countyUrl)<br><span style="font-size:0.65rem;font-weight:400;">navigate to assessor site</span></div>
+      </div>
+
+      <div class="flow-arrow-down">&#8595;</div>
+
+      <!-- CAPTCHA check -->
+      <div class="flow-row">
+        <div class="flow-decision">detectCaptcha(page)<br><span style="font-size:0.65rem;">reCAPTCHA / hCaptcha / Cloudflare?</span></div>
+      </div>
+
+      <div class="flow-row" style="gap:3rem; margin-top:0.5rem;">
+        <div style="text-align:center;">
+          <div class="flow-label">BLOCKED</div>
+          <div class="flow-box amber">captchaBlocked result<br><span style="font-size:0.65rem;font-weight:400;">422 + amber warning card</span></div>
+        </div>
+        <div style="text-align:center;">
+          <div class="flow-label">CLEAR — continue</div>
+          <div class="flow-box teal">platformDetector.detectFromUrl(url)<br><span style="font-size:0.65rem;font-weight:400;">URL + HTML fingerprinting</span></div>
+        </div>
+      </div>
+
+      <div class="flow-arrow-down">&#8595;</div>
+
+      <!-- Platform routing -->
+      <div class="flow-label" style="margin-bottom:0.4rem;">Route to platform handler:</div>
+      <div class="flow-split">
+        <div class="flow-box" style="background:#16a34a;">qpublic.js<br><span style="font-size:0.62rem;font-weight:400;">Schneider Angular</span></div>
+        <div class="flow-box" style="background:#2563eb;">tyler.js<br><span style="font-size:0.62rem;font-weight:400;">iasWorld ASP.NET</span></div>
+        <div class="flow-box" style="background:#0d9488;">beacon.js<br><span style="font-size:0.62rem;font-weight:400;">Schneider Angular</span></div>
+        <div class="flow-box" style="background:#7c3aed;">patriot.js<br><span style="font-size:0.62rem;font-weight:400;">Classic ASP Frameset</span></div>
+        <div class="flow-box" style="background:#dc2626;">vision.js<br><span style="font-size:0.62rem;font-weight:400;">ASP.NET WebForms</span></div>
+        <div class="flow-box" style="background:#d97706;">bis.js<br><span style="font-size:0.62rem;font-weight:400;">React/Angular SPA</span></div>
+        <div class="flow-box" style="background:#475569;">AI Fallback<br><span style="font-size:0.62rem;font-weight:400;">GPT-4o-mini loop</span></div>
+      </div>
+
+      <div class="flow-arrow-down">&#8595;</div>
+
+      <!-- Handler returns -->
+      <div class="flow-row">
+        <div class="flow-box green">Handler returns:<br><span style="font-size:0.65rem;font-weight:400;">&#123; records[], totalFound, summary, searchedUrl &#125;</span></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-decision">null return?<br><span style="font-size:0.65rem;">handler failed?</span></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box" style="background:#475569;">AI Agent Fallback Loop<br><span style="font-size:0.65rem;font-weight:400;">GPT-4o-mini + vision + tools</span></div>
+      </div>
+
+      <div class="flow-arrow-down">&#8595;</div>
+
+      <!-- SSE streaming -->
+      <div class="flow-row">
+        <div class="flow-box purple">SSE Stream Events:<br><span style="font-size:0.65rem;font-weight:400;">status · progress · captcha · results · done</span></div>
+        <div class="flow-arrow">&#8594;</div>
+        <div class="flow-box blue">Frontend Renders:<br><span style="font-size:0.65rem;font-weight:400;">record cards · detail fields · CAPTCHA warning · "no results"</span></div>
+      </div>
+
+    </div>
+
+    <div class="info-box" style="margin-top:1.5rem;">
+      <strong>Stealth mode:</strong> The browser is launched via <code>playwright-extra</code> with the <code>puppeteer-extra-plugin-stealth</code> plugin applied. This spoofs browser fingerprints (WebGL, navigator.webdriver, etc.) to bypass Cloudflare and similar bot-detection systems, dramatically improving success rates on protected county sites.
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECTION 5: ONE AGENT → MANY AGENTS
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" id="one-agent">
+  <div class="section-header">
+    <div class="section-num">5</div>
+    <div>
+      <h2>The "One Agent &#8594; Many Agents" Concept <span style="font-size:0.55em;font-weight:500;color:#2563eb;background:#eff6ff;padding:3px 10px;border-radius:20px;vertical-align:middle;letter-spacing:0.02em;">Core Strategy</span></h2>
+      <div class="section-sub">How a single AI agent was used to bootstrap nationwide county data at scale</div>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="exec-summary">
+      <p>
+        The core insight behind Phase 2: <strong>the same AI agent that learned to search one county could be instructed to discover all counties.</strong> Instead of manually curating 3,200 URLs, we pointed the master agent at <em>netronline.com</em> — the authoritative directory of US county assessor links — and let it spawn sub-agents for each state. Each sub-agent applied the same "crawl, identify, extract URL" playbook across every county in its state. This is the foundational AI-first design principle of the platform.
+      </p>
+    </div>
+
+    <div class="agent-diagram">
+      <div>
+        <div class="agent-master">
+          <span class="agent-icon">&#129302;</span>
+          <div class="agent-title">Master AI Agent</div>
+          <div class="agent-sub">GPT-4o-mini / Groq<br>Playwright + Vision</div>
+        </div>
+      </div>
+      <div class="agent-right">
+        <div class="agent-task">
+          <strong>Task 1 — Source Identification</strong>
+          Identify <em>netronline.com</em> as the authoritative US county assessor directory. Learn the site structure: state index pages, county listing pages, external assessor URL links.
+        </div>
+        <div class="agent-task">
+          <strong>Task 2 — State Sub-Agent Spawning (x50)</strong>
+          For each of the 50 US states: spawn a sub-agent assigned to that state's netronline page. Sub-agent crawls each county entry, extracts the assessor/CAD URL, and flags the county name.
+        </div>
+        <div class="agent-task">
+          <strong>Task 3 — Platform Classification</strong>
+          Each extracted URL is passed through <code>platformDetector.detectFromUrl()</code> to classify into: qpublic, tyler, beacon, patriot, vision, bis, or generic. This label is stored alongside the URL.
+        </div>
+        <div class="agent-task">
+          <strong>Task 4 — Data Consolidation</strong>
+          All sub-agent results are merged into <code>data/counties.json</code>: one record per county with state, county name, assessor URL, and platform key. Live URL health checks flag dead links for netronline refresh.
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin-top:2rem;">State Sub-Agents Deployed</h3>
+    <div class="state-agents-grid">
+      <div class="state-agent-chip">Alabama</div>
+      <div class="state-agent-chip">Alaska</div>
+      <div class="state-agent-chip">Arizona</div>
+      <div class="state-agent-chip">Arkansas</div>
+      <div class="state-agent-chip">California</div>
+      <div class="state-agent-chip">Colorado</div>
+      <div class="state-agent-chip">Connecticut</div>
+      <div class="state-agent-chip">Delaware</div>
+      <div class="state-agent-chip">Florida</div>
+      <div class="state-agent-chip">Georgia</div>
+      <div class="state-agent-chip">Hawaii</div>
+      <div class="state-agent-chip">Idaho</div>
+      <div class="state-agent-chip">Illinois</div>
+      <div class="state-agent-chip">Indiana</div>
+      <div class="state-agent-chip">Iowa</div>
+      <div class="state-agent-chip">Kansas</div>
+      <div class="state-agent-chip">Kentucky</div>
+      <div class="state-agent-chip">Louisiana</div>
+      <div class="state-agent-chip">Maine</div>
+      <div class="state-agent-chip">Maryland</div>
+      <div class="state-agent-chip">Massachusetts</div>
+      <div class="state-agent-chip">Michigan</div>
+      <div class="state-agent-chip">Minnesota</div>
+      <div class="state-agent-chip">Mississippi</div>
+      <div class="state-agent-chip">Missouri</div>
+      <div class="state-agent-chip">Montana</div>
+      <div class="state-agent-chip">Nebraska</div>
+      <div class="state-agent-chip">Nevada</div>
+      <div class="state-agent-chip">New Hampshire</div>
+      <div class="state-agent-chip">New Jersey</div>
+      <div class="state-agent-chip">New Mexico</div>
+      <div class="state-agent-chip">New York</div>
+      <div class="state-agent-chip">N. Carolina</div>
+      <div class="state-agent-chip">N. Dakota</div>
+      <div class="state-agent-chip">Ohio</div>
+      <div class="state-agent-chip">Oklahoma</div>
+      <div class="state-agent-chip">Oregon</div>
+      <div class="state-agent-chip">Pennsylvania</div>
+      <div class="state-agent-chip">Rhode Island</div>
+      <div class="state-agent-chip">S. Carolina</div>
+      <div class="state-agent-chip">S. Dakota</div>
+      <div class="state-agent-chip">Tennessee</div>
+      <div class="state-agent-chip">Texas</div>
+      <div class="state-agent-chip">Utah</div>
+      <div class="state-agent-chip">Vermont</div>
+      <div class="state-agent-chip">Virginia</div>
+      <div class="state-agent-chip">Washington</div>
+      <div class="state-agent-chip">W. Virginia</div>
+      <div class="state-agent-chip">Wisconsin</div>
+      <div class="state-agent-chip">Wyoming</div>
+    </div>
+
+    <div class="result-badge">
+      Result: 3,200+ counties mapped with assessor URL + platform label in data/counties.json
+    </div>
+
+    <div class="info-box" style="margin-top:1.5rem;">
+      <strong>The conceptual parallel:</strong> Just as the agent learned to search one county by taking screenshots, reading forms, and filling fields, it was given the instruction to apply that same discovery loop to every county in every state. The agent effectively wrote its own playbook and then executed it at scale — this is the core AI-first design principle that makes nationwide coverage achievable without manual curation.
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECTION 6: THE 6 PLATFORM HANDLERS
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" id="handlers">
+  <div class="section-header">
+    <div class="section-num">6</div>
+    <div>
+      <h2>The 6 Platform Handlers</h2>
+      <div class="section-sub">Deterministic Playwright handlers for each major county assessor software platform</div>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="handlers-grid">
+
+      <!-- ── 1. qPublic ─────────────────────────────────────────────────── -->
+      <div class="handler-card">
+        <div class="handler-card-header" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);">
+          <div class="handler-icon" style="background:#16a34a20;">&#127968;</div>
+          <div>
+            <div class="handler-name">qPublic <span class="label-tag green">qpublic.js</span></div>
+            <div class="handler-vendor">Schneider Corp / iasWorld</div>
+            <div class="coverage-badge">
+              <span class="state-tag">GA</span>
+              <span class="state-tag">SC</span>
+              <span class="state-tag">FL</span>
+              <span class="state-tag">AL</span>
+              <span class="state-tag">MS</span>
+              <span class="state-tag">NC</span>
+              <span class="state-tag">LA</span>
+              <span class="state-tag">+ many</span>
+            </div>
+          </div>
+        </div>
+        <div class="handler-card-body">
+          <div>
+            <div class="handler-section-label">Technology</div>
+            <div class="handler-tech">Schneider Angular SPA<br>app-parcel-summary · tt-upm-parcel-detail-section<br>ng-reflect-label attributes<br>ValidateUser.aspx · Application.aspx?PageType=Search</div>
+          </div>
+          <div>
+            <div class="handler-section-label">URL Patterns</div>
+            <div class="handler-tech">qpublic.schneidercorp.com/Application.aspx?App=...&amp;PageType=Search<br>qpublic.net/{state}/{county}/search.html (legacy, redirects)</div>
+          </div>
+          <div>
+            <div class="handler-section-label">Key Challenge</div>
+            <div class="challenge-box">Angular renders AFTER <code>networkidle</code> fires. Playwright declares page loaded, but the DOM is still empty — 0 fields extracted. Additionally, many sites require accepting a disclaimer or a <code>ValidateUser.aspx</code> session step before the search page is reachable.</div>
+          </div>
+          <div>
+            <div class="handler-section-label">Solution</div>
+            <div class="solution-box"><code>waitForAngularContent()</code> polls repeatedly until Angular-rendered label elements appear. Extracts <code>ng-reflect-label</code> attributes, <code>dt/dd</code> pairs, and label-sibling patterns from the fully rendered component tree.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 2. Tyler ───────────────────────────────────────────────────── -->
+      <div class="handler-card">
+        <div class="handler-card-header" style="background:linear-gradient(135deg,#eff6ff,#dbeafe);">
+          <div class="handler-icon" style="background:#2563eb20;">&#128190;</div>
+          <div>
+            <div class="handler-name">Tyler iasWorld <span class="label-tag">tyler.js</span></div>
+            <div class="handler-vendor">Tyler Technologies</div>
+            <div class="coverage-badge">
+              <span class="state-tag">TX</span>
+              <span class="state-tag">MA</span>
+              <span class="state-tag">+ nationwide CADs</span>
+            </div>
+          </div>
+        </div>
+        <div class="handler-card-body">
+          <div>
+            <div class="handler-section-label">Technology</div>
+            <div class="handler-tech">ASP.NET WebForms + server-side session (sIndex)<br>propaccess.tylertech.net · {district}.tylerhost.net<br>mapublicaccess.tylerhost.net (id="inpOwner")</div>
+          </div>
+          <div>
+            <div class="handler-section-label">URL Patterns</div>
+            <div class="handler-tech">propaccess.tylertech.net/clientdb/?cid=N<br>{district}.tylerhost.net/apps/assessments/<br>{district}.tylerhost.net/...iasworld...</div>
+          </div>
+          <div>
+            <div class="handler-section-label">Key Challenges</div>
+            <div class="challenge-box">1. <strong>sIndex session consumed:</strong> Clicking the first result row uses the sIndex session token. All subsequent sIndex URLs return row 0 data — a server-side limitation.<br><br>2. <strong>Label/value confusion:</strong> Adjacent table cells extracted without distinguishing between label cells and data cells, producing garbled output.</div>
+          </div>
+          <div>
+            <div class="handler-section-label">Solution</div>
+            <div class="solution-box">Pre-extract row 0 detail data during the initial results load (before any click consumes sIndex). Rows 1-N are table-only. Labels must end with a colon or be <code>&lt;th&gt;</code> elements (Tyler Datalet convention). <code>findVal()</code> provides flexible header matching.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 3. Beacon ──────────────────────────────────────────────────── -->
+      <div class="handler-card">
+        <div class="handler-card-header" style="background:linear-gradient(135deg,#f0fdfa,#ccfbf1);">
+          <div class="handler-icon" style="background:#0d948820;">&#128204;</div>
+          <div>
+            <div class="handler-name">Beacon <span class="label-tag teal">beacon.js</span></div>
+            <div class="handler-vendor">Schneider Corp (sister product to qPublic)</div>
+            <div class="coverage-badge">
+              <span class="state-tag">MN</span>
+              <span class="state-tag">WI</span>
+              <span class="state-tag">IA</span>
+              <span class="state-tag">NE</span>
+              <span class="state-tag">KS</span>
+              <span class="state-tag">OH</span>
+              <span class="state-tag">+ Midwest</span>
+            </div>
+          </div>
+        </div>
+        <div class="handler-card-body">
+          <div>
+            <div class="handler-section-label">Technology</div>
+            <div class="handler-tech">Angular SPA — identical Schneider stack to qPublic<br>tt-upm-* CSS class conventions<br>ctlBodyPane_ctl0N_ctl01_* ASP.NET control IDs</div>
+          </div>
+          <div>
+            <div class="handler-section-label">URL Patterns</div>
+            <div class="handler-tech">beacon.schneidercorp.com/Application.aspx?App=...&amp;PageType=Search<br>beacon.schneidercorp.com/Application.aspx?AppID=N&amp;PageType=Search<br>{county}.schneidercorp.com/... (county-hosted deployments)</div>
+          </div>
+          <div>
+            <div class="handler-section-label">Key Challenges</div>
+            <div class="challenge-box">Beacon defaults to <code>PageType=Map</code> (GIS view) — the URL in counties.json often includes <code>PageTypeID=</code> which produces a malformed search URL. Also shows a Terms &amp; Conditions modal on first visit. Angular timing is identical to qPublic.</div>
+          </div>
+          <div>
+            <div class="handler-section-label">Solution</div>
+            <div class="solution-box">URL builder strips <code>PageTypeID</code> and <code>PageID</code> parameters and injects <code>PageType=Search</code>. <code>waitForAngularContent()</code> (same as qPublic) handles Angular render timing. Modal dismissed before search begins.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 4. Patriot ─────────────────────────────────────────────────── -->
+      <div class="handler-card">
+        <div class="handler-card-header" style="background:linear-gradient(135deg,#faf5ff,#ede9fe);">
+          <div class="handler-icon" style="background:#7c3aed20;">&#127981;</div>
+          <div>
+            <div class="handler-name">Patriot Properties <span class="label-tag purple">patriot.js</span></div>
+            <div class="handler-vendor">Patriot Properties Inc.</div>
+            <div class="coverage-badge">
+              <span class="state-tag">MA</span>
+              <span class="state-tag">NH</span>
+              <span class="state-tag">CT</span>
+              <span class="state-tag">ME</span>
+              <span class="state-tag">RI</span>
+              <span class="state-tag">VT</span>
+              <span style="font-size:0.65rem;color:var(--purple);font-weight:600;">100% NE coverage</span>
+            </div>
+          </div>
+        </div>
+        <div class="handler-card-body">
+          <div>
+            <div class="handler-section-label">Technology</div>
+            <div class="handler-tech">Classic ASP — 3-frame frameset architecture<br>default.asp (frameset) · search-middle-ns.asp (search form)<br>home-bottom.asp (results) · Summary.asp (detail — also a frameset)</div>
+          </div>
+          <div>
+            <div class="handler-section-label">URL Patterns</div>
+            <div class="handler-tech">patriotproperties.com/{TOWN}/default.asp<br>patriotproperties.com/{TOWN}/Parcel.asp?...<br>patriotproperties.com/{TOWN}/Assessment.asp?...</div>
+          </div>
+          <div>
+            <div class="handler-section-label">Key Challenges</div>
+            <div class="challenge-box"><strong>Frameset architecture (both entry and detail):</strong><br>
+              1. <code>default.asp</code> is a frameset — the search form lives in the middle frame, results appear in the bottom frame.<br>
+              2. <code>Summary.asp</code> (detail page) is also a frameset — <code>extractDetailFields()</code> on the outer frameset HTML returns 0 fields because no content lives there.</div>
+          </div>
+          <div>
+            <div class="handler-section-label">Solution</div>
+            <div class="solution-box"><code>detectFrames()</code> uses the Playwright frame API. Handler stays on the frameset page, submits the form inside the search frame, captures the bottom frame's redirect URL, then navigates the main page there. For detail pages: detects the Summary.asp frameset and loops through frames to extract from <code>summary-bottom.asp</code> specifically.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 5. Vision ──────────────────────────────────────────────────── -->
+      <div class="handler-card">
+        <div class="handler-card-header" style="background:linear-gradient(135deg,#fff1f2,#ffe4e6);">
+          <div class="handler-icon" style="background:#dc262620;">&#128065;</div>
+          <div>
+            <div class="handler-name">Vision Government Solutions <span class="label-tag red">vision.js</span></div>
+            <div class="handler-vendor">Vision Government Solutions Inc.</div>
+            <div class="coverage-badge">
+              <span class="state-tag">CT</span>
+              <span class="state-tag">NH</span>
+              <span class="state-tag">RI</span>
+              <span class="state-tag">MA</span>
+              <span class="state-tag">VT</span>
+              <span class="state-tag">ME</span>
+            </div>
+          </div>
+        </div>
+        <div class="handler-card-body">
+          <div>
+            <div class="handler-section-label">Technology</div>
+            <div class="handler-tech">ASP.NET WebForms + UpdatePanel (async postback)<br>gis.vgsi.com: newer API — async.asmx/GetData2<br>visionappraisal.com: classic ASP.NET long control IDs<br>ctl00$MainContent$SearchControl1$txt*</div>
+          </div>
+          <div>
+            <div class="handler-section-label">URL Patterns</div>
+            <div class="handler-tech">gis.vgsi.com/{CityState}/<br>www.visionappraisal.com/databases/{ST}/{TOWN}/<br>Parcel.aspx?pid=N · Search/search_parcel.aspx?pid=N</div>
+          </div>
+          <div>
+            <div class="handler-section-label">Key Challenges</div>
+            <div class="challenge-box">UpdatePanel async postback navigation — clicking search tabs or submitting forms does not trigger full page loads, making standard <code>waitForNavigation</code> unreliable. Long auto-generated ASP.NET control IDs vary by deployment.</div>
+          </div>
+          <div>
+            <div class="handler-section-label">Solution</div>
+            <div class="solution-box">API interception for <code>gis.vgsi.com</code> deployments: intercept the <code>async.asmx/GetData2</code> XHR call to extract JSON results directly. For <code>visionappraisal.com</code>: tab detection by label text rather than fixed IDs. Detail at <code>Parcel.aspx?pid=N</code>.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 6. BIS ──────────────────────────────────────────────────────── -->
+      <div class="handler-card">
+        <div class="handler-card-header" style="background:linear-gradient(135deg,#fffbeb,#fef3c7);">
+          <div class="handler-icon" style="background:#d9770620;">&#128193;</div>
+          <div>
+            <div class="handler-name">BIS Consultants <span class="label-tag amber">bis.js</span></div>
+            <div class="handler-vendor">BIS Consultants (Texas CAD heavy)</div>
+            <div class="coverage-badge">
+              <span class="state-tag">TX</span>
+              <span class="state-tag">+ various states</span>
+            </div>
+          </div>
+        </div>
+        <div class="handler-card-body">
+          <div>
+            <div class="handler-section-label">Technology (Two Flavours)</div>
+            <div class="handler-tech">A) React/Angular SPA (newer) — hash-routed, XHR results<br>B) Classic ASP.NET WebForms (older) — standard table<br>Both: /Property/View/{id} detail · /#/property/{id} for SPAs<br>No CAPTCHA on Texas CAD sites</div>
+          </div>
+          <div>
+            <div class="handler-section-label">URL Patterns</div>
+            <div class="handler-tech">esearch.{county}cad.org/<br>{county}.bisconsultants.com/<br>{county}.cadcentral.com/</div>
+          </div>
+          <div>
+            <div class="handler-section-label">Key Challenge</div>
+            <div class="challenge-box">SPA fires the <code>/search/SearchResults</code> XHR before Playwright can set up an intercept if form submit is called first. Additionally, direct re-fetching of the XHR URL always returns HTML (not JSON) because results are session-bound.</div>
+          </div>
+          <div>
+            <div class="handler-section-label">Solution</div>
+            <div class="solution-box">Set up <code>page.waitForResponse()</code> promise <strong>before</strong> triggering the form submit — Playwright queues the intercept before the network request fires. The intercepted response contains <code>&#123; resultsList, totalResults &#125;</code>. Direct URL re-fetch is never attempted.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="info-box" style="margin-top:2rem;">
+      <strong>Platform detection strategy:</strong> <code>platformDetector.detectFromUrl()</code> tests URL patterns first (synchronous, no network needed). If the URL is ambiguous, <code>detectFromHtml()</code> fingerprints the live page HTML for known strings like <code>qpublic.schneidercorp</code>, <code>tylertech</code>, <code>patriotproperties</code>, <code>vgsi</code>, or <code>bisconsultants</code>. The combined <code>detectPlatform(url, html)</code> function is the primary entry point used in <code>browserAgent.js</code>.
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECTION 7: CAPTCHA STRATEGY
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" id="captcha">
+  <div class="section-header">
+    <div class="section-num">7</div>
+    <div>
+      <h2>CAPTCHA Strategy</h2>
+      <div class="section-sub">Detection, handling, and future upgrade path</div>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="captcha-options">
+      <div class="captcha-option future">
+        <div class="captcha-option-badge badge-future">Future</div>
+        <h4>Option 1 — 2Captcha / CapSolver API</h4>
+        <p>
+          Pay-per-solve CAPTCHA solving service. Cost: approx. <strong>$0.001 per solve</strong>. Supports reCAPTCHA v2/v3, hCaptcha, Cloudflare Turnstile, image CAPTCHAs. Zero code changes required in handlers — only the resolver function needs swapping.
+        </p>
+        <p style="margin-top:0.5rem; font-size:0.78rem; color:var(--blue);">
+          Planned for production when volume justifies the cost.
+        </p>
+      </div>
+
+      <div class="captcha-option current">
+        <div class="captcha-option-badge badge-current">Current — V2.2</div>
+        <h4>Option 2 — Detect &amp; Flag (Implemented)</h4>
+        <p>
+          <code>detectCaptcha(page)</code> in <code>src/captchaDetector.js</code>. If a CAPTCHA is found, the search returns a <code>captchaBlocked</code> result. Frontend renders an <strong>amber warning card</strong> with an order note for manual resolution. No automated solving attempted.
+        </p>
+        <p style="margin-top:0.5rem; font-size:0.78rem; color:var(--green);">
+          Implemented across all 6 handlers and the AI fallback loop.
+        </p>
+      </div>
+
+      <div class="captcha-option rejected">
+        <div class="captcha-option-badge badge-rejected">Rejected</div>
+        <h4>Option 3 — User Prompt in Browser</h4>
+        <p>
+          Present the CAPTCHA to the end-user in a browser window for manual completion. Rejected due to poor UX (blocks the search UI), complex session handoff between Playwright and the user's browser, and incompatibility with headless server deployment.
+        </p>
+      </div>
+    </div>
+
+    <h3>Current Implementation — <code>src/captchaDetector.js</code></h3>
+    <table class="styled-table">
+      <thead>
+        <tr>
+          <th>CAPTCHA Type</th>
+          <th>Detection Signal</th>
+          <th>Coverage</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>reCAPTCHA v2</td>
+          <td>iframe src containing <code>google.com/recaptcha</code>, <code>.g-recaptcha</code> div</td>
+          <td>All handlers + AI loop</td>
+        </tr>
+        <tr>
+          <td>reCAPTCHA v3</td>
+          <td><code>grecaptcha.execute</code> call, <code>recaptcha/api.js</code> script tag</td>
+          <td>All handlers + AI loop</td>
+        </tr>
+        <tr>
+          <td>hCaptcha</td>
+          <td>iframe src containing <code>hcaptcha.com</code>, <code>.h-captcha</code> element</td>
+          <td>All handlers + AI loop</td>
+        </tr>
+        <tr>
+          <td>Cloudflare Turnstile</td>
+          <td><code>challenges.cloudflare.com/turnstile</code> iframe</td>
+          <td>All handlers + AI loop</td>
+        </tr>
+        <tr>
+          <td>Cloudflare 5s Challenge</td>
+          <td>Page title contains "Just a moment", Cloudflare spinner elements</td>
+          <td>All handlers + AI loop</td>
+        </tr>
+        <tr>
+          <td>Generic Interstitial</td>
+          <td>Blocking overlay elements, "verify you are human" text</td>
+          <td>All handlers + AI loop</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info-box" style="margin-top:1.5rem;">
+      <strong>Upgrade path:</strong> The 2Captcha/CapSolver API can be integrated with <strong>zero changes to any handler</strong>. The <code>captchaDetector.js</code> module's resolver function is the only code that needs updating. All 6 handlers already call <code>detectCaptcha(page)</code> at step 0 (before any form interaction) and the AI loop checks after every navigate/get_page_content call.
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECTION 8: KEY TECHNICAL CHALLENGES & SOLUTIONS
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" id="challenges">
+  <div class="section-header">
+    <div class="section-num">8</div>
+    <div>
+      <h2>Key Technical Challenges &amp; Solutions</h2>
+      <div class="section-sub">Root cause analysis and implemented fixes across all platform handlers</div>
+    </div>
+  </div>
+  <div class="section-body">
+    <table class="styled-table">
+      <thead>
+        <tr>
+          <th style="width:22%;">Challenge</th>
+          <th style="width:28%;">Root Cause</th>
+          <th style="width:35%;">Solution</th>
+          <th style="width:15%;">Handler(s)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Angular SPA returns 0 fields on extraction</td>
+          <td><code>networkidle</code> fires before Angular finishes rendering the DOM. Playwright declares the page loaded, but component content has not yet been injected into the HTML.</td>
+          <td><code>waitForAngularContent()</code> polls on a short interval until Angular-rendered label elements (e.g., <code>ng-reflect-label</code>) appear in the DOM. Only then does extraction proceed.</td>
+          <td>qPublic, Beacon</td>
+        </tr>
+        <tr>
+          <td>Patriot search results invisible to Playwright</td>
+          <td>The search form targets <code>home-bottom.asp</code> in a frameset. After submit, results appear in a different frame than the one Playwright is watching. Standard <code>waitForNavigation</code> sees no change.</td>
+          <td>Playwright frame API: stay on frameset, submit inside the search frame, capture the bottom frame's redirected URL post-submit, then navigate the main page context there directly.</td>
+          <td>Patriot</td>
+        </tr>
+        <tr>
+          <td>Patriot detail pages return 0 fields</td>
+          <td><code>Summary.asp</code> is itself a frameset. <code>extractDetailFields()</code> runs on the outer frameset HTML, which contains only <code>&lt;frameset&gt;</code> and <code>&lt;frame src=...&gt;</code> — no property data.</td>
+          <td>Detect when a detail URL is a frameset. Loop through all child frames and run field extraction specifically on the frame whose src matches <code>summary-bottom.asp</code>.</td>
+          <td>Patriot</td>
+        </tr>
+        <tr>
+          <td>Tyler sIndex stale data (all results show row 0)</td>
+          <td>Tyler's server-side session uses an <code>sIndex</code> token. Clicking any result row in the results table consumes the sIndex. Subsequent requests using the same sIndex URL return row 0 data regardless of which row was intended.</td>
+          <td>Pre-extract the row 0 detail <em>during</em> the initial results page load (before any click). For rows 1-N, record the table data only — navigating to their detail pages is a known server-side limitation.</td>
+          <td>Tyler</td>
+        </tr>
+        <tr>
+          <td>Tyler produces wrong label/value pairs</td>
+          <td>Adjacent table cells were extracted in sequence without checking which cells are labels vs. which contain data. Tyler Datalet tables mix label cells and value cells without consistent class markers.</td>
+          <td>Only treat a cell as a label if it ends with a colon (<code>:</code>) or is a <code>&lt;th&gt;</code> element. <code>findVal(header)</code> provides flexible header matching against the parsed table.</td>
+          <td>Tyler</td>
+        </tr>
+        <tr>
+          <td>BIS SPA search XHR not capturable</td>
+          <td>The React SPA fires the <code>/search/SearchResults</code> XHR synchronously on form submit. If Playwright triggers the submit first, the network event fires before <code>waitForResponse()</code> is registered — the response is missed.</td>
+          <td>Register the <code>page.waitForResponse()</code> promise handler <em>before</em> calling the form submit action. This ensures the Playwright intercept is in place before the network request fires.</td>
+          <td>BIS</td>
+        </tr>
+        <tr>
+          <td>qPublic IP blocking (GA/Gwinnett sites)</td>
+          <td>Some Georgia county qPublic deployments block non-US IPv6 ranges. The handler code is correct but requests from non-US servers are rejected at the network level.</td>
+          <td>Handler code requires no changes. Deploy the service on a US-based server (any major cloud provider US region). IPv6 blocking at county level is a network policy — not a code issue.</td>
+          <td>qPublic</td>
+        </tr>
+        <tr>
+          <td>Beacon delivers wrong search URL format</td>
+          <td>counties.json entries sometimes contain <code>PageTypeID=N&amp;PageID=N</code> in the Beacon URL (GIS map view). This format is ignored by Beacon's search controller and produces an empty or malformed search page.</td>
+          <td>Beacon URL builder strips all <code>PageTypeID</code> and <code>PageID</code> query params from the stored URL and appends <code>PageType=Search</code> to force the correct search page.</td>
+          <td>Beacon</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECTION 9: STAGING READINESS CHECKLIST
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" id="staging">
+  <div class="section-header">
+    <div class="section-num">9</div>
+    <div>
+      <h2>Staging Readiness Checklist</h2>
+      <div class="section-sub">V2.2 pre-staging sign-off — all items verified and complete</div>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="checklist">
+      <div class="check-item">
+        <span class="check-icon">&#10003;</span>
+        <span>All 6 platform handlers (qPublic, Tyler, Beacon, Patriot, Vision, BIS) tested and returning structured records</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon">&#10003;</span>
+        <span>CAPTCHA detection implemented across all 6 handlers at step 0 AND in the AI fallback loop after every navigation call</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon">&#10003;</span>
+        <span>Concurrency cap: <code>MAX_CONCURRENT_SEARCHES=5</code> (env-tunable) — returns HTTP 503 "Server Busy" when exceeded</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon">&#10003;</span>
+        <span>Per-request timeout: <code>SEARCH_TIMEOUT_MS=180000</code> (3 minutes, env-tunable) — returns HTTP 504 on expiry</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon">&#10003;</span>
+        <span>REST endpoint error codes: 422 captchaBlocked, 503 busy, 504 timeout — all mapped to frontend display states</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon">&#10003;</span>
+        <span>Health endpoint: <code>GET /api/health</code> returns <code>activeSearches</code> counter and server status</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon">&#10003;</span>
+        <span>County directory API available; NE states (MA, NH, CT, ME, RI, VT) at 100% URL coverage in counties.json</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon">&#10003;</span>
+        <span>Frontend: amber CAPTCHA warning card with order note for manual resolution; clear "no results" state</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon">&#10003;</span>
+        <span>Angular SPA timing fix: <code>waitForAngularContent()</code> polling implemented and verified on qPublic and Beacon</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon">&#10003;</span>
+        <span>Patriot frameset architecture fully handled: search frame, results frame, and detail frameset extraction all working</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon">&#10003;</span>
+        <span>Tyler sIndex handling hardened: row 0 pre-extraction; label/value cell logic uses colon convention</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon">&#10003;</span>
+        <span>SSL / self-signed certificate support: Playwright launched with <code>--ignore-certificate-errors</code> for county sites with expired certs</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon">&#10003;</span>
+        <span>Stealth plugin active: <code>playwright-extra</code> + <code>puppeteer-extra-plugin-stealth</code> applied on every browser launch</span>
+      </div>
+      <div class="check-item">
+        <span class="check-icon">&#10003;</span>
+        <span>Branch pushed, tag <code>v2.2-staging-ready</code> created</span>
+      </div>
+    </div>
+
+    <h3 style="margin-top:1rem; margin-bottom:1rem;">Staging Environment — Required <code>.env</code> Configuration</h3>
+    <div class="env-box">
+      <span class="env-comment"># OpenAI — required for AI fallback agent (vision + tool calling)</span><br>
+      <span class="env-key">OPENAI_API_KEY</span>=<span class="env-val">&lt;your OpenAI API key&gt;</span><br>
+      <span class="env-key">OPENAI_MODEL</span>=<span class="env-val">gpt-4o-mini</span><br>
+      <br>
+      <span class="env-comment"># Server</span><br>
+      <span class="env-key">PORT</span>=<span class="env-val">3000</span><br>
+      <br>
+      <span class="env-comment"># Playwright — set true for server/CI, false for local debugging</span><br>
+      <span class="env-key">BROWSER_HEADLESS</span>=<span class="env-val">true</span><br>
+      <br>
+      <span class="env-comment"># Concurrency and timeout — tune for your server's resources</span><br>
+      <span class="env-key">MAX_CONCURRENT_SEARCHES</span>=<span class="env-val">5</span><br>
+      <span class="env-key">SEARCH_TIMEOUT_MS</span>=<span class="env-val">180000</span>
+    </div>
+
+    <div class="info-box" style="margin-top:1.5rem;">
+      <strong>Deployment prerequisites:</strong> Node.js 18+ installed, Chromium browser installed via <code>npx playwright install chromium</code> (or <code>npm run setup</code>), and all npm dependencies via <code>npm install</code>. The server starts with <code>npm start</code>. For development with hot-reload: <code>npm run dev</code> (requires nodemon).
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECTION 10: TECH STACK
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" id="techstack">
+  <div class="section-header">
+    <div class="section-num">10</div>
+    <div>
+      <h2>Technology Stack</h2>
+      <div class="section-sub">All dependencies are from package.json (mortgage-search-service v1.0.0)</div>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="tech-stack-grid">
+      <div class="tech-category">
+        <h3>Backend</h3>
+        <ul class="tech-list">
+          <li>
+            <div class="tech-bullet"></div>
+            <div><span class="tech-name">Node.js + Express ^4.19.2</span> — HTTP server, REST endpoints, SSE streaming</div>
+          </li>
+          <li>
+            <div class="tech-bullet"></div>
+            <div><span class="tech-name">Playwright ^1.44.0</span> — headless Chromium browser automation, frame API, network interception</div>
+          </li>
+          <li>
+            <div class="tech-bullet"></div>
+            <div><span class="tech-name">playwright-extra ^4.3.6</span> — Playwright plugin system for stealth mode</div>
+          </li>
+          <li>
+            <div class="tech-bullet"></div>
+            <div><span class="tech-name">puppeteer-extra-plugin-stealth ^2.11.2</span> — spoofs WebGL, navigator.webdriver, and other fingerprints; bypasses Cloudflare detection</div>
+          </li>
+          <li>
+            <div class="tech-bullet"></div>
+            <div><span class="tech-name">OpenAI SDK ^4.104.0</span> — GPT-4o-mini API client (vision + tool/function calling)</div>
+          </li>
+          <li>
+            <div class="tech-bullet"></div>
+            <div><span class="tech-name">dotenv ^16.4.5</span> — environment variable management (<code>.env</code> file support)</div>
+          </li>
+          <li>
+            <div class="tech-bullet"></div>
+            <div><span class="tech-name">axios ^1.15.2</span> — HTTP client for URL health checks and netronline refresh</div>
+          </li>
+          <li>
+            <div class="tech-bullet"></div>
+            <div><span class="tech-name">cors ^2.8.5</span> — Cross-Origin Resource Sharing middleware for Express</div>
+          </li>
+        </ul>
+      </div>
+
+      <div class="tech-category">
+        <h3>Frontend, Data &amp; Tooling</h3>
+        <ul class="tech-list">
+          <li>
+            <div class="tech-bullet"></div>
+            <div><span class="tech-name">Vanilla HTML/CSS/JS</span> — no framework; zero client-side dependencies; <code>public/index.html</code></div>
+          </li>
+          <li>
+            <div class="tech-bullet"></div>
+            <div><span class="tech-name">Server-Sent Events (SSE)</span> — real-time progress streaming from server to browser (<code>status</code>, <code>progress</code>, <code>results</code>, <code>done</code> event types)</div>
+          </li>
+          <li>
+            <div class="tech-bullet"></div>
+            <div><span class="tech-name">data/counties.json</span> — 3,200+ county records: state, county name, assessor URL, platform key. AI-generated via netronline.com sub-agent crawl</div>
+          </li>
+          <li>
+            <div class="tech-bullet"></div>
+            <div><span class="tech-name">netronline.com</span> — authoritative external source for US county assessor URL discovery</div>
+          </li>
+          <li>
+            <div class="tech-bullet"></div>
+            <div><span class="tech-name">nodemon ^3.1.0 (dev)</span> — hot-reload server for development (<code>npm run dev</code>)</div>
+          </li>
+          <li>
+            <div class="tech-bullet"></div>
+            <div><span class="tech-name">cheerio ^1.2.0 (dev)</span> — server-side HTML parsing utility (development/scripts only)</div>
+          </li>
+          <li>
+            <div class="tech-bullet"></div>
+            <div><span class="tech-name">Deployment target</span> — any Node.js 18+ host with Chromium available; US-region preferred for county site IP whitelists</div>
+          </li>
+          <li>
+            <div class="tech-bullet"></div>
+            <div><span class="tech-name">AI Model</span> — OpenAI GPT-4o-mini; supports both vision (screenshot analysis) and tool calling (structured browser actions). Configurable via <code>OPENAI_MODEL</code> env var</div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem; background:var(--gray-50); border:1px solid var(--gray-200); border-radius:10px; padding:1.25rem 1.5rem;">
+      <h4 style="margin-bottom:0.75rem;">Key Architecture Files</h4>
+      <table class="styled-table">
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>server.js</code></td>
+            <td>Express server, SSE endpoint, concurrency gate, timeout wrapper, health endpoint</td>
+          </tr>
+          <tr>
+            <td><code>browserAgent.js</code></td>
+            <td>Main orchestrator: launches Playwright, detects platform, routes to handler or AI loop</td>
+          </tr>
+          <tr>
+            <td><code>src/platformDetector.js</code></td>
+            <td>URL + HTML fingerprinting; returns platform key for handler routing</td>
+          </tr>
+          <tr>
+            <td><code>src/captchaDetector.js</code></td>
+            <td>Detects reCAPTCHA, hCaptcha, Cloudflare challenges; returns boolean + type</td>
+          </tr>
+          <tr>
+            <td><code>src/handlers/qpublic.js</code></td>
+            <td>Schneider Angular SPA handler — qPublic.net and qpublic.schneidercorp.com</td>
+          </tr>
+          <tr>
+            <td><code>src/handlers/tyler.js</code></td>
+            <td>Tyler Technologies iasWorld — tylerhost.net, tylertech.com, propaccess</td>
+          </tr>
+          <tr>
+            <td><code>src/handlers/beacon.js</code></td>
+            <td>Beacon/Schneider Angular SPA — beacon.schneidercorp.com, county-hosted</td>
+          </tr>
+          <tr>
+            <td><code>src/handlers/patriot.js</code></td>
+            <td>Patriot Properties classic ASP frameset — patriotproperties.com NE towns</td>
+          </tr>
+          <tr>
+            <td><code>src/handlers/vision.js</code></td>
+            <td>Vision Government Solutions — gis.vgsi.com and visionappraisal.com</td>
+          </tr>
+          <tr>
+            <td><code>src/handlers/bis.js</code></td>
+            <td>BIS Consultants — esearch.{county}cad.org, bisconsultants.com, cadcentral.com</td>
+          </tr>
+          <tr>
+            <td><code>data/counties.json</code></td>
+            <td>3,200+ county records with assessor URL and platform classification</td>
+          </tr>
+          <tr>
+            <td><code>public/index.html</code></td>
+            <td>Vanilla JS frontend: SSE consumer, search form, results cards, CAPTCHA warning UI</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECTION 11 — AI ENGINE & COST MODEL
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" id="ai-engine">
+  <div class="section-header">
+    <div class="section-num">11</div>
+    <div>
+      <h2>AI Engine &amp; Cost Model</h2>
+      <div class="section-sub">OpenAI GPT-4o-mini — when it's called, what it costs, and how to minimize spend</div>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="exec-summary">
+      <p>The AI engine is a <strong>last-resort fallback</strong>, not the primary path. Every search first tries a dedicated platform handler (Patriot, Tyler, Vision, qPublic, Beacon, BIS). Only when a handler is unavailable or fails does the system invoke GPT-4o-mini to visually navigate the county site. In production, maximizing handler coverage directly minimizes AI API cost.</p>
+    </div>
+
+    <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin-bottom:2rem;">
+      <div class="metric-card">
+        <span class="metric-icon">🤖</span>
+        <div class="metric-value">GPT-4o-mini</div>
+        <div class="metric-label">AI Model<br>(vision + tool calling)</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">💲</span>
+        <div class="metric-value">$0</div>
+        <div class="metric-label">Cost when dedicated<br>handler succeeds</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">🔁</span>
+        <div class="metric-value">2–5</div>
+        <div class="metric-label">Typical API calls<br>per AI-fallback search</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">⚡</span>
+        <div class="metric-value">~$0.003</div>
+        <div class="metric-label">Avg cost per<br>AI-fallback search</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">📦</span>
+        <div class="metric-value">18</div>
+        <div class="metric-label">Max iterations<br>(hard limit)</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">📊</span>
+        <div class="metric-value">~$10</div>
+        <div class="metric-label">Est. cost for 1,000<br>AI-fallback searches</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">Decision Flow — When Is OpenAI Called?</h3>
+    <div style="background:var(--gray-50); border:1px solid var(--gray-200); border-radius:12px; padding:1.5rem; margin-bottom:2rem; font-size:0.88rem;">
+      <div style="display:flex; flex-direction:column; gap:0.6rem;">
+        <div style="display:flex; align-items:center; gap:1rem;">
+          <span style="background:var(--navy);color:white;border-radius:999px;padding:0.2em 0.8em;font-size:0.75rem;font-weight:700;white-space:nowrap;">Step 1</span>
+          <span><strong>Platform Detection</strong> — URL fingerprinting identifies the platform (Patriot, Tyler, Vision, qPublic, Beacon, BIS)</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:1rem;">
+          <span style="background:var(--green);color:white;border-radius:999px;padding:0.2em 0.8em;font-size:0.75rem;font-weight:700;white-space:nowrap;">✓ Handler found</span>
+          <span>Dedicated handler runs — <strong>0 OpenAI API calls</strong>. Returns results directly.</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:1rem;">
+          <span style="background:var(--amber);color:white;border-radius:999px;padding:0.2em 0.8em;font-size:0.75rem;font-weight:700;white-space:nowrap;">✗ No handler / handler fails</span>
+          <span>AI agentic loop starts — <strong>1 OpenAI API call per iteration</strong>, up to 18 max.</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:1rem; border-top:1px solid var(--gray-200); padding-top:0.6rem;">
+          <span style="background:var(--blue);color:white;border-radius:999px;padding:0.2em 0.8em;font-size:0.75rem;font-weight:700;white-space:nowrap;">Cache check (both paths)</span>
+          <span>Before any browser launch, cache is checked. A cache hit returns results <strong>instantly at $0 cost</strong>.</span>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">What the AI Receives Each Iteration</h3>
+    <table class="styled-table" style="margin-bottom:2rem;">
+      <thead><tr><th>Input</th><th>Details</th></tr></thead>
+      <tbody>
+        <tr><td><strong>System prompt</strong></td><td>Detailed numbered instructions: how to find the search form, which fields to fill, how to submit, and when to call <code>extract_results</code></td></tr>
+        <tr><td><strong>User message</strong></td><td>County URL, owner name or property ID, specific search parameters</td></tr>
+        <tr><td><strong>Page text</strong></td><td>First 6,000 characters of page body text — form labels, button text, visible data</td></tr>
+        <tr><td><strong>Screenshot</strong></td><td>JPEG screenshot of the browser viewport (80% quality, base64 encoded) — enables visual form detection</td></tr>
+        <tr><td><strong>Tool history</strong></td><td>Previous iteration's tool calls and results — gives the model memory of what it already did</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">Available AI Tools (Function Calls)</h3>
+    <table class="styled-table" style="margin-bottom:2rem;">
+      <thead><tr><th>Tool</th><th>What It Does</th></tr></thead>
+      <tbody>
+        <tr><td><code>take_screenshot</code></td><td>Captures current browser viewport as JPEG; returned as base64 in next message</td></tr>
+        <tr><td><code>get_page_content</code></td><td>Returns raw page HTML + visible body text for text-based form detection</td></tr>
+        <tr><td><code>fill_input</code></td><td>Fills a form field by CSS selector or input name</td></tr>
+        <tr><td><code>click_element</code></td><td>Clicks a button, link, or checkbox by selector</td></tr>
+        <tr><td><code>navigate</code></td><td>Navigates to a URL (used for direct property ID URLs)</td></tr>
+        <tr><td><code>extract_results</code></td><td>Signals extraction complete; exits the loop</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">Cost Estimates at Production Scale</h3>
+    <table class="styled-table">
+      <thead><tr><th>Volume</th><th>All handler hits (best case)</th><th>50% AI fallback (typical)</th><th>100% AI fallback (worst case)</th></tr></thead>
+      <tbody>
+        <tr><td>100 searches/day</td><td><strong>$0.00</strong></td><td>~$0.15</td><td>~$0.30</td></tr>
+        <tr><td>1,000 searches/day</td><td><strong>$0.00</strong></td><td>~$1.50</td><td>~$3.00</td></tr>
+        <tr><td>10,000 searches/day</td><td><strong>$0.00</strong></td><td>~$15.00</td><td>~$30.00</td></tr>
+        <tr><td>50,000 searches/day</td><td><strong>$0.00</strong></td><td>~$75.00</td><td>~$150.00</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.8rem; color:var(--gray-500); margin-top:0.5rem;">Based on GPT-4o-mini pricing (~$0.15/1M input, $0.60/1M output tokens). Assumes avg 4 iterations × 1,500 input + 600 output tokens. Cache hits reduce AI-fallback cost further — see Section 12.</p>
+
+    <div style="margin-top:1.5rem; background:var(--green-bg); border:1px solid var(--green-border); border-radius:10px; padding:1.25rem 1.5rem;">
+      <h4 style="color:var(--green); margin-bottom:0.5rem;">Cost Optimization Strategy</h4>
+      <ul style="font-size:0.88rem; color:var(--gray-700); line-height:1.8; padding-left:1.2rem;">
+        <li><strong>Expand handler coverage</strong> — every new county that works via a dedicated handler = $0 per search forever</li>
+        <li><strong>Use the Search Cache</strong> (Section 12) — repeated same-county/same-name searches hit cache at $0</li>
+        <li><strong>Configure <code>OPENAI_MODEL</code></strong> — default is <code>gpt-4o-mini</code>; do not upgrade to <code>gpt-4o</code> (10× more expensive) unless accuracy requires it</li>
+        <li><strong>US-region deployment</strong> — eliminates IP-block retries that waste iterations</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     SECTION 12 — SEARCH RESULT CACHE
+     ══════════════════════════════════════════════════════════════════════════ -->
+<div class="section" id="cache">
+  <div class="section-header">
+    <div class="section-num">12</div>
+    <div>
+      <h2>Search Result Cache</h2>
+      <div class="section-sub">In-memory LRU cache — eliminates redundant browser launches and OpenAI API calls for repeated searches</div>
+    </div>
+  </div>
+  <div class="section-body">
+
+    <div class="exec-summary">
+      <p>In production, mortgage order processing means <strong>thousands of searches hit the same counties, same owner names, and same property IDs</strong> repeatedly (e.g., multiple orders for properties in Harris County TX, or re-searches due to data corrections). Without a cache, every repeat search costs the same as the first — a full Playwright browser launch, 400–500 MB RAM, and 2–18 OpenAI API calls. The search cache eliminates this waste entirely.</p>
+    </div>
+
+    <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); margin-bottom:2rem;">
+      <div class="metric-card">
+        <span class="metric-icon">⚡</span>
+        <div class="metric-value">&lt;5ms</div>
+        <div class="metric-label">Cache hit response<br>(vs 15–90s live search)</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">💰</span>
+        <div class="metric-value">$0</div>
+        <div class="metric-label">OpenAI API cost<br>on cache hit</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">🗂️</span>
+        <div class="metric-value">1,000</div>
+        <div class="metric-label">Max cached entries<br>(configurable)</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">⏱️</span>
+        <div class="metric-value">4 hrs</div>
+        <div class="metric-label">Default TTL<br>(configurable)</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">🔄</span>
+        <div class="metric-value">LRU</div>
+        <div class="metric-label">Eviction policy<br>(oldest first)</div>
+      </div>
+      <div class="metric-card">
+        <span class="metric-icon">🚫</span>
+        <div class="metric-value">Never</div>
+        <div class="metric-label">CAPTCHA results<br>are not cached</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">Cache Key Construction</h3>
+    <div style="background:var(--gray-50); border:1px solid var(--gray-200); border-radius:10px; padding:1.25rem 1.5rem; font-family:monospace; font-size:0.85rem; margin-bottom:2rem;">
+      <div style="color:var(--gray-500); margin-bottom:0.5rem;">// All values are lowercased + trimmed before joining</div>
+      <div style="color:var(--navy); font-weight:600;">key = url § firstName § lastName § fullName § accountNumber</div>
+      <div style="color:var(--gray-500); margin-top:0.75rem; font-family:sans-serif; font-size:0.82rem;">
+        Example: <code>https://esearch.andrewscad.org/ § § smith §  § </code><br>
+        Same county URL + same search terms = always the same cache key, regardless of which order triggered the search.
+      </div>
+    </div>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">Cache Behaviour Rules</h3>
+    <table class="styled-table" style="margin-bottom:2rem;">
+      <thead><tr><th>Scenario</th><th>Cache Action</th><th>Reason</th></tr></thead>
+      <tbody>
+        <tr><td>Successful search result</td><td style="color:var(--green);font-weight:600;">Stored</td><td>Safe to reuse — property records don't change mid-day</td></tr>
+        <tr><td>CAPTCHA-blocked result</td><td style="color:var(--red);font-weight:600;">NOT stored</td><td>CAPTCHA is transient — retry minutes later may succeed</td></tr>
+        <tr><td>Search error / timeout</td><td style="color:var(--red);font-weight:600;">NOT stored</td><td>Transient failure — should not propagate to future requests</td></tr>
+        <tr><td>Entry older than TTL</td><td style="color:var(--amber);font-weight:600;">Auto-evicted</td><td>Stale data — next request triggers fresh live search</td></tr>
+        <tr><td>Cache at max size (1,000)</td><td style="color:var(--amber);font-weight:600;">LRU eviction</td><td>Oldest entry removed to make room for newest</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">Configuration (Environment Variables)</h3>
+    <table class="styled-table" style="margin-bottom:2rem;">
+      <thead><tr><th>Variable</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>CACHE_TTL_HOURS</code></td><td><code>4</code></td><td>How long a cached result is considered fresh (hours). Set to <code>8</code> for overnight batches, <code>1</code> for live data requirements.</td></tr>
+        <tr><td><code>CACHE_MAX_SIZE</code></td><td><code>1000</code></td><td>Maximum number of entries in memory. Each entry is ~50–200 KB depending on result size. 1,000 entries ≈ 50–200 MB RAM.</td></tr>
+      </tbody>
+    </table>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">Monitoring Cache Health</h3>
+    <p style="margin-bottom:0.75rem; font-size:0.88rem;">Cache statistics are included in the <code>GET /api/health</code> response:</p>
+    <div style="background:var(--gray-50); border:1px solid var(--gray-200); border-radius:10px; padding:1.25rem 1.5rem; font-family:monospace; font-size:0.82rem; margin-bottom:2rem;">
+      <pre style="margin:0; white-space:pre-wrap; color:var(--gray-700);">{
+  "status": "ok",
+  "activeSearches": 2,
+  "cache": {
+    "size": 347,          // total entries stored (including expired)
+    "liveEntries": 312,   // non-expired entries
+    "maxSize": 1000,
+    "ttlHours": 4,
+    "totalCacheHits": 891 // cache hits since server start
+  }
+}</pre>
+    </div>
+
+    <h3 style="font-size:1.05rem; font-weight:700; color:var(--navy); margin-bottom:1rem;">Production Impact at Scale</h3>
+    <table class="styled-table" style="margin-bottom:1.5rem;">
+      <thead><tr><th>Scenario</th><th>Without Cache</th><th>With Cache (50% repeat rate)</th><th>With Cache (80% repeat rate)</th></tr></thead>
+      <tbody>
+        <tr><td>1,000 searches/day</td><td>1,000 browser launches<br>~$3–$10 AI cost</td><td>500 launches<br>~$1.50–$5.00 AI cost</td><td>200 launches<br>~$0.60–$2.00 AI cost</td></tr>
+        <tr><td>10,000 searches/day</td><td>10,000 launches<br>~$30–$100 AI cost</td><td>5,000 launches<br>~$15–$50 AI cost</td><td>2,000 launches<br>~$6–$20 AI cost</td></tr>
+        <tr><td>Response time (cached)</td><td>15–90 seconds</td><td colspan="2" style="text-align:center; color:var(--green); font-weight:600;">&lt;5 milliseconds ⚡</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.8rem; color:var(--gray-500);">Repeat rate = percentage of searches where the same URL + name/property combination was already cached. Mortgage order processing naturally has high repeat rates — multiple orders per county, same owners appearing across different lenders.</p>
+
+    <div style="margin-top:1.5rem; background:var(--blue-pale); border:1px solid #93c5fd; border-radius:10px; padding:1.25rem 1.5rem;">
+      <h4 style="color:var(--blue); margin-bottom:0.5rem;">Future Upgrade Path</h4>
+      <p style="font-size:0.88rem; color:var(--gray-700); line-height:1.7;">The current cache is <strong>in-process memory only</strong> — it resets on every server restart and is not shared across multiple server instances. For multi-server deployments, replace <code>_searchCache</code> (<code>Map</code>) in <code>server.js</code> with a <strong>Redis</strong> client using the same key/TTL logic. The interface is a drop-in replacement: <code>GET</code> / <code>SET</code> / <code>EX</code> (expire). No other code changes required.</p>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     FOOTER
+     ══════════════════════════════════════════════════════════════════════════ -->
+<footer>
+  <strong>Orchestrate-Mortgage — Property Tax &amp; Title Search 🤖 Agentic AI-Platform</strong> &nbsp;|&nbsp; V2.2 &nbsp;|&nbsp; <span style="color:#93c5fd;">Confidential — Internal Development &amp; Document by Sriman S.</span> &nbsp;|&nbsp; April 2026
+  <br>
+  <span style="font-size:0.72rem; margin-top:0.4rem; display:block; opacity:0.6;">
+    mortgage-search-service &nbsp;&middot;&nbsp; Node.js + Playwright + OpenAI GPT-4o-mini &nbsp;&middot;&nbsp; 3,200+ Counties &nbsp;&middot;&nbsp; 6 Platform Handlers
+  </span>
+</footer>
+
+</body>
+</html>

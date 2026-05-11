@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orchestrate-Mortgage — End-to-End Architecture Mind Map</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0d1b2a;
+    --navy2: #1a2e44;
+    --blue: #1f6feb;
+    --blue-l: #58a6ff;
+    --teal: #0d9488;
+    --teal-l: #2dd4bf;
+    --green: #16a34a;
+    --green-l: #4ade80;
+    --amber: #d97706;
+    --amber-l: #fbbf24;
+    --purple: #7c3aed;
+    --purple-l: #a78bfa;
+    --coral: #dc2626;
+    --coral-l: #f87171;
+    --gray: #334155;
+    --gray-l: #94a3b8;
+    --white: #f8fafc;
+    --card-bg: #111827;
+    --card-border: rgba(255,255,255,0.08);
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--navy);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(31,111,235,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(31,111,235,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── HEADER ─────────────────────────────────────────────────────── */
+  header {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 4rem 2rem 2rem;
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(31,111,235,0.15);
+    border: 1px solid rgba(31,111,235,0.35);
+    color: var(--blue-l);
+    padding: 0.3rem 0.9rem;
+    border-radius: 999px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    margin-bottom: 1.2rem;
+  }
+
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(1.6rem, 4vw, 2.8rem);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 0.6rem;
+    background: linear-gradient(135deg, #f1f5f9 0%, #58a6ff 60%, #2dd4bf 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  header p {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    max-width: 600px;
+    margin: 0 auto 1.5rem;
+    line-height: 1.6;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--blue-l);
+  }
+
+  .stat-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── NAV TABS ───────────────────────────────────────────────────── */
+  .nav-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding: 1.5rem 2rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(13,27,42,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  .tab-btn {
+    padding: 0.45rem 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--card-border);
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .tab-btn:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.2); }
+  .tab-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+  /* ── MAIN CONTENT ───────────────────────────────────────────────── */
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  .section {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .section.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── SECTION TITLE ─────────────────────────────────────────────── */
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+    color: var(--text-primary);
+  }
+
+  .section-sub {
+    font-size: 0.87rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+    line-height: 1.5;
+  }
+
+  /* ── CARD BASE ──────────────────────────────────────────────────── */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 14px;
+    padding: 1.5rem;
+  }
+
+  /* ── OVERVIEW MIND MAP (SVG-based) ─────────────────────────────── */
+  .mindmap-wrap {
+    background: rgba(13,27,42,0.6);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 2rem;
+    overflow-x: auto;
+  }
+
+  .mindmap-wrap svg {
+    display: block;
+    margin: 0 auto;
+  }
+
+  /* ── FLOW DIAGRAM ───────────────────────────────────────────────── */
+  .flow-diagram {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+  }
+
+  .flow-step {
+    display: flex;
+    align-items: stretch;
+    gap: 1rem;
+    position: relative;
+  }
+
+  .step-num-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 40px;
+  }
+
+  .step-num {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    color: #fff;
+    z-index: 1;
+  }
+
+  .step-line {
+    width: 2px;
+    flex: 1;
+    background: linear-gradient(to bottom, rgba(31,111,235,0.4), rgba(31,111,235,0.05));
+    margin-top: 4px;
+    min-height: 24px;
+  }
+
+  .step-content {
+    flex: 1;
+    padding-bottom: 2rem;
+  }
+
+  .step-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    transition: border-color 0.2s;
+  }
+
+  .step-card:hover { border-color: rgba(255,255,255,0.18); }
+
+  .step-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .step-card p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin-bottom: 0.6rem;
+  }
+
+  /* ── TAG CHIPS ──────────────────────────────────────────────────── */
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 0.75rem;
+  }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 5px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 500;
+  }
+
+  .tag-blue   { background: rgba(31,111,235,0.15); color: var(--blue-l); border: 1px solid rgba(31,111,235,0.3); }
+  .tag-green  { background: rgba(22,163,74,0.15); color: var(--green-l); border: 1px solid rgba(22,163,74,0.3); }
+  .tag-amber  { background: rgba(217,119,6,0.15); color: var(--amber-l); border: 1px solid rgba(217,119,6,0.3); }
+  .tag-purple { background: rgba(124,58,237,0.15); color: var(--purple-l); border: 1px solid rgba(124,58,237,0.3); }
+  .tag-teal   { background: rgba(13,148,136,0.15); color: var(--teal-l); border: 1px solid rgba(13,148,136,0.3); }
+  .tag-coral  { background: rgba(220,38,38,0.15); color: var(--coral-l); border: 1px solid rgba(220,38,38,0.3); }
+  .tag-gray   { background: rgba(148,163,184,0.1); color: var(--gray-l); border: 1px solid rgba(148,163,184,0.2); }
+
+  /* ── GRID LAYOUTS ───────────────────────────────────────────────── */
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+  .grid-6 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+
+  /* ── HANDLER CARD ───────────────────────────────────────────────── */
+  .handler-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+
+  .handler-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.18); }
+
+  .handler-head {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .handler-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .handler-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .handler-file {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+
+  .handler-body {
+    padding: 1rem 1.25rem;
+  }
+
+  .handler-body p {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 0.75rem;
+  }
+
+  .state-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 0.5rem;
+  }
+
+  .state-chip {
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    background: rgba(255,255,255,0.06);
+    color: var(--text-secondary);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  /* ── INFO BOX ───────────────────────────────────────────────────── */
+  .info-box {
+    background: rgba(31,111,235,0.08);
+    border-left: 3px solid var(--blue);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+    font-size: 0.85rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+  }
+
+  .warn-box {
+    background: rgba(217,119,6,0.08);
+    border-left: 3px solid var(--amber);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+    font-size: 0.85rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+  }
+
+  .success-box {
+    background: rgba(22,163,74,0.08);
+    border-left: 3px solid var(--green);
+    border-radius: 0 8px 8px 0;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+    font-size: 0.85rem;
+    line-height: 1.65;
+    color: var(--text-secondary);
+  }
+
+  /* ── DECISION FLOW ──────────────────────────────────────────────── */
+  .decision-flow {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    padding: 1rem 0;
+  }
+
+  .df-box {
+    padding: 0.7rem 1.4rem;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    text-align: center;
+    min-width: 200px;
+  }
+
+  .df-diamond {
+    width: 0; height: 0;
+    position: relative;
+  }
+
+  .df-diamond-inner {
+    padding: 0.7rem 1.2rem;
+    background: rgba(217,119,6,0.18);
+    border: 1px solid var(--amber);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--amber-l);
+    text-align: center;
+    min-width: 220px;
+    position: relative;
+  }
+
+  .df-arrow {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    height: 28px;
+  }
+
+  .df-split {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .df-branch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 160px;
+  }
+
+  .df-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ── CAPTCHA SECTION ────────────────────────────────────────────── */
+  .captcha-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  .captcha-card {
+    background: rgba(217,119,6,0.06);
+    border: 1px solid rgba(217,119,6,0.2);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+  }
+
+  .captcha-card h4 {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--amber-l);
+    margin-bottom: 0.5rem;
+  }
+
+  .captcha-card p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* ── COST TABLE ─────────────────────────────────────────────────── */
+  .cost-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+  }
+
+  .cost-table th {
+    text-align: left;
+    padding: 0.6rem 1rem;
+    background: rgba(31,111,235,0.12);
+    color: var(--blue-l);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(31,111,235,0.2);
+  }
+
+  .cost-table td {
+    padding: 0.6rem 1rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  .cost-table tr:last-child td { border-bottom: none; }
+
+  .cost-table td:first-child { color: var(--text-primary); font-weight: 500; }
+
+  .cost-zero { color: var(--green-l) !important; font-weight: 600; }
+
+  /* ── CACHE METRICS ──────────────────────────────────────────────── */
+  .metric-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .metric-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .metric-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--blue-l);
+    margin-bottom: 4px;
+  }
+
+  .metric-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* ── TECH STACK GRID ────────────────────────────────────────────── */
+  .tech-item {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+  }
+
+  .tech-item h4 {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--teal-l);
+    margin-bottom: 4px;
+  }
+
+  .tech-item p {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ── AGENT DIAGRAM ──────────────────────────────────────────────── */
+  .agent-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .master-agent {
+    background: linear-gradient(135deg, rgba(31,111,235,0.2), rgba(31,111,235,0.05));
+    border: 2px solid rgba(31,111,235,0.5);
+    border-radius: 16px;
+    padding: 1.5rem 2rem;
+    text-align: center;
+    min-width: 280px;
+  }
+
+  .master-agent .title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--blue-l);
+    margin-bottom: 0.3rem;
+  }
+
+  .master-agent .sub {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .sub-agents-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 6px;
+    width: 100%;
+    max-width: 800px;
+  }
+
+  .sub-agent-chip {
+    background: rgba(13,148,136,0.12);
+    border: 1px solid rgba(13,148,136,0.25);
+    border-radius: 6px;
+    padding: 0.35rem 0.5rem;
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    color: var(--teal-l);
+  }
+
+  .arrow-down {
+    color: var(--blue);
+    font-size: 1.5rem;
+    text-align: center;
+  }
+
+  /* ── PIPELINE VISUAL ────────────────────────────────────────────── */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+  }
+
+  .pipe-node {
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .pipe-arrow {
+    color: var(--text-muted);
+    font-size: 1rem;
+    padding: 0 0.25rem;
+    flex-shrink: 0;
+  }
+
+  .pipe-node-blue   { background: rgba(31,111,235,0.2); border: 1px solid rgba(31,111,235,0.4); color: var(--blue-l); }
+  .pipe-node-green  { background: rgba(22,163,74,0.2); border: 1px solid rgba(22,163,74,0.4); color: var(--green-l); }
+  .pipe-node-teal   { background: rgba(13,148,136,0.2); border: 1px solid rgba(13,148,136,0.4); color: var(--teal-l); }
+  .pipe-node-amber  { background: rgba(217,119,6,0.2); border: 1px solid rgba(217,119,6,0.4); color: var(--amber-l); }
+  .pipe-node-purple { background: rgba(124,58,237,0.2); border: 1px solid rgba(124,58,237,0.4); color: var(--purple-l); }
+  .pipe-node-coral  { background: rgba(220,38,38,0.2); border: 1px solid rgba(220,38,38,0.4); color: var(--coral-l); }
+  .pipe-node-gray   { background: rgba(148,163,184,0.1); border: 1px solid rgba(148,163,184,0.2); color: var(--gray-l); }
+
+  footer {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    border-top: 1px solid var(--card-border);
+  }
+
+  footer span { color: var(--blue-l); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="badge">V2.2 · April 2026 · Internal Architecture Document</div>
+  <h1>Orchestrate-Mortgage<br>Architecture Mind Map</h1>
+  <p>Property Tax &amp; Title Search — Agentic AI Platform · End-to-End Flow from Search to Structured Data</p>
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-value">3,200+</div><div class="stat-label">US Counties</div></div>
+    <div class="stat"><div class="stat-value">50+</div><div class="stat-label">State Sub-Agents</div></div>
+    <div class="stat"><div class="stat-value">21,000+</div><div class="stat-label">Assessor URLs</div></div>
+    <div class="stat"><div class="stat-value">6</div><div class="stat-label">Platform Handlers</div></div>
+    <div class="stat"><div class="stat-value">&lt;3 min</div><div class="stat-label">Per Search</div></div>
+    <div class="stat"><div class="stat-value">&lt;5ms</div><div class="stat-label">Cache Hit</div></div>
+  </div>
+</header>
+
+<nav class="nav-tabs">
+  <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
+  <button class="tab-btn" onclick="showTab('journey')">Dev Journey (Steps 1–10)</button>
+  <button class="tab-btn" onclick="showTab('agents')">Agent Architecture</button>
+  <button class="tab-btn" onclick="showTab('request-flow')">Request Flow</button>
+  <button class="tab-btn" onclick="showTab('handlers')">6 Platform Handlers</button>
+  <button class="tab-btn" onclick="showTab('captcha')">CAPTCHA & Blockers</button>
+  <button class="tab-btn" onclick="showTab('cache')">Search Cache</button>
+  <button class="tab-btn" onclick="showTab('stack')">Tech Stack & Costs</button>
+</nav>
+
+<main>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     OVERVIEW — full mind-map SVG
+     ══════════════════════════════════════════════════════════════════ -->
+<section id="overview" class="section active">
+  <div class="section-title">Platform Overview — Mind Map</div>
+  <div class="section-sub">Full end-to-end architecture of Orchestrate-Mortgage showing all major components and their relationships</div>
+
+  <div class="mindmap-wrap">
+    <svg width="100%" viewBox="0 0 1200 820" role="img">
+      <title>Orchestrate-Mortgage full architecture mind map</title>
+      <desc>Complete mind map showing user input through AI agents, handlers, CAPTCHA mitigation, caching, and output</desc>
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </marker>
+      </defs>
+
+      <!-- ── CENTER: Core Platform ── -->
+      <rect x="460" y="330" width="280" height="80" rx="14" fill="rgba(31,111,235,0.25)" stroke="#1f6feb" stroke-width="1.5"/>
+      <text x="600" y="362" text-anchor="middle" fill="#58a6ff" font-family="Syne, sans-serif" font-size="15" font-weight="800">Orchestrate-Mortgage</text>
+      <text x="600" y="382" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="11">Agentic AI Property Search Platform</text>
+      <text x="600" y="398" text-anchor="middle" fill="#475569" font-family="DM Mono, monospace" font-size="10">mortgage-search-service · V2.2</text>
+
+      <!-- ── USER INPUT (left) ── -->
+      <rect x="30" y="348" width="160" height="52" rx="10" fill="rgba(148,163,184,0.1)" stroke="rgba(148,163,184,0.25)" stroke-width="1"/>
+      <text x="110" y="370" text-anchor="middle" fill="#f1f5f9" font-family="Syne, sans-serif" font-size="12" font-weight="700">User / Frontend</text>
+      <text x="110" y="387" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">index.html · Vanilla JS SPA</text>
+      <text x="110" y="401" text-anchor="middle" fill="#475569" font-family="DM Sans, sans-serif" font-size="10">POST /api/search/stream</text>
+      <line x1="190" y1="374" x2="458" y2="374" stroke="#1f6feb" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+
+      <!-- ── OUTPUT (right) ── -->
+      <rect x="1010" y="348" width="170" height="52" rx="10" fill="rgba(22,163,74,0.12)" stroke="rgba(22,163,74,0.3)" stroke-width="1"/>
+      <text x="1095" y="370" text-anchor="middle" fill="#4ade80" font-family="Syne, sans-serif" font-size="12" font-weight="700">Structured Results</text>
+      <text x="1095" y="385" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">Property records · SSE stream</text>
+      <text x="1095" y="398" text-anchor="middle" fill="#475569" font-family="DM Sans, sans-serif" font-size="10">DB storage · Reports</text>
+      <line x1="742" y1="374" x2="1008" y2="374" stroke="#16a34a" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+
+      <!-- ── TOP: County Data Engine ── -->
+      <rect x="370" y="60" width="460" height="80" rx="12" fill="rgba(13,148,136,0.12)" stroke="rgba(13,148,136,0.3)" stroke-width="1"/>
+      <text x="600" y="92" text-anchor="middle" fill="#2dd4bf" font-family="Syne, sans-serif" font-size="13" font-weight="700">County Data Engine</text>
+      <text x="600" y="110" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">netronline.com crawled → counties.json · 3,200+ counties</text>
+      <text x="600" y="126" text-anchor="middle" fill="#475569" font-family="DM Sans, sans-serif" font-size="10">50 State sub-agents × 6-7 URLs/county = 21,000+ assessor URLs</text>
+      <line x1="600" y1="140" x2="600" y2="328" stroke="#0d9488" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+
+      <!-- ── AGENT ARCHITECTURE (top-left) ── -->
+      <rect x="60" y="60" width="270" height="80" rx="12" fill="rgba(124,58,237,0.12)" stroke="rgba(124,58,237,0.3)" stroke-width="1"/>
+      <text x="195" y="88" text-anchor="middle" fill="#a78bfa" font-family="Syne, sans-serif" font-size="13" font-weight="700">Agent Architecture</text>
+      <text x="195" y="106" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">1 Core Master Agent + 50+ State Sub-Agents</text>
+      <text x="195" y="122" text-anchor="middle" fill="#475569" font-family="DM Sans, sans-serif" font-size="10">"One Agent → Many Agents" pattern</text>
+      <line x1="330" y1="100" x2="458" y2="340" stroke="#7c3aed" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+
+      <!-- ── AI MODEL (top-right) ── -->
+      <rect x="860" y="60" width="280" height="80" rx="12" fill="rgba(31,111,235,0.12)" stroke="rgba(31,111,235,0.25)" stroke-width="1"/>
+      <text x="1000" y="88" text-anchor="middle" fill="#58a6ff" font-family="Syne, sans-serif" font-size="13" font-weight="700">AI Model Selection</text>
+      <text x="1000" y="106" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">Tested: Llama3, Groq, OpenAI variants</text>
+      <text x="1000" y="122" text-anchor="middle" fill="#2dd4bf" font-family="DM Mono, monospace" font-size="10">✓ GPT-4o-mini: Vision + Tool Calling</text>
+      <line x1="860" y1="100" x2="742" y2="330" stroke="#1f6feb" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+
+      <!-- ── PLATFORM DETECTION ── -->
+      <rect x="200" y="220" width="220" height="70" rx="10" fill="rgba(13,148,136,0.1)" stroke="rgba(13,148,136,0.25)" stroke-width="1"/>
+      <text x="310" y="248" text-anchor="middle" fill="#2dd4bf" font-family="Syne, sans-serif" font-size="12" font-weight="700">Platform Detection</text>
+      <text x="310" y="264" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">platformDetector.js</text>
+      <text x="310" y="278" text-anchor="middle" fill="#475569" font-family="DM Sans, sans-serif" font-size="10">URL + HTML fingerprinting</text>
+      <line x1="420" y1="255" x2="460" y2="350" stroke="#0d9488" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- ── 6 HANDLERS (left middle-bottom) ── -->
+      <rect x="30" y="470" width="390" height="160" rx="12" fill="rgba(22,163,74,0.06)" stroke="rgba(22,163,74,0.2)" stroke-width="1"/>
+      <text x="225" y="495" text-anchor="middle" fill="#4ade80" font-family="Syne, sans-serif" font-size="12" font-weight="700">6 Deterministic Platform Handlers</text>
+
+      <rect x="42" y="508" width="100" height="36" rx="7" fill="rgba(22,163,74,0.2)" stroke="rgba(22,163,74,0.35)" stroke-width="0.8"/>
+      <text x="92" y="524" text-anchor="middle" fill="#4ade80" font-family="DM Mono, monospace" font-size="10" font-weight="500">qpublic.js</text>
+      <text x="92" y="538" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="9">Schneider Angular</text>
+
+      <rect x="152" y="508" width="100" height="36" rx="7" fill="rgba(31,111,235,0.2)" stroke="rgba(31,111,235,0.35)" stroke-width="0.8"/>
+      <text x="202" y="524" text-anchor="middle" fill="#58a6ff" font-family="DM Mono, monospace" font-size="10" font-weight="500">tyler.js</text>
+      <text x="202" y="538" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="9">iasWorld ASP.NET</text>
+
+      <rect x="262" y="508" width="100" height="36" rx="7" fill="rgba(13,148,136,0.2)" stroke="rgba(13,148,136,0.35)" stroke-width="0.8"/>
+      <text x="312" y="524" text-anchor="middle" fill="#2dd4bf" font-family="DM Mono, monospace" font-size="10" font-weight="500">beacon.js</text>
+      <text x="312" y="538" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="9">Schneider Angular</text>
+
+      <rect x="42" y="556" width="100" height="36" rx="7" fill="rgba(124,58,237,0.2)" stroke="rgba(124,58,237,0.35)" stroke-width="0.8"/>
+      <text x="92" y="572" text-anchor="middle" fill="#a78bfa" font-family="DM Mono, monospace" font-size="10" font-weight="500">patriot.js</text>
+      <text x="92" y="586" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="9">Classic ASP Frames</text>
+
+      <rect x="152" y="556" width="100" height="36" rx="7" fill="rgba(220,38,38,0.2)" stroke="rgba(220,38,38,0.35)" stroke-width="0.8"/>
+      <text x="202" y="572" text-anchor="middle" fill="#f87171" font-family="DM Mono, monospace" font-size="10" font-weight="500">vision.js</text>
+      <text x="202" y="586" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="9">ASP.NET WebForms</text>
+
+      <rect x="262" y="556" width="100" height="36" rx="7" fill="rgba(217,119,6,0.2)" stroke="rgba(217,119,6,0.35)" stroke-width="0.8"/>
+      <text x="312" y="572" text-anchor="middle" fill="#fbbf24" font-family="DM Mono, monospace" font-size="10" font-weight="500">bis.js</text>
+      <text x="312" y="586" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="9">React/Angular TX</text>
+
+      <text x="225" y="625" text-anchor="middle" fill="#475569" font-family="DM Sans, sans-serif" font-size="10">+ AI Fallback: GPT-4o-mini loop (vision + tool calling)</text>
+      <line x1="225" y1="470" x2="550" y2="412" stroke="#16a34a" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- ── CAPTCHA & BLOCKERS ── -->
+      <rect x="450" y="520" width="300" height="120" rx="12" fill="rgba(217,119,6,0.08)" stroke="rgba(217,119,6,0.25)" stroke-width="1"/>
+      <text x="600" y="545" text-anchor="middle" fill="#fbbf24" font-family="Syne, sans-serif" font-size="12" font-weight="700">CAPTCHA &amp; Bot Blockers</text>
+      <text x="600" y="563" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">8.1 Country IP validation (US-region only)</text>
+      <text x="600" y="578" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">8.2 Cloudflare Human/Bot detection</text>
+      <text x="600" y="593" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">8.3 reCAPTCHA / hCaptcha / Turnstile</text>
+      <text x="600" y="608" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">8.4 Concurrency CAP · 8.5 Search timings</text>
+      <text x="600" y="623" text-anchor="middle" fill="#475569" font-family="DM Sans, sans-serif" font-size="9">Playwright Stealth · playwright-extra · puppeteer-extra-plugin-stealth</text>
+      <line x1="600" y1="410" x2="600" y2="518" stroke="#d97706" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+
+      <!-- ── SEARCH CACHE ── -->
+      <rect x="830" y="460" width="230" height="90" rx="12" fill="rgba(31,111,235,0.1)" stroke="rgba(31,111,235,0.25)" stroke-width="1"/>
+      <text x="945" y="484" text-anchor="middle" fill="#58a6ff" font-family="Syne, sans-serif" font-size="12" font-weight="700">LRU Search Cache</text>
+      <text x="945" y="500" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">&lt;5ms on cache hit · 1,000 max entries</text>
+      <text x="945" y="516" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">4hr TTL · $0 on repeat searches</text>
+      <text x="945" y="532" text-anchor="middle" fill="#475569" font-family="DM Mono, monospace" font-size="9">key: url § firstName § lastName § parcel</text>
+      <line x1="742" y1="390" x2="830" y2="478" stroke="#1f6feb" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+
+      <!-- ── DATABASE ── -->
+      <rect x="860" y="620" width="200" height="60" rx="10" fill="rgba(22,163,74,0.1)" stroke="rgba(22,163,74,0.25)" stroke-width="1"/>
+      <text x="960" y="644" text-anchor="middle" fill="#4ade80" font-family="Syne, sans-serif" font-size="12" font-weight="700">Database Storage</text>
+      <text x="960" y="660" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">All results · Reports · History</text>
+      <line x1="1095" y1="400" x2="960" y2="618" stroke="#16a34a" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+
+      <!-- ── BROWSER AUTOMATION ── -->
+      <rect x="780" y="220" width="240" height="70" rx="10" fill="rgba(124,58,237,0.1)" stroke="rgba(124,58,237,0.25)" stroke-width="1"/>
+      <text x="900" y="246" text-anchor="middle" fill="#a78bfa" font-family="Syne, sans-serif" font-size="12" font-weight="700">Browser Automation</text>
+      <text x="900" y="262" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">Playwright Chromium + Stealth</text>
+      <text x="900" y="276" text-anchor="middle" fill="#475569" font-family="DM Sans, sans-serif" font-size="10">browserAgent.js · runBrowserAgent()</text>
+      <line x1="850" y1="290" x2="742" y2="340" stroke="#7c3aed" stroke-width="1" marker-end="url(#arr)"/>
+
+      <!-- ── LEGEND ── -->
+      <rect x="30" y="740" width="500" height="30" rx="6" fill="rgba(255,255,255,0.02)" stroke="rgba(255,255,255,0.06)" stroke-width="0.5"/>
+      <text x="40" y="759" fill="#475569" font-family="DM Sans, sans-serif" font-size="9">Click tabs above to explore each section in detail. All dashed lines = data flow. Solid lines = direct connections.</text>
+    </svg>
+  </div>
+
+  <div class="info-box" style="margin-top:1.5rem;">
+    <strong style="color:#58a6ff;">Core Design Principle:</strong> "One Agent → Many Agents" — a single AI agent that learned to search one county was scaled to discover and map all 3,200+ counties across 50 US states. Deterministic handlers ($0 cost) cover the 6 dominant platforms; GPT-4o-mini AI fallback covers edge cases.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     JOURNEY — Steps 1–10
+     ══════════════════════════════════════════════════════════════════ -->
+<section id="journey" class="section">
+  <div class="section-title">Development Journey — Steps 1 to 10</div>
+  <div class="section-sub">The 10 phases of how Orchestrate-Mortgage was conceived and built</div>
+
+  <div class="flow-diagram">
+
+    <div class="flow-step">
+      <div class="step-num-col">
+        <div class="step-num" style="background:#1f6feb;">1</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-content">
+        <div class="step-card">
+          <h3 style="color:#58a6ff;">AI Model Research &amp; Selection</h3>
+          <p>Evaluated multiple AI models for the core engine. Tested local Llama 3.x (text + vision variants), Groq API with different models, and various OpenAI models. Concluded that <strong style="color:#58a6ff;">GPT-4o-mini with Vision + Tool Calling</strong> was the best fit — balancing cost, speed, accuracy, and fallback capability for county assessor websites.</p>
+          <div class="tags">
+            <span class="tag tag-gray">Local Llama 3.x</span>
+            <span class="tag tag-gray">Llama 3.x Vision</span>
+            <span class="tag tag-gray">Groq API</span>
+            <span class="tag tag-gray">OpenAI variants</span>
+            <span class="tag tag-blue">✓ GPT-4o-mini selected</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num-col">
+        <div class="step-num" style="background:#7c3aed;">2</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-content">
+        <div class="step-card">
+          <h3 style="color:#a78bfa;">Core / Main AI Agent Built</h3>
+          <p>Built the foundational Core AI Agent. Used <strong style="color:#a78bfa;">netronline.com</strong> as the primary source for US county assessor URLs — integrated and scraped to obtain all US states and their respective counties. Result: <strong style="color:#a78bfa;">3,000+ counties discovered</strong>, each with 6–7 internal URLs per county (assessors, maps, GIS, tax records, etc.).</p>
+          <div class="tags">
+            <span class="tag tag-purple">All 50 US States</span>
+            <span class="tag tag-purple">3,000+ Counties</span>
+            <span class="tag tag-blue">netronline.com</span>
+            <span class="tag tag-gray">6–7 URLs/county</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num-col">
+        <div class="step-num" style="background:#0d9488;">3</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-content">
+        <div class="step-card">
+          <h3 style="color:#2dd4bf;">Search Engine Proved — TX County (Andrews)</h3>
+          <p>Using the Core AI Agent, achieved a fully working property search engine for US Mortgage services (Tax &amp; Title search). Demonstrated search by: first name, last name, property/account ID — for <strong style="color:#2dd4bf;">Andrews County, Texas</strong>. Fetched, populated, and showcased results correctly. The proof of concept worked end-to-end.</p>
+          <div class="tags">
+            <span class="tag tag-teal">TX-Andrews County</span>
+            <span class="tag tag-green">Search by name ✓</span>
+            <span class="tag tag-green">Search by parcel ID ✓</span>
+            <span class="tag tag-green">Results populated ✓</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num-col">
+        <div class="step-num" style="background:#1f6feb;">4</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-content">
+        <div class="step-card">
+          <h3 style="color:#58a6ff;">50 State Sub-Agents Created (1 per State)</h3>
+          <p>Scaled the Core AI Agent into <strong style="color:#58a6ff;">50 dedicated State Sub-Agents</strong> — one per US state (TX-AI-AGENT, AZ-AI-AGENT, CA-AI-AGENT, etc.). Each sub-agent is responsible for all counties within its state and inherits the same search logic as the core agent, adapted for state-specific URL patterns and assessor platforms.</p>
+          <div class="tags">
+            <span class="tag tag-blue">TX-AI-AGENT</span>
+            <span class="tag tag-blue">AZ-AI-AGENT</span>
+            <span class="tag tag-blue">CA-AI-AGENT</span>
+            <span class="tag tag-blue">NY-AI-AGENT</span>
+            <span class="tag tag-blue">50 total agents</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num-col">
+        <div class="step-num" style="background:#d97706;">5</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-content">
+        <div class="step-card">
+          <h3 style="color:#fbbf24;">Scale: 50 Agents × 3,000 Counties × 7 URLs = 21,000+ URLs</h3>
+          <p>The math behind the scale: <strong style="color:#fbbf24;">50 state agents</strong> covering <strong style="color:#fbbf24;">3,000+ counties</strong>, each with <strong style="color:#fbbf24;">6–7 assessor/tax/GIS URLs per county</strong> = over <strong style="color:#fbbf24;">21,000 URLs</strong> to handle. These 50 sub-agents working together with the Core Agent form the complete nationwide search infrastructure ready to handle any US county property search.</p>
+          <div class="tags">
+            <span class="tag tag-amber">50 States</span>
+            <span class="tag tag-amber">3,000+ Counties</span>
+            <span class="tag tag-amber">×7 URLs each</span>
+            <span class="tag tag-amber">= 21,000+ URLs</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num-col">
+        <div class="step-num" style="background:#7c3aed;">6</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-content">
+        <div class="step-card">
+          <h3 style="color:#a78bfa;">Specialized Platform Handlers Built (Robos)</h3>
+          <p>Analyzed all county assessor URL platforms. The AI model matured by studying all states &amp; counties' URL patterns. Built <strong style="color:#a78bfa;">6 specialized deterministic handlers</strong> (Robos) for the dominant county software platforms, replacing AI guesswork with precision. Also built <code style="background:rgba(124,58,237,0.2);color:#a78bfa;padding:1px 5px;border-radius:4px;">platformDetector.js</code> for URL + HTML fingerprinting to route each incoming request to the correct handler automatically.</p>
+          <div class="tags">
+            <span class="tag tag-green">qpublic.js</span>
+            <span class="tag tag-blue">tyler.js</span>
+            <span class="tag tag-teal">beacon.js</span>
+            <span class="tag tag-purple">patriot.js</span>
+            <span class="tag tag-coral">vision.js</span>
+            <span class="tag tag-amber">bis.js</span>
+            <span class="tag tag-gray">+ AI fallback</span>
+          </div>
+          <div class="info-box" style="margin-top:0.75rem;">
+            <strong>6.2:</strong> Replaced AI guesswork with deterministic selector strategies. AI agent retained as intelligent fallback for unrecognized platforms. <code>platformDetector.js</code> uses URL + HTML fingerprinting to route requests.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num-col">
+        <div class="step-num" style="background:#0d9488;">7</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-content">
+        <div class="step-card">
+          <h3 style="color:#2dd4bf;">1 Core + 50 Sub-Agents → 6 Handlers = 21,000 URLs Covered</h3>
+          <p>The combined architecture: Core AI Agent + 50 State Sub-Agents, each equipped with <strong style="color:#2dd4bf;">6 dominant platform handlers</strong>. Together they are ready to handle all <strong style="color:#2dd4bf;">21,000+ URLs</strong> across the US. Each agent gets 6 handlers; if all deterministic handlers miss, the AI fallback loop engages automatically.</p>
+          <div class="pipeline">
+            <div class="pipe-node pipe-node-purple">Core Agent</div>
+            <div class="pipe-arrow">+</div>
+            <div class="pipe-node pipe-node-teal">50 Sub-Agents</div>
+            <div class="pipe-arrow">×</div>
+            <div class="pipe-node pipe-node-green">6 Handlers each</div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-node pipe-node-blue">21,000+ URLs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num-col">
+        <div class="step-num" style="background:#dc2626;">8</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-content">
+        <div class="step-card">
+          <h3 style="color:#f87171;">CAPTCHA &amp; Access Control Scenarios Handled</h3>
+          <p>County assessor URLs are access-controlled by many different barrier scenarios that must be navigated programmatically:</p>
+          <div class="captcha-grid" style="margin-top:0.75rem;">
+            <div class="captcha-card"><h4>8.1 Country IP Validation</h4><p>Many counties restrict access to US IP addresses only. US-region deployment eliminates IP-block retries.</p></div>
+            <div class="captcha-card"><h4>8.2 Cloudflare Bot Detection</h4><p>Human/Bot detection via Cloudflare Turnstile. Bypassed using Playwright Stealth plugin (spoof WebGL, navigator.webdriver).</p></div>
+            <div class="captcha-card"><h4>8.3 CAPTCHA Types</h4><p>reCAPTCHA v2/v3, hCaptcha, and custom CAPTCHA implementations. Detected with detectCaptcha() — returns captchaBlocked result.</p></div>
+            <div class="captcha-card"><h4>8.4 Concurrency CAP</h4><p>NetronOnline and county sites throttle concurrent sessions. MAX_CONCURRENT = 5 browser processes managed by server.js.</p></div>
+            <div class="captcha-card"><h4>8.5 Search Timings</h4><p>Per-search timeout: 180s (3 min). Angular SPA timing, frameset delays, ASP.NET postback waits all handled per platform.</p></div>
+            <div class="captcha-card"><h4>8.6 SSL &amp; Session</h4><p>Self-signed certificate support. Tyler sIndex session handling. Disclaimer/Terms modal dismissal before search begins.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num-col">
+        <div class="step-num" style="background:#16a34a;">9</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-content">
+        <div class="step-card">
+          <h3 style="color:#4ade80;">Search → Scrape → Extract → Display Results</h3>
+          <p>The application model: search finds exact values through web scraping and fetching. Data flows back to the frontend as <strong style="color:#4ade80;">exact structured output fields</strong> — owner name, parcel ID, address, assessed value, tax status, legal description — displayed in real-time via Server-Sent Events (SSE) stream.</p>
+          <div class="pipeline">
+            <div class="pipe-node pipe-node-blue">User Search</div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-node pipe-node-teal">Scrape/Fetch</div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-node pipe-node-green">Extract Fields</div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-node pipe-node-purple">SSE Stream</div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-node pipe-node-green">Frontend Display</div>
+          </div>
+          <div class="tags">
+            <span class="tag tag-green">owner name</span>
+            <span class="tag tag-green">parcel ID</span>
+            <span class="tag tag-green">address</span>
+            <span class="tag tag-green">assessed value</span>
+            <span class="tag tag-green">tax status</span>
+            <span class="tag tag-green">legal description</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num-col">
+        <div class="step-num" style="background:#1f6feb;">10</div>
+      </div>
+      <div class="step-content">
+        <div class="step-card">
+          <h3 style="color:#58a6ff;">Store in DB → Power Reports &amp; Everything</h3>
+          <p>All search results are stored in the database. This persistent layer powers downstream reporting, audit trails, repeat searches (served from LRU cache), and integration with the broader Orchestrate-Mortgage platform. Every property record searched becomes part of the institutional knowledge base.</p>
+          <div class="success-box" style="margin-top:0.75rem;">
+            <strong style="color:#4ade80;">Status: Ready for Staging</strong> — All 10 steps complete. The platform is a fully automated end-to-end property tax &amp; title search system covering 3,200+ US counties.
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     AGENTS
+     ══════════════════════════════════════════════════════════════════ -->
+<section id="agents" class="section">
+  <div class="section-title">Agent Architecture — "One Agent → Many Agents"</div>
+  <div class="section-sub">How the single core AI agent was scaled to cover all 50 US states and 3,200+ counties</div>
+
+  <div class="agent-box" style="margin-bottom:2rem;">
+    <div class="master-agent">
+      <div class="title">🤖 Master AI Agent</div>
+      <div class="sub">GPT-4o-mini · Vision + Tool Calling · Playwright</div>
+    </div>
+    <div class="arrow-down">↓</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;width:100%;">
+      <div class="card">
+        <h4 style="font-family:'Syne',sans-serif;font-weight:700;color:#2dd4bf;margin-bottom:0.5rem;">Task 1 — Source Identification</h4>
+        <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6;">Identify netronline.com as the authoritative US county assessor directory. Learn the site structure: state index pages, county listing pages, external assessor URL links.</p>
+      </div>
+      <div class="card">
+        <h4 style="font-family:'Syne',sans-serif;font-weight:700;color:#2dd4bf;margin-bottom:0.5rem;">Task 2 — State Sub-Agent Spawning (×50)</h4>
+        <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6;">For each of the 50 US states: spawn a sub-agent assigned to that state's netronline page. Sub-agent crawls each county entry and extracts the assessor/CAD URL.</p>
+      </div>
+      <div class="card">
+        <h4 style="font-family:'Syne',sans-serif;font-weight:700;color:#2dd4bf;margin-bottom:0.5rem;">Task 3 — Platform Classification</h4>
+        <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6;">Each extracted URL is passed through platformDetector.detectFromUrl() to classify into: qpublic, tyler, beacon, patriot, vision, bis, or generic.</p>
+      </div>
+      <div class="card">
+        <h4 style="font-family:'Syne',sans-serif;font-weight:700;color:#2dd4bf;margin-bottom:0.5rem;">Task 4 — Data Consolidation</h4>
+        <p style="font-size:0.82rem;color:var(--text-secondary);line-height:1.6;">All sub-agent results merged into data/counties.json: one record per county with state, county name, assessor URL, and platform key. Live health checks flag dead links.</p>
+      </div>
+    </div>
+    <div class="arrow-down">↓</div>
+    <div style="width:100%;"><p style="text-align:center;font-size:0.85rem;color:var(--text-muted);margin-bottom:0.75rem;">50 State Sub-Agents deployed:</p></div>
+    <div class="sub-agents-row">
+      <div class="sub-agent-chip">Alabama</div><div class="sub-agent-chip">Alaska</div><div class="sub-agent-chip">Arizona</div><div class="sub-agent-chip">Arkansas</div><div class="sub-agent-chip">California</div><div class="sub-agent-chip">Colorado</div><div class="sub-agent-chip">Connecticut</div><div class="sub-agent-chip">Delaware</div><div class="sub-agent-chip">Florida</div><div class="sub-agent-chip">Georgia</div><div class="sub-agent-chip">Hawaii</div><div class="sub-agent-chip">Idaho</div><div class="sub-agent-chip">Illinois</div><div class="sub-agent-chip">Indiana</div><div class="sub-agent-chip">Iowa</div><div class="sub-agent-chip">Kansas</div><div class="sub-agent-chip">Kentucky</div><div class="sub-agent-chip">Louisiana</div><div class="sub-agent-chip">Maine</div><div class="sub-agent-chip">Maryland</div><div class="sub-agent-chip">Massachusetts</div><div class="sub-agent-chip">Michigan</div><div class="sub-agent-chip">Minnesota</div><div class="sub-agent-chip">Mississippi</div><div class="sub-agent-chip">Missouri</div><div class="sub-agent-chip">Montana</div><div class="sub-agent-chip">Nebraska</div><div class="sub-agent-chip">Nevada</div><div class="sub-agent-chip">New Hampshire</div><div class="sub-agent-chip">New Jersey</div><div class="sub-agent-chip">New Mexico</div><div class="sub-agent-chip">New York</div><div class="sub-agent-chip">N. Carolina</div><div class="sub-agent-chip">N. Dakota</div><div class="sub-agent-chip">Ohio</div><div class="sub-agent-chip">Oklahoma</div><div class="sub-agent-chip">Oregon</div><div class="sub-agent-chip">Pennsylvania</div><div class="sub-agent-chip">Rhode Island</div><div class="sub-agent-chip">S. Carolina</div><div class="sub-agent-chip">S. Dakota</div><div class="sub-agent-chip">Tennessee</div><div class="sub-agent-chip">Texas</div><div class="sub-agent-chip">Utah</div><div class="sub-agent-chip">Vermont</div><div class="sub-agent-chip">Virginia</div><div class="sub-agent-chip">Washington</div><div class="sub-agent-chip">W. Virginia</div><div class="sub-agent-chip">Wisconsin</div><div class="sub-agent-chip">Wyoming</div>
+    </div>
+    <div class="success-box" style="width:100%;margin-top:1rem;">
+      <strong style="color:#4ade80;">Result:</strong> 3,200+ counties mapped with assessor URL + platform label in <code style="background:rgba(22,163,74,0.2);color:#4ade80;padding:1px 5px;border-radius:4px;">data/counties.json</code>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     REQUEST FLOW
+     ══════════════════════════════════════════════════════════════════ -->
+<section id="request-flow" class="section">
+  <div class="section-title">End-to-End Request Flow</div>
+  <div class="section-sub">Complete data flow from user input to structured property records returned via SSE stream</div>
+
+  <div class="decision-flow">
+
+    <div class="df-box" style="background:rgba(148,163,184,0.1);border:1px solid rgba(148,163,184,0.25);color:#f1f5f9;">
+      👤 User enters owner name / parcel ID → <code style="color:#58a6ff;">index.html</code> (Vanilla JS SPA)
+    </div>
+    <div class="df-arrow">↓</div>
+    <div class="df-box" style="background:rgba(31,111,235,0.15);border:1px solid rgba(31,111,235,0.35);color:#58a6ff;">
+      POST + SSE → <code>/api/search/stream</code> → <code>server.js</code> (Express + SSE)
+    </div>
+    <div class="df-arrow">↓</div>
+    <div class="df-diamond-inner">Cache Check — hit in LRU cache?</div>
+    <div class="df-arrow">↓</div>
+    <div class="df-split">
+      <div class="df-branch">
+        <div class="df-label">HIT &lt;5ms</div>
+        <div class="df-box" style="background:rgba(22,163,74,0.15);border:1px solid rgba(22,163,74,0.3);color:#4ade80;">Return cached result immediately · $0 cost</div>
+      </div>
+      <div class="df-branch">
+        <div class="df-label">MISS — continue</div>
+        <div class="df-diamond-inner">Concurrency Check — activeSearches &lt; MAX (5)?</div>
+      </div>
+    </div>
+    <div class="df-arrow">↓</div>
+    <div class="df-split">
+      <div class="df-branch">
+        <div class="df-label">NO — busy</div>
+        <div class="df-box" style="background:rgba(220,38,38,0.15);border:1px solid rgba(220,38,38,0.3);color:#f87171;">503 Server Busy — returns JSON error</div>
+      </div>
+      <div class="df-branch">
+        <div class="df-label">YES — proceed</div>
+        <div class="df-box" style="background:rgba(22,163,74,0.15);border:1px solid rgba(22,163,74,0.3);color:#4ade80;">resolveCountyUrl() — health check; netronline refresh if dead</div>
+      </div>
+    </div>
+    <div class="df-arrow">↓</div>
+    <div class="df-box" style="background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);color:#a78bfa;">
+      runBrowserAgent() → Playwright Chromium + Stealth plugin → page.goto(countyUrl)
+    </div>
+    <div class="df-arrow">↓</div>
+    <div class="df-diamond-inner">detectCaptcha(page) — reCAPTCHA / hCaptcha / Cloudflare?</div>
+    <div class="df-arrow">↓</div>
+    <div class="df-split">
+      <div class="df-branch">
+        <div class="df-label">BLOCKED</div>
+        <div class="df-box" style="background:rgba(217,119,6,0.15);border:1px solid rgba(217,119,6,0.3);color:#fbbf24;">captchaBlocked result · 422 + amber warning card</div>
+      </div>
+      <div class="df-branch">
+        <div class="df-label">CLEAR — proceed</div>
+        <div class="df-box" style="background:rgba(13,148,136,0.15);border:1px solid rgba(13,148,136,0.3);color:#2dd4bf;">platformDetector.detectFromUrl(url) — URL + HTML fingerprinting</div>
+      </div>
+    </div>
+    <div class="df-arrow">↓</div>
+
+    <div style="background:rgba(255,255,255,0.03);border:1px solid var(--card-border);border-radius:12px;padding:1.25rem;width:100%;max-width:700px;">
+      <p style="text-align:center;font-size:0.8rem;color:var(--text-muted);margin-bottom:0.75rem;">Route to platform handler:</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;">
+        <div class="pipe-node pipe-node-green">qpublic.js<br><span style="font-size:0.7rem;opacity:0.7;">Schneider Angular</span></div>
+        <div class="pipe-node pipe-node-blue">tyler.js<br><span style="font-size:0.7rem;opacity:0.7;">iasWorld ASP.NET</span></div>
+        <div class="pipe-node pipe-node-teal">beacon.js<br><span style="font-size:0.7rem;opacity:0.7;">Schneider Angular</span></div>
+        <div class="pipe-node pipe-node-purple">patriot.js<br><span style="font-size:0.7rem;opacity:0.7;">Classic ASP frames</span></div>
+        <div class="pipe-node pipe-node-coral">vision.js<br><span style="font-size:0.7rem;opacity:0.7;">ASP.NET WebForms</span></div>
+        <div class="pipe-node pipe-node-amber">bis.js<br><span style="font-size:0.7rem;opacity:0.7;">React/Angular TX</span></div>
+        <div class="pipe-node pipe-node-gray">AI Fallback<br><span style="font-size:0.7rem;opacity:0.7;">GPT-4o-mini loop</span></div>
+      </div>
+    </div>
+
+    <div class="df-arrow">↓</div>
+    <div class="df-diamond-inner">Handler returns null? (handler failed?)</div>
+    <div class="df-arrow">↓</div>
+    <div class="df-split">
+      <div class="df-branch">
+        <div class="df-label">NULL — fallback</div>
+        <div class="df-box" style="background:rgba(148,163,184,0.1);border:1px solid rgba(148,163,184,0.2);color:#94a3b8;">AI Agent Fallback Loop · GPT-4o-mini + Vision + Tool Calling · up to N iterations</div>
+      </div>
+      <div class="df-branch">
+        <div class="df-label">SUCCESS</div>
+        <div class="df-box" style="background:rgba(22,163,74,0.15);border:1px solid rgba(22,163,74,0.3);color:#4ade80;">{ records[], totalFound, summary, searchedUrl } returned</div>
+      </div>
+    </div>
+    <div class="df-arrow">↓</div>
+    <div class="df-box" style="background:rgba(31,111,235,0.15);border:1px solid rgba(31,111,235,0.35);color:#58a6ff;">
+      SSE Stream Events: <code>status</code> · <code>progress</code> · <code>captcha</code> · <code>results</code> · <code>done</code>
+    </div>
+    <div class="df-arrow">↓</div>
+    <div class="df-box" style="background:rgba(22,163,74,0.12);border:1px solid rgba(22,163,74,0.25);color:#4ade80;">
+      Frontend renders: record cards · detail fields · CAPTCHA warning · "no results" state · stored in DB
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     HANDLERS
+     ══════════════════════════════════════════════════════════════════ -->
+<section id="handlers" class="section">
+  <div class="section-title">6 Platform Handlers</div>
+  <div class="section-sub">Deterministic Playwright handlers for each major county assessor software platform — zero AI cost when matched</div>
+
+  <div class="grid-2" style="margin-bottom:1.5rem;">
+
+    <div class="handler-card">
+      <div class="handler-head" style="border-color:rgba(22,163,74,0.2);">
+        <div class="handler-icon" style="background:rgba(22,163,74,0.15);">🏘</div>
+        <div>
+          <div class="handler-name" style="color:#4ade80;">qPublic · qpublic.js</div>
+          <div class="handler-file">Schneider Corp / iasWorld · Angular SPA</div>
+        </div>
+      </div>
+      <div class="handler-body">
+        <p>Schneider Angular SPA. Uses <code>ng-reflect-label</code> attributes, <code>dt/dd</code> pairs. Requires <code>waitForAngularContent()</code> — Angular renders AFTER networkidle fires. Many sites need ValidateUser.aspx session step.</p>
+        <div class="state-chips"><span class="state-chip">GA</span><span class="state-chip">SC</span><span class="state-chip">FL</span><span class="state-chip">AL</span><span class="state-chip">MS</span><span class="state-chip">NC</span><span class="state-chip">LA</span><span class="state-chip">+ many</span></div>
+      </div>
+    </div>
+
+    <div class="handler-card">
+      <div class="handler-head" style="border-color:rgba(31,111,235,0.2);">
+        <div class="handler-icon" style="background:rgba(31,111,235,0.15);">🏛</div>
+        <div>
+          <div class="handler-name" style="color:#58a6ff;">Tyler iasWorld · tyler.js</div>
+          <div class="handler-file">Tyler Technologies · ASP.NET + session tokens</div>
+        </div>
+      </div>
+      <div class="handler-body">
+        <p>ASP.NET search with sIndex session token. Pre-extracts row 0 detail during initial results load. Labels matched by <code>findVal()</code> with flexible header matching. sIndex consumed on first result click — must pre-extract.</p>
+        <div class="state-chips"><span class="state-chip">TX</span><span class="state-chip">OK</span><span class="state-chip">AR</span><span class="state-chip">TN</span><span class="state-chip">LA</span><span class="state-chip">+ many</span></div>
+      </div>
+    </div>
+
+    <div class="handler-card">
+      <div class="handler-head" style="border-color:rgba(13,148,136,0.2);">
+        <div class="handler-icon" style="background:rgba(13,148,136,0.15);">📍</div>
+        <div>
+          <div class="handler-name" style="color:#2dd4bf;">Beacon · beacon.js</div>
+          <div class="handler-file">Schneider Corp (sister to qPublic) · Angular SPA</div>
+        </div>
+      </div>
+      <div class="handler-body">
+        <p>Identical Schneider stack to qPublic. Defaults to PageType=Map (GIS). URL builder strips <code>PageTypeID</code> and injects <code>PageType=Search</code>. Dismisses Terms &amp; Conditions modal. Same waitForAngularContent() timing solution.</p>
+        <div class="state-chips"><span class="state-chip">MN</span><span class="state-chip">WI</span><span class="state-chip">IA</span><span class="state-chip">NE</span><span class="state-chip">KS</span><span class="state-chip">OH</span><span class="state-chip">+ Midwest</span></div>
+      </div>
+    </div>
+
+    <div class="handler-card">
+      <div class="handler-head" style="border-color:rgba(124,58,237,0.2);">
+        <div class="handler-icon" style="background:rgba(124,58,237,0.15);">🏗</div>
+        <div>
+          <div class="handler-name" style="color:#a78bfa;">Patriot Properties · patriot.js</div>
+          <div class="handler-file">Patriot Properties Inc. · Classic ASP Frameset</div>
+        </div>
+      </div>
+      <div class="handler-body">
+        <p>Classic ASP 3-frame architecture: <code>default.asp</code> (frameset) → search in middle frame → results in bottom frame. <code>detectFrames()</code> uses Playwright frame API. Summary.asp detail page is also a frameset — loops frames to find <code>summary-bottom.asp</code>.</p>
+        <div class="state-chips"><span class="state-chip" style="color:#a78bfa;">MA ✓</span><span class="state-chip" style="color:#a78bfa;">NH ✓</span><span class="state-chip" style="color:#a78bfa;">CT ✓</span><span class="state-chip" style="color:#a78bfa;">ME ✓</span><span class="state-chip" style="color:#a78bfa;">RI ✓</span><span class="state-chip" style="color:#a78bfa;">VT ✓</span><span class="state-chip">100% NE coverage</span></div>
+      </div>
+    </div>
+
+    <div class="handler-card">
+      <div class="handler-head" style="border-color:rgba(220,38,38,0.2);">
+        <div class="handler-icon" style="background:rgba(220,38,38,0.15);">👁</div>
+        <div>
+          <div class="handler-name" style="color:#f87171;">Vision Gov Solutions · vision.js</div>
+          <div class="handler-file">Vision Government Solutions · ASP.NET WebForms</div>
+        </div>
+      </div>
+      <div class="handler-body">
+        <p>ASP.NET WebForms + UpdatePanel async postback. Two flavors: <code>gis.vgsi.com</code> (API interception of <code>async.asmx/GetData2</code> XHR) and <code>visionappraisal.com</code> (tab detection by label text, not fixed IDs). Standard waitForNavigation unreliable with UpdatePanel.</p>
+        <div class="state-chips"><span class="state-chip">CT</span><span class="state-chip">NH</span><span class="state-chip">RI</span><span class="state-chip">MA</span><span class="state-chip">VT</span><span class="state-chip">ME</span></div>
+      </div>
+    </div>
+
+    <div class="handler-card">
+      <div class="handler-head" style="border-color:rgba(217,119,6,0.2);">
+        <div class="handler-icon" style="background:rgba(217,119,6,0.15);">📁</div>
+        <div>
+          <div class="handler-name" style="color:#fbbf24;">BIS Consultants · bis.js</div>
+          <div class="handler-file">BIS Consultants · React/Angular SPA (TX heavy)</div>
+        </div>
+      </div>
+      <div class="handler-body">
+        <p>Two flavors: modern React/Angular SPA (<code>iswdata.com</code>, <code>bisweb.com</code>) with REST API interception and JSON parsing; legacy Classic HTML with table scraping. Texas CAD heavy. Property ID direct-navigation supported via navigate tool.</p>
+        <div class="state-chips"><span class="state-chip">TX</span><span class="state-chip">+ various states</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <h3 style="font-family:'Syne',sans-serif;font-weight:700;color:#94a3b8;margin-bottom:0.75rem;">AI Fallback Agent (GPT-4o-mini Vision Loop)</h3>
+    <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.65;margin-bottom:0.75rem;">When no deterministic handler matches, or when a handler returns null, the AI fallback loop engages. GPT-4o-mini receives screenshots of the county website and uses 6 tool calls to interact: <code>take_screenshot</code>, <code>get_page_content</code>, <code>fill_input</code>, <code>click_element</code>, <code>navigate</code>, <code>extract_results</code>. The loop runs for up to N iterations until results are extracted or timeout is reached.</p>
+    <div class="tags">
+      <span class="tag tag-gray">take_screenshot</span>
+      <span class="tag tag-gray">get_page_content</span>
+      <span class="tag tag-gray">fill_input</span>
+      <span class="tag tag-gray">click_element</span>
+      <span class="tag tag-gray">navigate</span>
+      <span class="tag tag-gray">extract_results</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     CAPTCHA
+     ══════════════════════════════════════════════════════════════════ -->
+<section id="captcha" class="section">
+  <div class="section-title">CAPTCHA &amp; Bot Detection Handling</div>
+  <div class="section-sub">Six categories of access barriers encountered across county assessor websites and how each is mitigated</div>
+
+  <div class="captcha-grid" style="margin-bottom:1.5rem;">
+    <div class="captcha-card">
+      <h4>Country IP Validation (8.1)</h4>
+      <p>Many counties restrict access to US IP addresses only. Solution: deploy server in US-region. Eliminates IP-block retries that waste iterations. Cross-county concurrency further reduces detection probability.</p>
+    </div>
+    <div class="captcha-card">
+      <h4>Cloudflare Bot Detection (8.2)</h4>
+      <p>Human/Bot detection via Cloudflare Turnstile, WAF rules, and behavioral analysis. Solution: Playwright-extra + puppeteer-extra-plugin-stealth. Spoofs WebGL, navigator.webdriver, canvas fingerprint, and other bot signals.</p>
+    </div>
+    <div class="captcha-card">
+      <h4>CAPTCHA Types (8.3)</h4>
+      <p>reCAPTCHA v2/v3, hCaptcha, Cloudflare Turnstile, custom image CAPTCHAs. detectCaptcha() scans for telltale selectors. On detection: returns captchaBlocked result (422) with amber warning card. CAPTCHA results are NOT cached.</p>
+    </div>
+    <div class="captcha-card">
+      <h4>Concurrency CAP (8.4)</h4>
+      <p>NetronOnline and county sites throttle concurrent sessions. MAX_CONCURRENT = 5 browser processes. Requests beyond this cap receive 503 Server Busy. activeSearches counter managed by server.js with increment/decrement lifecycle.</p>
+    </div>
+    <div class="captcha-card">
+      <h4>Search Timings (8.5)</h4>
+      <p>Per-search timeout: SEARCH_TIMEOUT_MS=180000 (3 min) — 504 on expiry. Angular SPA timing: waitForAngularContent() polling. Frameset architecture: frame navigation delays. ASP.NET UpdatePanel postback: intercept XHR instead of waitForNavigation.</p>
+    </div>
+    <div class="captcha-card">
+      <h4>SSL &amp; Sessions (8.6)</h4>
+      <p>Self-signed certificate support via --ignore-certificate-errors. Tyler sIndex session handling hardened. Disclaimer/Terms modal auto-dismissal. ValidateUser.aspx session pre-step for qPublic. County-specific cookie/session management.</p>
+    </div>
+  </div>
+
+  <div class="warn-box">
+    <strong style="color:#fbbf24;">Important:</strong> CAPTCHA-blocked results are explicitly NOT stored in the LRU search cache. CAPTCHA is transient — a retry minutes later may succeed. Error/timeout results are also not cached. Only successful property record results are cached.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     CACHE
+     ══════════════════════════════════════════════════════════════════ -->
+<section id="cache" class="section">
+  <div class="section-title">LRU Search Result Cache</div>
+  <div class="section-sub">In-memory LRU cache eliminates redundant browser launches and OpenAI API calls for repeated searches</div>
+
+  <div class="metric-cards">
+    <div class="metric-card"><div class="metric-value">&lt;5ms</div><div class="metric-label">Cache hit response (vs 15–90s live)</div></div>
+    <div class="metric-card"><div class="metric-value">$0</div><div class="metric-label">OpenAI API cost on cache hit</div></div>
+    <div class="metric-card"><div class="metric-value">1,000</div><div class="metric-label">Max cached entries (configurable)</div></div>
+    <div class="metric-card"><div class="metric-value">4 hrs</div><div class="metric-label">Default TTL (configurable)</div></div>
+    <div class="metric-card"><div class="metric-value">LRU</div><div class="metric-label">Eviction policy (oldest first)</div></div>
+    <div class="metric-card"><div class="metric-value">Never</div><div class="metric-label">CAPTCHA results cached</div></div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem;">
+    <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;margin-bottom:0.75rem;color:#58a6ff;">Cache Key Construction</h3>
+    <div style="background:rgba(31,111,235,0.08);border:1px solid rgba(31,111,235,0.15);border-radius:8px;padding:1rem;font-family:'DM Mono',monospace;font-size:0.82rem;color:#94a3b8;">
+      key = url § firstName § lastName § fullName § accountNumber<br>
+      <span style="color:#475569;margin-top:4px;display:block;font-size:0.75rem;">// All values lowercased + trimmed before joining. Same county URL + same search terms = same cache key regardless of which order triggered the search.</span>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;margin-bottom:0.75rem;color:#2dd4bf;">Cache Behaviour Rules</h3>
+      <table class="cost-table">
+        <thead><tr><th>Scenario</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td>Successful result</td><td style="color:#4ade80;">Stored ✓</td></tr>
+          <tr><td>CAPTCHA-blocked</td><td style="color:#f87171;">NOT stored</td></tr>
+          <tr><td>Error / timeout</td><td style="color:#f87171;">NOT stored</td></tr>
+          <tr><td>Entry older than TTL</td><td style="color:#fbbf24;">Auto-evicted</td></tr>
+          <tr><td>Cache at max (1,000)</td><td style="color:#fbbf24;">LRU eviction</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;margin-bottom:0.75rem;color:#2dd4bf;">Production Impact</h3>
+      <table class="cost-table">
+        <thead><tr><th>Volume</th><th>50% repeat rate</th><th>80% repeat rate</th></tr></thead>
+        <tbody>
+          <tr><td>1,000/day</td><td>500 launches · ~$1.50 AI</td><td>200 launches · ~$0.60 AI</td></tr>
+          <tr><td>10,000/day</td><td>5,000 launches · ~$15 AI</td><td>2,000 launches · ~$6 AI</td></tr>
+          <tr><td>Response (cached)</td><td colspan="2" style="color:#4ade80;text-align:center;">&lt;5ms vs 15–90s live ⚡</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     TECH STACK & COSTS
+     ══════════════════════════════════════════════════════════════════ -->
+<section id="stack" class="section">
+  <div class="section-title">Tech Stack &amp; Cost Model</div>
+  <div class="section-sub">Full technology stack and production cost estimates at scale</div>
+
+  <div class="grid-3" style="margin-bottom:2rem;">
+    <div class="tech-item"><h4>Node.js + Express</h4><p>Backend server. Express + SSE streaming. SEARCH_TIMEOUT_MS=180000. MAX_CONCURRENT=5.</p></div>
+    <div class="tech-item"><h4>Playwright Chromium</h4><p>playwright-extra + puppeteer-extra-plugin-stealth. Headless browser automation for all county sites.</p></div>
+    <div class="tech-item"><h4>GPT-4o-mini API</h4><p>Vision + tool calling. AI fallback for unrecognized platforms. ~$0.15/1M input, $0.60/1M output tokens.</p></div>
+    <div class="tech-item"><h4>platformDetector.js</h4><p>URL + HTML fingerprinting router. Classifies counties to: qpublic, tyler, beacon, patriot, vision, bis, generic.</p></div>
+    <div class="tech-item"><h4>counties.json</h4><p>Master data file. 3,200+ county records. Fields: state, county, assessorUrl, platform, lastHealthCheck.</p></div>
+    <div class="tech-item"><h4>LRU Cache (in-memory)</h4><p>Map-based cache. _searchCache in server.js. Future: Redis drop-in replacement for multi-server deployments.</p></div>
+    <div class="tech-item"><h4>netronline.com</h4><p>Primary source for US county assessor URL discovery. Crawled by master agent to build counties.json.</p></div>
+    <div class="tech-item"><h4>Server-Sent Events (SSE)</h4><p>Real-time streaming of search progress, results, and errors back to the frontend SPA.</p></div>
+    <div class="tech-item"><h4>Vanilla JS SPA</h4><p>index.html frontend. No framework. Renders record cards, detail fields, CAPTCHA warnings, progress states.</p></div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:1rem;color:#58a6ff;">Cost Estimates at Production Scale (GPT-4o-mini)</h3>
+    <table class="cost-table">
+      <thead><tr><th>Volume</th><th>All handler hits (best)</th><th>50% AI fallback (typical)</th><th>100% AI fallback (worst)</th></tr></thead>
+      <tbody>
+        <tr><td>100 searches/day</td><td class="cost-zero">$0.00</td><td>~$0.15</td><td>~$0.30</td></tr>
+        <tr><td>1,000 searches/day</td><td class="cost-zero">$0.00</td><td>~$1.50</td><td>~$3.00</td></tr>
+        <tr><td>10,000 searches/day</td><td class="cost-zero">$0.00</td><td>~$15.00</td><td>~$30.00</td></tr>
+        <tr><td>50,000 searches/day</td><td class="cost-zero">$0.00</td><td>~$75.00</td><td>~$150.00</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.76rem;color:var(--text-muted);margin-top:0.75rem;">Based on GPT-4o-mini pricing (~$0.15/1M input, $0.60/1M output tokens). Assumes avg 4 iterations × 1,500 input + 600 output tokens. Cache hits reduce AI-fallback cost further.</p>
+  </div>
+
+  <div class="success-box" style="margin-top:1rem;">
+    <strong style="color:#4ade80;">Cost optimization strategy:</strong> Expand handler coverage (every new county matched = $0/search forever) · Use Search Cache (repeated searches hit cache at $0) · Keep OPENAI_MODEL=gpt-4o-mini (do NOT upgrade to gpt-4o — 10× more expensive) · US-region deployment (eliminates IP-block retries).
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <strong>Orchestrate-Mortgage — Property Tax &amp; Title Search Agentic AI Platform</strong> &nbsp;|&nbsp; V2.2 &nbsp;|&nbsp;
+  <span>Confidential — Internal Development &amp; Document by Sriman S.</span> &nbsp;|&nbsp; April 2026<br>
+  <span style="font-size:0.68rem;margin-top:4px;display:block;opacity:0.5;">mortgage-search-service · Node.js + Playwright + OpenAI GPT-4o-mini · 3,200+ Counties · 6 Platform Handlers · 50+ State Sub-Agents</span>
+</footer>
+
+<script>
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
