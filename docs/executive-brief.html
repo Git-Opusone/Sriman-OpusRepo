@@ -146,6 +146,102 @@
   }
   .pill.green  { background: rgba(22,163,74,.25);  border-color: rgba(134,239,172,.4); }
   .pill.amber  { background: rgba(217,119,6,.25);  border-color: rgba(252,211,77,.4); }
+  .pill.gold   { background: rgba(245,200,66,.22); border-color: rgba(245,200,66,.5); color: #fef08a; }
+
+  /* ── Top nav bar ── */
+  .top-nav {
+    background: var(--navy);
+    border-bottom: 1px solid rgba(255,255,255,.08);
+    padding: 10px 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .top-nav-brand {
+    font-size: .78rem;
+    font-weight: 700;
+    color: rgba(255,255,255,.5);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .top-nav-links {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .top-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 20px;
+    color: rgba(255,255,255,.85);
+    font-size: .76rem;
+    font-weight: 600;
+    text-decoration: none;
+    letter-spacing: .01em;
+    transition: background .18s, border-color .18s;
+    white-space: nowrap;
+  }
+  .top-nav-link:hover {
+    background: rgba(255,255,255,.18);
+    border-color: rgba(255,255,255,.4);
+    color: #fff;
+  }
+
+  /* ── Enterprise banner ── */
+  .ent-banner {
+    background: linear-gradient(90deg, #1e2a4a 0%, #1e3a6e 100%);
+    border: 1px solid rgba(99,179,255,.25);
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+  @media(max-width:620px) { .ent-banner { grid-template-columns: 1fr; } }
+  .ent-item {}
+  .ent-item-title {
+    font-size: .78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--gold);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ent-item p {
+    font-size: .8rem;
+    color: rgba(255,255,255,.72);
+    line-height: 1.5;
+  }
+
+  /* ── Container highlight card ── */
+  .cap-card.featured {
+    border: 2px solid var(--blue-mid);
+    background: var(--blue-pale);
+    position: relative;
+    overflow: hidden;
+  }
+  .cap-card.featured::before {
+    content: 'FULLY CONTAINERIZED';
+    position: absolute;
+    top: 10px; right: -22px;
+    background: var(--blue-mid);
+    color: var(--white);
+    font-size: .6rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    padding: 3px 28px;
+    transform: rotate(35deg);
+  }
 
   /* ── Body content ── */
   .body { padding: 44px 52px; }
@@ -406,39 +502,57 @@
   /* ── Footer ── */
   .doc-footer {
     background: var(--navy);
-    color: rgba(255,255,255,.6);
-    padding: 20px 52px;
+    color: rgba(255,255,255,.65);
+    padding: 28px 52px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
-    font-size: .75rem;
+    gap: 14px;
+    font-size: .92rem;
   }
-  .doc-footer strong { color: var(--white); }
-  .doc-footer a { color: rgba(255,255,255,.7); text-decoration: none; }
+  .doc-footer .footer-brand {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.6;
+  }
+  .doc-footer .footer-brand strong { color: var(--white); font-size: 1.05rem; }
+  .doc-footer .footer-author {
+    display: block;
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: var(--gold);
+    letter-spacing: .01em;
+    margin-top: 3px;
+  }
+  .doc-footer a {
+    color: rgba(255,255,255,.7);
+    text-decoration: none;
+    font-size: .82rem;
+  }
   .doc-footer a:hover { color: var(--white); }
 
-  /* ── Print ── */
-  @media print {
-    body { background: white; }
-    .page {
-      max-width: 100%;
-      margin: 0;
-      border-radius: 0;
-      box-shadow: none;
-    }
-    .cap-card:hover { box-shadow: none; }
-    .no-print { display: none !important; }
-    .body { padding: 32px 40px; }
-    .cover { padding: 36px 40px 32px; }
-    .section { page-break-inside: avoid; }
-  }
 </style>
 </head>
 <body>
 
 <div class="page">
+
+  <!-- ══ TOP NAV ════════════════════════════════════════════════════════════ -->
+  <div class="top-nav">
+    <div class="top-nav-brand">Opus One · Orchestrate</div>
+    <div class="top-nav-links">
+      <a href="https://opusone-ai.orchestrate.com" target="_blank" rel="noopener" class="top-nav-link">
+        🌐 opusone-ai.orchestrate.com
+      </a>
+      <a href="https://opusone-ai.orchestrate.com/docs/staging-test-tracker.html" target="_blank" rel="noopener" class="top-nav-link">
+        📋 Test Tracker
+      </a>
+      <a href="https://srimanopusoneai.grafana.net/public-dashboards/5599a7a5ae9b43afac030c60dee2e90f" target="_blank" rel="noopener" class="top-nav-link">
+        📊 Live Dashboard
+      </a>
+    </div>
+  </div>
 
   <!-- ══ COVER ══════════════════════════════════════════════════════════════ -->
   <div class="cover">
@@ -458,14 +572,16 @@
     <div class="cover-body">
       <h1>AI-Powered Mortgage<br><span>Title &amp; Tax Search</span><br>Platform</h1>
       <p class="tagline">
-        A fully deployed, enterprise-grade microservice that automates county property,
-        title, and tax record retrieval — with end-to-end CI/CD, live monitoring, and
-        complete operational observability.
+        An enterprise-grade, fully containerized microservice that automates county property,
+        title, and tax record retrieval at scale — deployable horizontally or vertically,
+        with end-to-end CI/CD, live monitoring, and complete operational observability.
       </p>
       <div class="cover-pills">
         <span class="pill green">✓ Production Live</span>
+        <span class="pill gold">★ Enterprise Grade</span>
         <span class="pill">Multi-Agent AI</span>
-        <span class="pill">AWS EC2 + Docker</span>
+        <span class="pill">Fully Containerized</span>
+        <span class="pill">Horizontally Scalable</span>
         <span class="pill">CI/CD Automated</span>
         <span class="pill amber">Grafana Monitored</span>
       </div>
@@ -486,6 +602,31 @@
         county government portals with fully automated AI browser agents. It navigates any
         US county property portal, extracts structured title and tax data, and returns results
         in seconds — at scale, with full observability and zero manual deployment steps.
+      </p>
+    </div>
+
+    <!-- ── Enterprise & Scalability ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon">🏢</div>
+        <div class="section-title">Enterprise Architecture &amp; Scalability</div>
+      </div>
+      <div class="ent-banner">
+        <div class="ent-item">
+          <div class="ent-item-title">⬆ Vertical Scaling</div>
+          <p>The application is containerized and resource-configurable. Simply upgrade the EC2 instance type to increase CPU and memory — no code changes, no redeployment complexity. Handles increased Playwright concurrency automatically.</p>
+        </div>
+        <div class="ent-item">
+          <div class="ent-item-title">↔ Horizontal Scaling</div>
+          <p>Every component is stateless and Docker-native. Additional instances can be provisioned behind a load balancer at any time — whether on EC2, ECS, or Kubernetes — without application changes. Scales to any order volume.</p>
+        </div>
+        <div class="ent-item">
+          <div class="ent-item-title">🐳 Fully Containerized</div>
+          <p>The application, monitoring agent, and infrastructure metrics collector all run as Docker containers. Identical behaviour across development, staging, and production. Zero environment-specific configuration drift.</p>
+        </div>
+      </div>
+      <p style="font-size:.82rem;color:var(--gray-500);">
+        The platform is architected from day one to grow with the business — whether that means 10× order volume on the same server, or distributing across a cluster with a load balancer. The containerized foundation makes either path straightforward.
       </p>
     </div>
 
@@ -512,12 +653,16 @@
           <div class="cap-card-title"><span class="icon">🔀</span> Dual-Source Parallel Search</div>
           <p>For supported counties, the platform simultaneously queries both the Appraisal (CAD) and Tax Office databases in parallel, returning a single consolidated result — two data sources in one request.</p>
         </div>
+        <div class="cap-card featured">
+          <div class="cap-card-title"><span class="icon">🐳</span> Fully Containerized Platform</div>
+          <p>Every service — app, monitoring agent, metrics collector — runs as a Docker container. Consistent behaviour across all environments. Deploy to any cloud or on-premise host with a single command. Foundation for horizontal and vertical scaling.</p>
+        </div>
         <div class="cap-card">
           <div class="cap-card-title"><span class="icon">🛡️</span> Concurrency Management</div>
           <p>Manages up to 3 simultaneous browser sessions with built-in queue protection. Requests beyond capacity return a clean busy-state response rather than crashing or silently timing out.</p>
         </div>
         <div class="cap-card">
-          <div class="cap-card-title"><span class="icon">⚠️</span> CAPTCHA Detection & Flagging</div>
+          <div class="cap-card-title"><span class="icon">⚠️</span> CAPTCHA Detection &amp; Flagging</div>
           <p>CAPTCHA-blocked searches are detected, logged, and surfaced with clear order-level notes for manual follow-up — no silent failures, no lost orders.</p>
         </div>
       </div>
@@ -747,26 +892,18 @@
 
   <!-- ══ FOOTER ═════════════════════════════════════════════════════════════ -->
   <div class="doc-footer">
-    <div>
-      <strong>Opus One</strong> — AI-Powered Mortgage Title &amp; Tax Search &nbsp;·&nbsp;
-      Built &amp; operated by <strong>Sriman S</strong>
+    <div class="footer-brand">
+      <strong>Opus One</strong> — AI-Powered Mortgage Title &amp; Tax Search
+      <span class="footer-author">Built &amp; Operated by Sriman S</span>
     </div>
-    <div style="display:flex;gap:18px;align-items:center;">
-      <a href="https://opusone-ai.orchestrate.com" target="_blank">opusone-ai.orchestrate.com</a>
-      <a href="https://opusone-ai.orchestrate.com/docs/staging-test-tracker.html" target="_blank">Test Tracker</a>
-      <a href="https://srimanopusoneai.grafana.net/public-dashboards/5599a7a5ae9b43afac030c60dee2e90f" target="_blank">Live Dashboard</a>
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+      <a href="https://opusone-ai.orchestrate.com" target="_blank" rel="noopener">🌐 opusone-ai.orchestrate.com</a>
+      <a href="https://opusone-ai.orchestrate.com/docs/staging-test-tracker.html" target="_blank" rel="noopener">📋 Test Tracker</a>
+      <a href="https://srimanopusoneai.grafana.net/public-dashboards/5599a7a5ae9b43afac030c60dee2e90f" target="_blank" rel="noopener">📊 Live Dashboard</a>
     </div>
   </div>
 
 </div><!-- /page -->
-
-<!-- Print button — hidden on print -->
-<div class="no-print" style="text-align:center;margin:20px 0 40px;">
-  <button onclick="window.print()"
-    style="background:#1a56db;color:#fff;border:none;border-radius:8px;padding:10px 28px;font-size:.9rem;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(26,86,219,.3);">
-    🖨️ &nbsp;Print / Save as PDF
-  </button>
-</div>
 
 </body>
 </html>
