@@ -6,6 +6,5 @@ node_modules
 .DS_Store
 .vscode
 .claude
-docs
 scripts
 npm-debug.log*

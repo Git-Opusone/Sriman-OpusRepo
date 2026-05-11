@@ -17,7 +17,7 @@ RUN npx playwright install chromium
 COPY . .
 
 # Remove dev files not needed in production
-RUN rm -rf .env.example docs scripts .vscode .claude
+RUN rm -rf .env.example scripts .vscode .claude
 
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
