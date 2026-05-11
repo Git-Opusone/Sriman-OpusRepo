@@ -11,6 +11,7 @@ env:
   AWS_REGION: us-west-2                             # Oregon — matches your EC2 region
   ECR_REPOSITORY: opus-ecr                          # must match the ECR repo name you created
   CONTAINER_NAME: opus-one-app
+  DOMAIN: opusone-ai.orchestrate.com                # production domain
 
 jobs:
   # ─── Job 1: Build Docker image and push to ECR ───────────────────────────
