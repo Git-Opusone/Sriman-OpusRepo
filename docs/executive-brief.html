@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opus One — Executive Brief | May 2026</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:        #1e2a4a;
+    --blue:        #1a56db;
+    --blue-mid:    #2563eb;
+    --blue-light:  #dbeafe;
+    --blue-pale:   #eff6ff;
+    --white:       #ffffff;
+    --gray-50:     #f8fafc;
+    --gray-100:    #f1f5f9;
+    --gray-200:    #e2e8f0;
+    --gray-400:    #94a3b8;
+    --gray-500:    #64748b;
+    --gray-700:    #334155;
+    --gray-900:    #0f172a;
+    --green:       #16a34a;
+    --green-bg:    #f0fdf4;
+    --green-border:#bbf7d0;
+    --amber:       #d97706;
+    --amber-bg:    #fffbeb;
+    --red:         #dc2626;
+    --gold:        #f5c842;
+  }
+
+  html { font-size: 15px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-900);
+    line-height: 1.6;
+  }
+
+  /* ── Page shell ── */
+  .page {
+    max-width: 900px;
+    margin: 32px auto 60px;
+    background: var(--white);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.06);
+  }
+
+  /* ── Cover header ── */
+  .cover {
+    background: linear-gradient(135deg, #1e2a4a 0%, #1a56db 60%, #2563eb 100%);
+    color: var(--white);
+    padding: 48px 52px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 320px; height: 320px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.04);
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: 30%;
+    width: 240px; height: 240px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.03);
+  }
+  .cover-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 16px;
+    position: relative;
+    z-index: 1;
+  }
+  .cover-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-mark {
+    width: 46px; height: 46px;
+    background: rgba(255,255,255,.18);
+    border: 1.5px solid rgba(255,255,255,.35);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem;
+  }
+  .logo-text { font-size: 1.1rem; font-weight: 700; letter-spacing: -.01em; }
+  .logo-sub  { font-size: .75rem; opacity: .7; font-weight: 400; }
+  .cover-meta {
+    text-align: right;
+  }
+  .cover-meta .badge {
+    display: inline-block;
+    background: rgba(255,255,255,.15);
+    border: 1px solid rgba(255,255,255,.3);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .cover-meta .date { font-size: .8rem; opacity: .65; }
+
+  .cover-body { position: relative; z-index: 1; }
+  .cover h1 {
+    font-size: 2.1rem;
+    font-weight: 800;
+    letter-spacing: -.03em;
+    line-height: 1.15;
+    margin-bottom: 12px;
+  }
+  .cover h1 span { color: var(--gold); }
+  .cover .tagline {
+    font-size: 1.0rem;
+    opacity: .82;
+    max-width: 580px;
+    line-height: 1.5;
+  }
+  .cover-pills {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .pill {
+    background: rgba(255,255,255,.14);
+    border: 1px solid rgba(255,255,255,.28);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: .78rem;
+    font-weight: 600;
+    letter-spacing: .02em;
+  }
+  .pill.green  { background: rgba(22,163,74,.25);  border-color: rgba(134,239,172,.4); }
+  .pill.amber  { background: rgba(217,119,6,.25);  border-color: rgba(252,211,77,.4); }
+
+  /* ── Body content ── */
+  .body { padding: 44px 52px; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 40px; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--blue-light);
+  }
+  .section-icon {
+    width: 34px; height: 34px;
+    background: var(--blue-pale);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .section-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: -.01em;
+  }
+
+  /* ── Lead paragraph ── */
+  .lead {
+    font-size: .98rem;
+    color: var(--gray-700);
+    line-height: 1.7;
+    background: var(--blue-pale);
+    border-left: 4px solid var(--blue-mid);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin-bottom: 0;
+  }
+
+  /* ── Capability grid ── */
+  .cap-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media(max-width:600px) { .cap-grid { grid-template-columns: 1fr; } }
+
+  .cap-card {
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 16px 18px;
+    background: var(--white);
+    transition: box-shadow .15s;
+  }
+  .cap-card:hover { box-shadow: 0 4px 12px rgba(26,86,219,.08); }
+  .cap-card-title {
+    font-size: .88rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .cap-card-title .icon { font-size: 1rem; }
+  .cap-card p { font-size: .82rem; color: var(--gray-500); line-height: 1.55; }
+
+  /* ── Stack table ── */
+  .stack-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .85rem;
+  }
+  .stack-table thead tr {
+    background: var(--navy);
+    color: var(--white);
+  }
+  .stack-table th {
+    padding: 10px 16px;
+    font-weight: 600;
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    text-align: left;
+  }
+  .stack-table th:first-child { border-radius: 8px 0 0 0; }
+  .stack-table th:last-child  { border-radius: 0 8px 0 0; }
+  .stack-table tbody tr { border-bottom: 1px solid var(--gray-100); }
+  .stack-table tbody tr:last-child { border-bottom: none; }
+  .stack-table tbody tr:hover { background: var(--blue-pale); }
+  .stack-table td { padding: 10px 16px; color: var(--gray-700); }
+  .stack-table td:first-child { font-weight: 600; color: var(--navy); white-space: nowrap; }
+  .stack-badge {
+    display: inline-block;
+    background: var(--blue-light);
+    color: var(--blue-mid);
+    border-radius: 10px;
+    padding: 2px 10px;
+    font-size: .72rem;
+    font-weight: 700;
+  }
+  .stack-badge.green { background: var(--green-bg); color: var(--green); }
+  .stack-badge.amber { background: var(--amber-bg); color: var(--amber); }
+
+  /* ── Observability grid ── */
+  .obs-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  @media(max-width:600px) { .obs-grid { grid-template-columns: 1fr; } }
+  .obs-card {
+    border-radius: 10px;
+    padding: 16px 16px 14px;
+    border: 1px solid var(--gray-200);
+  }
+  .obs-card.metrics { border-top: 3px solid var(--blue-mid); }
+  .obs-card.logs    { border-top: 3px solid #f59e0b; }
+  .obs-card.infra   { border-top: 3px solid var(--green); }
+  .obs-card-title {
+    font-size: .82rem;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .obs-card ul {
+    list-style: none;
+    padding: 0;
+  }
+  .obs-card ul li {
+    font-size: .78rem;
+    color: var(--gray-500);
+    padding: 2px 0;
+    padding-left: 14px;
+    position: relative;
+  }
+  .obs-card ul li::before {
+    content: '·';
+    position: absolute;
+    left: 4px;
+    color: var(--gray-400);
+    font-weight: 700;
+  }
+
+  /* ── Before / After ── */
+  .ba-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media(max-width:580px) { .ba-grid { grid-template-columns: 1fr; } }
+  .ba-col {
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .ba-col.before {
+    background: #fff5f5;
+    border: 1px solid #fecaca;
+  }
+  .ba-col.after {
+    background: var(--green-bg);
+    border: 1px solid var(--green-border);
+  }
+  .ba-col-title {
+    font-size: .82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    margin-bottom: 12px;
+  }
+  .ba-col.before .ba-col-title { color: var(--red); }
+  .ba-col.after  .ba-col-title { color: var(--green); }
+  .ba-col ul { list-style: none; padding: 0; }
+  .ba-col ul li {
+    font-size: .82rem;
+    padding: 5px 0;
+    padding-left: 20px;
+    position: relative;
+    border-bottom: 1px solid rgba(0,0,0,.05);
+    line-height: 1.4;
+  }
+  .ba-col ul li:last-child { border-bottom: none; }
+  .ba-col.before ul li { color: #7f1d1d; }
+  .ba-col.after  ul li { color: #14532d; }
+  .ba-col.before ul li::before { content: '✗'; position: absolute; left: 0; color: var(--red); font-weight: 700; font-size: .8rem; }
+  .ba-col.after  ul li::before { content: '✓'; position: absolute; left: 0; color: var(--green); font-weight: 700; font-size: .8rem; }
+
+  /* ── CICD pipeline visual ── */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 16px 20px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+  .pipeline-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 90px;
+    text-align: center;
+  }
+  .pipeline-icon {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: var(--white);
+    border: 2px solid var(--blue-mid);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    margin-bottom: 6px;
+    color: var(--blue-mid);
+  }
+  .pipeline-label {
+    font-size: .72rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    line-height: 1.3;
+  }
+  .pipeline-arrow {
+    font-size: 1.2rem;
+    color: var(--gray-400);
+    margin: 0 4px;
+    padding-bottom: 20px;
+    flex-shrink: 0;
+  }
+
+  /* ── Status chips ── */
+  .status-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: .78rem;
+    font-weight: 600;
+  }
+  .status-chip.live    { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .status-chip.secure  { background: var(--blue-pale); color: var(--blue-mid); border: 1px solid var(--blue-light); }
+  .status-chip.monitored { background: var(--amber-bg); color: var(--amber); border: 1px solid #fde68a; }
+  .status-chip .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+  /* ── Footer ── */
+  .doc-footer {
+    background: var(--navy);
+    color: rgba(255,255,255,.6);
+    padding: 20px 52px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: .75rem;
+  }
+  .doc-footer strong { color: var(--white); }
+  .doc-footer a { color: rgba(255,255,255,.7); text-decoration: none; }
+  .doc-footer a:hover { color: var(--white); }
+
+  /* ── Print ── */
+  @media print {
+    body { background: white; }
+    .page {
+      max-width: 100%;
+      margin: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    .cap-card:hover { box-shadow: none; }
+    .no-print { display: none !important; }
+    .body { padding: 32px 40px; }
+    .cover { padding: 36px 40px 32px; }
+    .section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ══ COVER ══════════════════════════════════════════════════════════════ -->
+  <div class="cover">
+    <div class="cover-top">
+      <div class="cover-logo">
+        <div class="logo-mark">🏠</div>
+        <div>
+          <div class="logo-text">Opus One</div>
+          <div class="logo-sub">by Orchestrate</div>
+        </div>
+      </div>
+      <div class="cover-meta">
+        <div class="badge">Executive Brief</div>
+        <div class="date">May 2026</div>
+      </div>
+    </div>
+    <div class="cover-body">
+      <h1>AI-Powered Mortgage<br><span>Title &amp; Tax Search</span><br>Platform</h1>
+      <p class="tagline">
+        A fully deployed, enterprise-grade microservice that automates county property,
+        title, and tax record retrieval — with end-to-end CI/CD, live monitoring, and
+        complete operational observability.
+      </p>
+      <div class="cover-pills">
+        <span class="pill green">✓ Production Live</span>
+        <span class="pill">Multi-Agent AI</span>
+        <span class="pill">AWS EC2 + Docker</span>
+        <span class="pill">CI/CD Automated</span>
+        <span class="pill amber">Grafana Monitored</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ BODY ═══════════════════════════════════════════════════════════════ -->
+  <div class="body">
+
+    <!-- ── What We Built ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon">💡</div>
+        <div class="section-title">What We Built</div>
+      </div>
+      <p class="lead">
+        Opus One is a production-deployed microservice that replaces manual staff lookup of
+        county government portals with fully automated AI browser agents. It navigates any
+        US county property portal, extracts structured title and tax data, and returns results
+        in seconds — at scale, with full observability and zero manual deployment steps.
+      </p>
+    </div>
+
+    <!-- ── Core Capabilities ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon">⚙️</div>
+        <div class="section-title">Core Platform Capabilities</div>
+      </div>
+      <div class="cap-grid">
+        <div class="cap-card">
+          <div class="cap-card-title"><span class="icon">🤖</span> Multi-Agent AI Architecture</div>
+          <p>8 specialised AI agents — each built for a specific county portal platform (Tyler Technologies, Vision Government, Beacon, QPublic, BIS, Patriot, PublicPortal, Anderson Tax). Platform auto-detected per county, correct agent dispatched automatically.</p>
+        </div>
+        <div class="cap-card">
+          <div class="cap-card-title"><span class="icon">🔍</span> Nationwide County Coverage</div>
+          <p>Supports county portals across all 50 US states. Built-in county URL directory with live health checks — dead URLs are auto-refreshed from public registry, never blocking an order silently.</p>
+        </div>
+        <div class="cap-card">
+          <div class="cap-card-title"><span class="icon">⚡</span> Smart Result Caching</div>
+          <p>Search results cached for 4 hours. Repeat searches on the same property return instantly with zero browser overhead — dramatically reducing cost and latency under high order volume.</p>
+        </div>
+        <div class="cap-card">
+          <div class="cap-card-title"><span class="icon">🔀</span> Dual-Source Parallel Search</div>
+          <p>For supported counties, the platform simultaneously queries both the Appraisal (CAD) and Tax Office databases in parallel, returning a single consolidated result — two data sources in one request.</p>
+        </div>
+        <div class="cap-card">
+          <div class="cap-card-title"><span class="icon">🛡️</span> Concurrency Management</div>
+          <p>Manages up to 3 simultaneous browser sessions with built-in queue protection. Requests beyond capacity return a clean busy-state response rather than crashing or silently timing out.</p>
+        </div>
+        <div class="cap-card">
+          <div class="cap-card-title"><span class="icon">⚠️</span> CAPTCHA Detection & Flagging</div>
+          <p>CAPTCHA-blocked searches are detected, logged, and surfaced with clear order-level notes for manual follow-up — no silent failures, no lost orders.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CI/CD Pipeline ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon">🚀</div>
+        <div class="section-title">CI/CD Pipeline — Fully Automated Deployment</div>
+      </div>
+      <div class="pipeline">
+        <div class="pipeline-step">
+          <div class="pipeline-icon">📝</div>
+          <div class="pipeline-label">Code<br>Push</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">
+          <div class="pipeline-icon">🐳</div>
+          <div class="pipeline-label">Docker<br>Build</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">
+          <div class="pipeline-icon">📦</div>
+          <div class="pipeline-label">Push to<br>AWS ECR</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">
+          <div class="pipeline-icon">🖥️</div>
+          <div class="pipeline-label">Deploy to<br>EC2</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">
+          <div class="pipeline-icon">📡</div>
+          <div class="pipeline-label">Monitoring<br>Stack Up</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step">
+          <div class="pipeline-icon">✅</div>
+          <div class="pipeline-label">Live in<br>&lt; 3 min</div>
+        </div>
+      </div>
+      <p style="font-size:.8rem;color:var(--gray-400);margin-top:10px;">
+        Every push to the production branch triggers the full pipeline automatically via GitHub Actions. Zero manual steps. Total pipeline duration: ~2.5 minutes.
+      </p>
+    </div>
+
+    <!-- ── Tech Stack ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon">🏗️</div>
+        <div class="section-title">Technology Stack</div>
+      </div>
+      <table class="stack-table">
+        <thead>
+          <tr>
+            <th>Layer</th>
+            <th>Technology</th>
+            <th>Purpose</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Application</td>
+            <td>Node.js + Express</td>
+            <td>REST &amp; SSE API server with concurrency management</td>
+            <td><span class="stack-badge green">Live</span></td>
+          </tr>
+          <tr>
+            <td>AI Engine</td>
+            <td>OpenAI GPT-4o-mini (Vision)</td>
+            <td>Reads and interprets county portal screenshots</td>
+            <td><span class="stack-badge green">Live</span></td>
+          </tr>
+          <tr>
+            <td>Browser Automation</td>
+            <td>Playwright + Chromium</td>
+            <td>Headless browser agents per county portal</td>
+            <td><span class="stack-badge green">Live</span></td>
+          </tr>
+          <tr>
+            <td>Container</td>
+            <td>Docker</td>
+            <td>Consistent packaging across all environments</td>
+            <td><span class="stack-badge green">Live</span></td>
+          </tr>
+          <tr>
+            <td>Registry</td>
+            <td>AWS ECR</td>
+            <td>Versioned Docker image storage</td>
+            <td><span class="stack-badge green">Live</span></td>
+          </tr>
+          <tr>
+            <td>Production Host</td>
+            <td>AWS EC2</td>
+            <td>Application &amp; monitoring containers</td>
+            <td><span class="stack-badge green">Live</span></td>
+          </tr>
+          <tr>
+            <td>CI/CD</td>
+            <td>GitHub Actions</td>
+            <td>Automated build → push → deploy pipeline</td>
+            <td><span class="stack-badge green">Live</span></td>
+          </tr>
+          <tr>
+            <td>Metrics</td>
+            <td>Prometheus + Grafana Cloud</td>
+            <td>Real-time application &amp; infrastructure metrics</td>
+            <td><span class="stack-badge green">Live</span></td>
+          </tr>
+          <tr>
+            <td>Log Management</td>
+            <td>Loki + Grafana Cloud</td>
+            <td>Centralised log aggregation &amp; search</td>
+            <td><span class="stack-badge green">Live</span></td>
+          </tr>
+          <tr>
+            <td>Agent</td>
+            <td>Grafana Alloy</td>
+            <td>Unified telemetry collector (metrics + logs)</td>
+            <td><span class="stack-badge green">Live</span></td>
+          </tr>
+          <tr>
+            <td>Test Tracking</td>
+            <td>Staging Test Tracker</td>
+            <td>Structured test log across all platform handlers</td>
+            <td><span class="stack-badge amber">Maintained</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── Observability ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon">📊</div>
+        <div class="section-title">Observability — Full-Stack Monitoring</div>
+      </div>
+      <div class="obs-grid">
+        <div class="obs-card metrics">
+          <div class="obs-card-title">📈 Application Metrics</div>
+          <ul>
+            <li>Live search volume by result type</li>
+            <li>Search latency — P50 / P95 / P99</li>
+            <li>Cache hit rate (efficiency)</li>
+            <li>Active concurrent browser sessions</li>
+            <li>HTTP request rate &amp; error rate</li>
+            <li>Concurrency rejection events</li>
+          </ul>
+        </div>
+        <div class="obs-card logs">
+          <div class="obs-card-title">📋 Log Management</div>
+          <ul>
+            <li>All container logs in real time</li>
+            <li>Error-filtered stream for triage</li>
+            <li>Full request context per search</li>
+            <li>Searchable &amp; filterable in Grafana</li>
+            <li>30-day log retention</li>
+          </ul>
+        </div>
+        <div class="obs-card infra">
+          <div class="obs-card-title">🖥️ Infrastructure</div>
+          <ul>
+            <li>EC2 CPU utilisation</li>
+            <li>Memory usage (Playwright is RAM-heavy)</li>
+            <li>Disk usage — Docker image accumulation</li>
+            <li>Correlated with search load</li>
+            <li>14-day metric retention</li>
+          </ul>
+        </div>
+      </div>
+      <p style="font-size:.82rem;color:var(--gray-500);margin-top:4px;">
+        All data flows from a Grafana Alloy agent running alongside the app on EC2 — shipping to Grafana Cloud with zero additional infrastructure to manage.
+      </p>
+    </div>
+
+    <!-- ── Before / After ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon">📉</div>
+        <div class="section-title">Business Impact — Before vs. After</div>
+      </div>
+      <div class="ba-grid">
+        <div class="ba-col before">
+          <div class="ba-col-title">Before</div>
+          <ul>
+            <li>Manual staff lookup per county order</li>
+            <li>No visibility into search failures or errors</li>
+            <li>Manual deployment — risk of human error</li>
+            <li>No performance data or latency tracking</li>
+            <li>County portal changes silently break workflow</li>
+            <li>No audit trail for failed or blocked searches</li>
+            <li>No infrastructure health monitoring</li>
+          </ul>
+        </div>
+        <div class="ba-col after">
+          <div class="ba-col-title">After</div>
+          <ul>
+            <li>Automated retrieval in seconds, any county</li>
+            <li>Full metrics, logs, and error alerting live</li>
+            <li>Push-to-deploy CI/CD — &lt;3 min, zero manual steps</li>
+            <li>P95 latency, cache rate, error rate tracked in real time</li>
+            <li>Portal URLs auto-detected and self-healed</li>
+            <li>Every blocked search flagged with order notes</li>
+            <li>CPU, memory, disk monitored 24/7</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Live Status ── -->
+    <div class="section" style="margin-bottom: 0;">
+      <div class="section-header">
+        <div class="section-icon">🌐</div>
+        <div class="section-title">Current Production Status</div>
+      </div>
+      <div class="status-row">
+        <span class="status-chip live"><span class="dot"></span> Application Live — opusone-ai.orchestrate.com</span>
+        <span class="status-chip monitored"><span class="dot"></span> Monitored — Grafana Cloud</span>
+        <span class="status-chip secure"><span class="dot"></span> HTTPS Secured — AWS EC2</span>
+        <span class="status-chip live"><span class="dot"></span> CI/CD Active — GitHub Actions</span>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- ══ FOOTER ═════════════════════════════════════════════════════════════ -->
+  <div class="doc-footer">
+    <div>
+      <strong>Opus One</strong> — AI-Powered Mortgage Title &amp; Tax Search &nbsp;·&nbsp;
+      Built &amp; operated by <strong>Sriman S</strong>
+    </div>
+    <div style="display:flex;gap:18px;align-items:center;">
+      <a href="https://opusone-ai.orchestrate.com" target="_blank">opusone-ai.orchestrate.com</a>
+      <a href="https://opusone-ai.orchestrate.com/docs/staging-test-tracker.html" target="_blank">Test Tracker</a>
+      <a href="https://srimanopusoneai.grafana.net/public-dashboards/5599a7a5ae9b43afac030c60dee2e90f" target="_blank">Live Dashboard</a>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- Print button — hidden on print -->
+<div class="no-print" style="text-align:center;margin:20px 0 40px;">
+  <button onclick="window.print()"
+    style="background:#1a56db;color:#fff;border:none;border-radius:8px;padding:10px 28px;font-size:.9rem;font-weight:600;cursor:pointer;box-shadow:0 2px 8px rgba(26,86,219,.3);">
+    🖨️ &nbsp;Print / Save as PDF
+  </button>
+</div>
+
+</body>
+</html>
