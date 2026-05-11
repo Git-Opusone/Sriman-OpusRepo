@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Description — AI Test Developer | Orchestrate · Opus One</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy:        #1e2a4a;
+    --blue:        #1a56db;
+    --blue-mid:    #2563eb;
+    --blue-light:  #dbeafe;
+    --blue-pale:   #eff6ff;
+    --white:       #ffffff;
+    --gray-50:     #f8fafc;
+    --gray-100:    #f1f5f9;
+    --gray-200:    #e2e8f0;
+    --gray-400:    #94a3b8;
+    --gray-500:    #64748b;
+    --gray-700:    #334155;
+    --gray-900:    #0f172a;
+    --green:       #16a34a;
+    --green-bg:    #f0fdf4;
+    --green-border:#bbf7d0;
+    --amber:       #d97706;
+    --amber-bg:    #fffbeb;
+    --red:         #dc2626;
+    --gold:        #f5c842;
+    --purple:      #7c3aed;
+    --purple-bg:   #f5f3ff;
+  }
+
+  html { font-size: 15px; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-900);
+    line-height: 1.65;
+  }
+
+  /* ── Page ── */
+  .page {
+    max-width: 860px;
+    margin: 32px auto 60px;
+    background: var(--white);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.06);
+  }
+
+  /* ── Top bar ── */
+  .top-bar {
+    background: var(--navy);
+    padding: 10px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .top-bar-brand { font-size: .76rem; font-weight: 700; color: rgba(255,255,255,.5); letter-spacing: .05em; text-transform: uppercase; }
+  .top-bar-tag   { font-size: .72rem; font-weight: 600; color: var(--gold); letter-spacing: .04em; }
+
+  /* ── Cover ── */
+  .cover {
+    background: linear-gradient(135deg, #1e2a4a 0%, #1a56db 65%, #2563eb 100%);
+    color: var(--white);
+    padding: 44px 48px 38px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: ''; position: absolute;
+    top: -50px; right: -50px;
+    width: 280px; height: 280px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.04);
+  }
+  .cover-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+    position: relative;
+    z-index: 1;
+  }
+  .cover-badge-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .cbadge {
+    display: inline-block;
+    padding: 4px 13px;
+    border-radius: 20px;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    border: 1px solid rgba(255,255,255,.25);
+    background: rgba(255,255,255,.12);
+  }
+  .cbadge.green  { background: rgba(22,163,74,.28); border-color: rgba(134,239,172,.4); }
+  .cbadge.amber  { background: rgba(217,119,6,.28); border-color: rgba(252,211,77,.45); }
+  .cbadge.purple { background: rgba(124,58,237,.28); border-color: rgba(167,139,250,.4); }
+
+  .cover-meta { text-align: right; }
+  .cover-meta .co-name { font-size: .85rem; font-weight: 700; color: rgba(255,255,255,.8); }
+  .cover-meta .post-date { font-size: .75rem; color: rgba(255,255,255,.5); margin-top: 4px; }
+
+  .cover h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -.03em;
+    line-height: 1.15;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 1;
+  }
+  .cover h1 span { color: var(--gold); }
+  .cover .sub {
+    font-size: .95rem;
+    opacity: .8;
+    line-height: 1.5;
+    max-width: 560px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Quick facts strip ── */
+  .quick-facts {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--navy);
+    border-bottom: 2px solid rgba(255,255,255,.07);
+  }
+  @media(max-width:600px) { .quick-facts { grid-template-columns: 1fr 1fr; } }
+  .qf-item {
+    padding: 16px 20px;
+    border-right: 1px solid rgba(255,255,255,.07);
+    text-align: center;
+  }
+  .qf-item:last-child { border-right: none; }
+  .qf-label { font-size: .65rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: rgba(255,255,255,.4); margin-bottom: 4px; }
+  .qf-value { font-size: .88rem; font-weight: 700; color: var(--white); }
+  .qf-value.gold { color: var(--gold); }
+
+  /* ── Body ── */
+  .body { padding: 40px 48px; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 36px; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding-bottom: 11px;
+    border-bottom: 2px solid var(--blue-light);
+  }
+  .section-icon {
+    width: 32px; height: 32px;
+    background: var(--blue-pale);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .95rem; flex-shrink: 0;
+  }
+  .section-title { font-size: 1rem; font-weight: 700; color: var(--navy); letter-spacing: -.01em; }
+
+  /* ── Role summary box ── */
+  .role-box {
+    background: var(--blue-pale);
+    border-left: 4px solid var(--blue-mid);
+    border-radius: 0 10px 10px 0;
+    padding: 16px 20px;
+    font-size: .93rem;
+    color: var(--gray-700);
+    line-height: 1.7;
+  }
+
+  /* ── What you'll do ── */
+  .task-list { list-style: none; padding: 0; }
+  .task-list li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--gray-100);
+    font-size: .88rem;
+    color: var(--gray-700);
+    line-height: 1.5;
+  }
+  .task-list li:last-child { border-bottom: none; }
+  .task-num {
+    min-width: 26px; height: 26px;
+    background: var(--blue-mid);
+    color: var(--white);
+    border-radius: 50%;
+    font-size: .72rem;
+    font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── Skills grid ── */
+  .skills-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media(max-width:560px) { .skills-grid { grid-template-columns: 1fr; } }
+
+  .skill-col {
+    border-radius: 10px;
+    padding: 16px 18px;
+    border: 1px solid var(--gray-200);
+  }
+  .skill-col.must { border-top: 3px solid var(--blue-mid); }
+  .skill-col.good { border-top: 3px solid var(--green); }
+  .skill-col-title {
+    font-size: .78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-bottom: 12px;
+  }
+  .skill-col.must .skill-col-title { color: var(--blue-mid); }
+  .skill-col.good .skill-col-title { color: var(--green); }
+  .skill-tag-list { display: flex; flex-wrap: wrap; gap: 7px; }
+  .skill-tag {
+    display: inline-block;
+    padding: 4px 11px;
+    border-radius: 14px;
+    font-size: .75rem;
+    font-weight: 600;
+  }
+  .skill-col.must .skill-tag { background: var(--blue-pale); color: var(--blue-mid); border: 1px solid var(--blue-light); }
+  .skill-col.good .skill-tag { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+
+  /* ── Day-in-life ── */
+  .day-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+  @media(max-width:580px) { .day-grid { grid-template-columns: 1fr; } }
+  .day-card {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .day-card-head {
+    font-size: .72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--gray-400);
+    margin-bottom: 8px;
+  }
+  .day-card p { font-size: .8rem; color: var(--gray-700); line-height: 1.5; }
+
+  /* ── Tech you'll use ── */
+  .tech-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .tech-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: .8rem;
+    font-weight: 600;
+    border: 1px solid var(--gray-200);
+    background: var(--white);
+    color: var(--gray-700);
+  }
+  .tech-chip.primary { background: var(--blue-pale); border-color: var(--blue-light); color: var(--blue-mid); }
+  .tech-chip.ai      { background: var(--purple-bg); border-color: #ddd6fe; color: var(--purple); }
+  .tech-chip.infra   { background: var(--green-bg);  border-color: var(--green-border); color: var(--green); }
+
+  /* ── Offer box ── */
+  .offer-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media(max-width:560px) { .offer-grid { grid-template-columns: 1fr; } }
+  .offer-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .offer-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px; }
+  .offer-label { font-size: .82rem; font-weight: 700; color: var(--navy); margin-bottom: 3px; }
+  .offer-desc  { font-size: .78rem; color: var(--gray-500); line-height: 1.45; }
+
+  /* ── Apply box ── */
+  .apply-box {
+    background: linear-gradient(135deg, #1e2a4a 0%, #1a56db 100%);
+    border-radius: 12px;
+    padding: 28px 32px;
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .apply-box h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
+  .apply-box p  { font-size: .85rem; opacity: .8; line-height: 1.5; }
+  .apply-email {
+    display: inline-block;
+    margin-top: 10px;
+    background: var(--gold);
+    color: var(--navy);
+    font-weight: 800;
+    font-size: .88rem;
+    padding: 9px 22px;
+    border-radius: 8px;
+    text-decoration: none;
+    letter-spacing: .01em;
+  }
+  .apply-email:hover { opacity: .92; }
+  .apply-note { font-size: .78rem; opacity: .65; margin-top: 6px; }
+
+  /* ── Footer ── */
+  .doc-footer {
+    background: var(--navy);
+    padding: 22px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .doc-footer .left  { font-size: .9rem; font-weight: 600; color: rgba(255,255,255,.6); }
+  .doc-footer .left strong { color: var(--white); }
+  .doc-footer .author { font-size: 1rem; font-weight: 800; color: var(--gold); margin-top: 2px; display: block; }
+  .doc-footer a { font-size: .78rem; color: rgba(255,255,255,.55); text-decoration: none; }
+  .doc-footer a:hover { color: var(--white); }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- ── Top bar ── -->
+  <div class="top-bar">
+    <div class="top-bar-brand">Orchestrate · Opus One Platform</div>
+    <div class="top-bar-tag">📄 Job Description · May 2026</div>
+  </div>
+
+  <!-- ── Cover ── -->
+  <div class="cover">
+    <div class="cover-row">
+      <div class="cover-badge-row">
+        <span class="cbadge green">Fresher / Trainee</span>
+        <span class="cbadge">Full-Time</span>
+        <span class="cbadge amber">AI-Assisted Development</span>
+        <span class="cbadge purple">Immediate Joining</span>
+      </div>
+      <div class="cover-meta">
+        <div class="co-name">Orchestrate</div>
+        <div class="post-date">Posted May 2026</div>
+      </div>
+    </div>
+    <h1>AI Test Developer<br><span>— Opus One Platform</span></h1>
+    <p class="sub">
+      A hands-on, learning-first role for trained Java + AI candidates to validate,
+      test, and improve an AI-powered mortgage title &amp; tax search platform —
+      working directly with Claude Code as your AI development partner.
+    </p>
+  </div>
+
+  <!-- ── Quick facts ── -->
+  <div class="quick-facts">
+    <div class="qf-item">
+      <div class="qf-label">Role Level</div>
+      <div class="qf-value gold">Fresher / Trainee</div>
+    </div>
+    <div class="qf-item">
+      <div class="qf-label">Experience</div>
+      <div class="qf-value">0 – 1 Year</div>
+    </div>
+    <div class="qf-item">
+      <div class="qf-label">Mode</div>
+      <div class="qf-value">Hybrid / Remote</div>
+    </div>
+    <div class="qf-item">
+      <div class="qf-label">Core Stack</div>
+      <div class="qf-value">Java · Node.js · AI</div>
+    </div>
+  </div>
+
+  <!-- ── Body ── -->
+  <div class="body">
+
+    <!-- ── About the Role ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon">💡</div>
+        <div class="section-title">About the Role</div>
+      </div>
+      <p class="role-box">
+        Opus One is a live, enterprise-grade AI platform that automates property record
+        searches across every US county. The core engine is built — now we need a sharp,
+        curious developer to systematically validate it county by county, surface edge
+        cases, and drive code fixes using <strong>Claude Code</strong> as the AI pair-programmer.
+        <br><br>
+        This is not a traditional QA role. You will <strong>read code, run searches,
+        interpret AI agent output, raise issues, and fix them</strong> — all guided by Claude Code.
+        It is an ideal first role for a Java/AI trainee who wants to grow fast inside a
+        production AI system.
+      </p>
+    </div>
+
+    <!-- ── What You'll Do ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon">🎯</div>
+        <div class="section-title">What You'll Do — Day to Day</div>
+      </div>
+      <ul class="task-list">
+        <li>
+          <span class="task-num">1</span>
+          <span><strong>County-by-county validation</strong> — Work through US counties systematically. For each county, run searches using Name, Account Number, and Parcel ID use cases. Document pass / fail / partial results in the Staging Test Tracker.</span>
+        </li>
+        <li>
+          <span class="task-num">2</span>
+          <span><strong>Use case testing</strong> — Test every combination the platform supports: first name only, last name only, full name, account number, parcel ID — and edge cases like hyphenated names, numeric-only IDs, and special characters.</span>
+        </li>
+        <li>
+          <span class="task-num">3</span>
+          <span><strong>Platform handler verification</strong> — Verify that each of the 8 AI agent handlers (Tyler, Vision, Beacon, QPublic, BIS, Patriot, PublicPortal, Anderson Tax) behaves correctly for counties assigned to it. Flag platform detection mismatches.</span>
+        </li>
+        <li>
+          <span class="task-num">4</span>
+          <span><strong>AI-assisted debugging</strong> — When a county fails, use <strong>Claude Code</strong> to diagnose the issue, understand the handler code, propose a fix, and apply it. You are not expected to fix everything manually — you are expected to drive Claude Code to do it correctly.</span>
+        </li>
+        <li>
+          <span class="task-num">5</span>
+          <span><strong>Result quality review</strong> — Validate extracted data (owner name, parcel ID, property address, tax amounts, payment status) against what the county website actually shows. Flag data accuracy issues separately from search failures.</span>
+        </li>
+        <li>
+          <span class="task-num">6</span>
+          <span><strong>Log &amp; metrics monitoring</strong> — Check the Grafana Live Dashboard daily. Identify error spikes, CAPTCHA blocks, or latency anomalies. Correlate log entries with test results to understand root causes.</span>
+        </li>
+        <li>
+          <span class="task-num">7</span>
+          <span><strong>Test tracker maintenance</strong> — Keep the Staging Test Tracker updated with every county tested, result status, issue details, and fix applied. This is the source of truth for platform coverage.</span>
+        </li>
+        <li>
+          <span class="task-num">8</span>
+          <span><strong>CI/CD awareness</strong> — Push fixes through the GitHub Actions pipeline. Verify deployments succeed. Understand the Docker + EC2 deployment flow well enough to confirm your fix is live in production.</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- ── A Day in Your Life ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon">☀️</div>
+        <div class="section-title">A Typical Day in This Role</div>
+      </div>
+      <div class="day-grid">
+        <div class="day-card">
+          <div class="day-card-head">Morning</div>
+          <p>Check Grafana dashboard for overnight errors. Review CI/CD pipeline status. Pick 3–5 counties from the test tracker queue and run full use-case sweeps.</p>
+        </div>
+        <div class="day-card">
+          <div class="day-card-head">Midday</div>
+          <p>Deep-dive on any failed county — open Claude Code, paste the failure log, walk through the handler code, identify the fix, apply it, and push via GitHub Actions.</p>
+        </div>
+        <div class="day-card">
+          <div class="day-card-head">Afternoon</div>
+          <p>Update the Staging Test Tracker with results. Verify the fix is live on opusone-ai.orchestrate.com. Re-run the failed county to confirm resolution. Document what you learned.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Skills ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon">🎓</div>
+        <div class="section-title">Skills &amp; Qualifications</div>
+      </div>
+      <div class="skills-grid">
+        <div class="skill-col must">
+          <div class="skill-col-title">Required — Must Have</div>
+          <div class="skill-tag-list">
+            <span class="skill-tag">Java Full Stack Training</span>
+            <span class="skill-tag">OOP Concepts</span>
+            <span class="skill-tag">REST APIs</span>
+            <span class="skill-tag">HTML / CSS basics</span>
+            <span class="skill-tag">Git &amp; GitHub</span>
+            <span class="skill-tag">AI / ML Internship or Course</span>
+            <span class="skill-tag">Problem-solving mindset</span>
+            <span class="skill-tag">Attention to detail</span>
+            <span class="skill-tag">Clear written communication</span>
+          </div>
+        </div>
+        <div class="skill-col good">
+          <div class="skill-col-title">Good to Have — Bonus</div>
+          <div class="skill-tag-list">
+            <span class="skill-tag">Node.js / JavaScript</span>
+            <span class="skill-tag">Prompt Engineering</span>
+            <span class="skill-tag">Claude / ChatGPT usage</span>
+            <span class="skill-tag">Docker basics</span>
+            <span class="skill-tag">AWS fundamentals</span>
+            <span class="skill-tag">Browser DevTools</span>
+            <span class="skill-tag">Playwright / Selenium</span>
+            <span class="skill-tag">Grafana / Monitoring</span>
+            <span class="skill-tag">CI/CD pipelines</span>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:.8rem;color:var(--gray-400);margin-top:14px;">
+        ★ We value <strong>curiosity and initiative over credentials</strong>. If you have completed a structured Java Full Stack programme and any AI/ML internship or certification — you are qualified to apply.
+      </p>
+    </div>
+
+    <!-- ── Tech You'll Use ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon">🛠️</div>
+        <div class="section-title">Technologies You'll Work With</div>
+      </div>
+      <div class="tech-row">
+        <span class="tech-chip ai">🤖 Claude Code (AI Dev Partner)</span>
+        <span class="tech-chip primary">🟨 JavaScript / Node.js</span>
+        <span class="tech-chip primary">☕ Java (background)</span>
+        <span class="tech-chip ai">🧠 OpenAI GPT-4o-mini</span>
+        <span class="tech-chip primary">🎭 Playwright Browser Automation</span>
+        <span class="tech-chip infra">🐳 Docker</span>
+        <span class="tech-chip infra">☁️ AWS EC2 + ECR</span>
+        <span class="tech-chip">🔄 GitHub Actions (CI/CD)</span>
+        <span class="tech-chip ai">📊 Grafana + Loki (Monitoring)</span>
+        <span class="tech-chip">📋 Staging Test Tracker</span>
+        <span class="tech-chip primary">🌐 County Government Portals (50 states)</span>
+      </div>
+    </div>
+
+    <!-- ── What We Offer ── -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-icon">🎁</div>
+        <div class="section-title">What You'll Gain</div>
+      </div>
+      <div class="offer-grid">
+        <div class="offer-item">
+          <div class="offer-icon">🤖</div>
+          <div>
+            <div class="offer-label">Real AI-Assisted Development</div>
+            <div class="offer-desc">Work daily with Claude Code on a live production system. Learn how to drive an AI coding assistant effectively — a skill that defines the next decade of software development.</div>
+          </div>
+        </div>
+        <div class="offer-item">
+          <div class="offer-icon">🏭</div>
+          <div>
+            <div class="offer-label">Production System Exposure</div>
+            <div class="offer-desc">From day one you are working on a live, containerized, AWS-hosted enterprise application — not a tutorial project. Your fixes ship to real users.</div>
+          </div>
+        </div>
+        <div class="offer-item">
+          <div class="offer-icon">📈</div>
+          <div>
+            <div class="offer-label">Full DevOps Visibility</div>
+            <div class="offer-desc">You'll touch CI/CD pipelines, Docker containers, cloud deployments, Grafana dashboards, and live logs. Rare exposure for a fresher role.</div>
+          </div>
+        </div>
+        <div class="offer-item">
+          <div class="offer-icon">🧭</div>
+          <div>
+            <div class="offer-label">Mentored Growth Path</div>
+            <div class="offer-desc">Directly mentored by the architect of the platform. Clear path from test developer → platform developer as county coverage and codebase contribution grows.</div>
+          </div>
+        </div>
+        <div class="offer-item">
+          <div class="offer-icon">🌍</div>
+          <div>
+            <div class="offer-label">Domain Knowledge — PropTech / LegalTech</div>
+            <div class="offer-desc">Deep understanding of US mortgage, title, and county tax systems — a niche, high-value domain that opens doors in real estate technology and fintech.</div>
+          </div>
+        </div>
+        <div class="offer-item">
+          <div class="offer-icon">📜</div>
+          <div>
+            <div class="offer-label">Letter of Recommendation</div>
+            <div class="offer-desc">Candidates who perform well receive a detailed recommendation letter covering AI-assisted development, production testing, and full-stack contribution.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Apply ── -->
+    <div class="section" style="margin-bottom:0;">
+      <div class="apply-box">
+        <div>
+          <h3>Ready to build with AI?</h3>
+          <p>
+            Send your resume, a brief note on your Java / AI training background,<br>
+            and one thing you've built or tested that you're proud of.
+          </p>
+          <a class="apply-email" href="mailto:sriman@revoltution.com">
+            Apply → sriman@revoltution.com
+          </a>
+          <p class="apply-note">Subject line: <em>AI Test Developer – [Your Name]</em></p>
+        </div>
+        <div style="text-align:right;color:rgba(255,255,255,.55);font-size:.8rem;line-height:1.8;">
+          <div>📍 Hybrid / Remote</div>
+          <div>🗓️ Immediate Joining</div>
+          <div>🎓 Fresher / 0–1 yr exp.</div>
+          <div>☕ Java + 🤖 AI background</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- ── Footer ── -->
+  <div class="doc-footer">
+    <div class="left">
+      <strong>Orchestrate · Opus One Platform</strong>
+      <span class="author">Built &amp; Led by Sriman S</span>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;">
+      <a href="https://opusone-ai.orchestrate.com" target="_blank">🌐 Live Platform</a>
+      <a href="https://opusone-ai.orchestrate.com/docs/executive-brief.html" target="_blank">📄 Executive Brief</a>
+      <a href="https://srimanopusoneai.grafana.net/public-dashboards/5599a7a5ae9b43afac030c60dee2e90f" target="_blank">📊 Live Dashboard</a>
+    </div>
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>
