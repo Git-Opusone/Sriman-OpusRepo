@@ -36,14 +36,21 @@ const PLATFORM_RULES = [
   { platform: 'bis',          test: u => /esearch\.[a-z]+cad\.(org|net)/i.test(u)       },
   { platform: 'bis',          test: u => /bisconsultants\.com/i.test(u)                 },
   { platform: 'bis',          test: u => /cadcentral\.com/i.test(u)                     },
-  // Public Portal (Aumentum Technologies) — Texas CADs with {county}cad.net domains
+  // Public Portal (Aumentum Technologies) — {county}cad.net / {county}cad.org domains
+  // Specific known domains first; broad *cad.net pattern last (after BIS rules)
   { platform: 'publicportal', test: u => /andersoncad\.net/i.test(u)                    },
   { platform: 'publicportal', test: u => /harrisoncad\.net/i.test(u)                    },
   { platform: 'publicportal', test: u => /somervellcad\.net/i.test(u)                   },
   { platform: 'publicportal', test: u => /woodcad\.net/i.test(u)                        },
   { platform: 'publicportal', test: u => /tylercad\.net/i.test(u)                       },
+  { platform: 'publicportal', test: u => /prodigycad\.com/i.test(u)                     },
+  // Broad *cad.net catch-all — excludes esearch.* (BIS) and known non-portal domains
+  { platform: 'publicportal', test: u => /[a-z]cad\.net\b/i.test(u) &&
+      !/esearch\.|bisconsultants\.|cadcentral\.|qpublic/i.test(u)                        },
   // ── Path / query patterns ─────────────────────────────────────────────────
   { platform: 'qpublic',      test: u => /\/qpublic\//i.test(u)                         },
+  // TylerTech CAMA (county-hosted, e.g. assessor.co.county.state.us/TylerCama)
+  { platform: 'tyler',        test: u => /tylercama/i.test(u)                           },
 ];
 
 /**
@@ -72,13 +79,15 @@ function detectFromHtml(html) {
   // qpublic.schneidercorp.com check must come before generic schneidercorp check
   if (h.includes('qpublic.schneidercorp') || h.includes('qpublic.net') || h.includes('q-public')) return 'qpublic';
   if (h.includes('beacon.schneidercorp') || h.includes('schneidercorp')) return 'beacon';
-  if (h.includes('tylertech') || h.includes('iasworld'))                 return 'tyler';
+  if (h.includes('tylertech') || h.includes('iasworld') || h.includes('tyler cama')) return 'tyler';
   if (h.includes('patriotproperties'))                                   return 'patriot';
-  if (h.includes('visionappraisal') || h.includes('vgsi'))               return 'vision';
+  if (h.includes('visionappraisal') || h.includes('vgsi.com'))           return 'vision';
   if (h.includes('bisconsultants') || h.includes('bis consultants') ||
       h.includes('powered by: bis'))                                      return 'bis';
-  // Public Portal (Aumentum): SPA with minimal initial HTML; title is literally "Public Portal"
-  if (h.includes('public portal') && (h.includes('cad') || h.includes('appraisal')))
+  // Public Portal (Aumentum): SPA title "Public Portal" or API path fingerprint
+  if (h.includes('/api/searchresults/') || h.includes('searchresults/getdefaultsearch') ||
+      h.includes('search/fulltext'))                                      return 'publicportal';
+  if (h.includes('public portal') && (h.includes('cad') || h.includes('appraisal district')))
                                                                           return 'publicportal';
 
   return 'generic';

@@ -14,7 +14,7 @@ const OpenAI = require('openai');
 // Apply stealth plugin — bypasses Cloudflare and other bot-detection systems
 chromiumExtra.use(StealthPlugin());
 
-const { detectFromUrl }       = require('./src/platformDetector');
+const { detectFromUrl, detectFromHtml, platformLabel } = require('./src/platformDetector');
 const qpublicHandler          = require('./src/handlers/qpublic');
 const tylerHandler            = require('./src/handlers/tyler');
 const beaconHandler           = require('./src/handlers/beacon');
@@ -393,7 +393,22 @@ async function runBrowserAgent({
     // PLATFORM ROUTING: route to a dedicated handler before falling back to
     // the generic AI loop. Handlers return null to signal fallback needed.
     // -----------------------------------------------------------------------
-    const platform = detectFromUrl(url);
+    let platform = detectFromUrl(url);
+
+    // If URL alone wasn't enough, fingerprint the live page HTML.
+    // This catches counties whose URLs don't match any known pattern but whose
+    // page source reveals the underlying platform (qPublic, Tyler, Beacon, etc.)
+    if (platform === 'generic') {
+      try {
+        const html = await page.content();
+        const htmlPlatform = detectFromHtml(html);
+        if (htmlPlatform !== 'generic') {
+          platform = htmlPlatform;
+          onProgress(`Detected ${platformLabel(htmlPlatform)} platform via page fingerprint — using dedicated handler...`);
+        }
+      } catch (_) {}
+    }
+
     console.log(`[agent] platform=${platform}`);
 
     if (platform === 'qpublic') {
@@ -752,38 +767,56 @@ async function runBrowserAgent({
 
     // System prompt with explicit numbered tool-call sequence
     const systemPrompt = searchMode === 'property_id'
-      ? `You are a data extraction agent. The browser has already been navigated to the county property search results page for Property ID ${accountNumber}. You do NOT need to navigate or fill any forms.
+      ? `You are a property data extraction agent for US county tax/appraisal websites.
+The browser is already on the county website. Search for Property ID: ${accountNumber}.
 
-Your ONLY job: read the page and call extract_results with the property record.
+STEP 1: Call take_screenshot — inspect the page visually.
+STEP 2: Call get_page_content — read inputs, buttons, page text.
+STEP 3: Handle disclaimers — if you see an "Accept", "I Agree", or "Continue" button, click it first.
+STEP 4: Find the search form. Look for tabs like "By ID", "Account", "Parcel", "Property ID" and click one if visible.
+STEP 5: Fill the account/parcel/property ID field with: ${accountNumber}
+STEP 6: Submit by clicking Search or pressing Enter.
+STEP 7: Call wait.
+STEP 8: Call take_screenshot — see results.
+STEP 9: Call get_page_content — read the results table.
+STEP 10: If a results row is shown, click into the property detail page to get full data.
+STEP 11: Call extract_results with: ownerName, propertyAddress, parcelId, taxYear, taxAmountDue, paymentStatus, legalDescription, county, state, additionalDetails (include assessed value, market value, exemptions, due dates, account number).
 
-STEP 1: Call take_screenshot to see the current page.
-STEP 2: Call get_page_content to read the page text, tables, and data.
-STEP 3: Call extract_results with all property data found on the page. Include: ownerName, propertyAddress, parcelId, taxYear, taxAmountDue, paymentStatus, legalDescription, county, state, additionalDetails.
+RULES:
+- If you see a CAPTCHA or "blocked" page, call extract_results with records=[] and explain in summary.
+- Never navigate to a different domain.
+- If the site asks for a different ID format (e.g. "R60110" vs "60110"), try both.
+- If the page shows no results, retry once with a trimmed or reformatted ID.
+- After 2 failed attempts call extract_results with records=[] and explain in summary.`
 
-If the page shows no results or an error, call extract_results with records=[] and explain in summary.
-Do NOT navigate anywhere. Do NOT fill any forms. Just read and extract.`
-      : `You are a browser automation agent searching a county property tax website by owner name.
+      : `You are a browser automation agent searching a US county property tax or appraisal website by owner name.
+You can handle any county in any of the 50 US states.
 
 Execute these steps IN ORDER:
 
 STEP 1: Call take_screenshot.
-STEP 2: Call get_page_content to read available tabs, inputs, and buttons.
-STEP 3: Click the owner name search tab.
-  - Look for a button/link with text "By Owner", "Owner", or "Name" and click it.
-STEP 4: Fill the name fields or keyword box.
-  - If there are separate first/last name inputs: fill lastName="${lastName || ''}", firstName="${firstName || ''}".
-  - If there is a single keyword/search box: type OwnerName:"${nameForSearch}" Year:2025
-  - If there is only one name field: type "${nameForSearch}".
-STEP 5: Submit (click Search or press Enter).
-STEP 6: Call wait.
-STEP 7: Call take_screenshot.
-STEP 8: Call get_page_content to read the results.
-STEP 9: Call extract_results with all records found.
+STEP 2: Call get_page_content — read available tabs, inputs, and buttons.
+STEP 3: Handle disclaimers — if you see "Accept", "I Agree", "Agree", or "Continue" button, click it.
+STEP 4: Find and click the owner name search tab.
+  - Look for text: "By Owner", "Owner Name", "Owner", "Name Search", "Search by Name".
+STEP 5: Fill the name fields:
+  - Separate last/first inputs: lastName="${lastName || ''}", firstName="${firstName || ''}".
+  - Single name field or keyword box: type "${nameForSearch}".
+  - If there is a year/tax year field, set it to the current year (2025).
+STEP 6: Submit — click Search, Find, or press Enter.
+STEP 7: Call wait.
+STEP 8: Call take_screenshot — see the results.
+STEP 9: Call get_page_content — read the results.
+STEP 10: For each result row visible, extract: ownerName, propertyAddress, parcelId, taxAmountDue, paymentStatus, county, state, legalDescription, assessed value, market value, exemptions.
+STEP 11: If pagination exists and there are more pages, note the total count in summary.
+STEP 12: Call extract_results with ALL records found (up to 20).
 
 RULES:
 - Never navigate to a different domain.
-- If first attempt returns no results, retry with last name only: "${lastName || nameForSearch}".
-- After 2 failed attempts call extract_results with empty records[] and explain in summary.`;
+- If results show "no records found", retry with last name only: "${lastName || nameForSearch}".
+- If the site is blocked by CAPTCHA or login wall, call extract_results with records=[] and describe the blocker in summary.
+- After 2 failed search attempts call extract_results with records=[] and explain why.
+- Extract as much data per record as possible: address, parcel ID, assessed value, tax amount, payment status, legal description.`;
 
     const userMessage = searchMode === 'property_id'
       ? `Search the county property tax website for Property ID: ${accountNumber}
