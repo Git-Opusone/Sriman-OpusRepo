@@ -334,10 +334,12 @@ function mapDetailApiResponse(data) {
   }
 
   // Scalar value fields from the primary property record
-  const dollar = v => (v != null && v !== '') ? `$${Number(v).toLocaleString()}` : undefined;
-  result.netAppraisedValue = dollar(prop.netAppraisedValue || prop.netAppraised  || prop.totalAppraisedValue  || prop.appraisedValue);
-  result.landMarketValue   = dollar(prop.landMarketValue   || prop.landValue     || prop.landMktVal);
-  result.improvementValue  = dollar(prop.improvementValue  || prop.improvementMarketValue || prop.imprValue || prop.imprMktVal);
+  // Use nullish coalescing to pick the first non-null/undefined value (preserves numeric 0)
+  const pickVal = (...vs) => { for (const v of vs) { if (v != null) return v; } return undefined; };
+  const dollar  = v => (v != null && v !== '') ? `$${Number(v).toLocaleString()}` : undefined;
+  result.netAppraisedValue = dollar(pickVal(prop.netAppraisedValue, prop.netAppraised,  prop.totalAppraisedValue,  prop.appraisedValue));
+  result.landMarketValue   = dollar(pickVal(prop.landMarketValue,   prop.landValue,     prop.landMktVal));
+  result.improvementValue  = dollar(pickVal(prop.improvementValue,  prop.improvementMarketValue, prop.imprValue, prop.imprMktVal));
   result.ownerName         = prop.ownerName || prop.name   || prop.displayName   || '';
   result.geoId             = prop.geoID     || prop.geoId  || prop.geo_id        || '';
   result.legalDescription  = prop.legalDescription || prop.legal || '';

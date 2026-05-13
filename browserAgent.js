@@ -367,6 +367,11 @@ async function runBrowserAgent({
 
   const page = await context.newPage();
 
+  // Forward browser console.log messages to Node stdout (useful for handler debug logs)
+  page.on('console', msg => {
+    if (msg.type() === 'log') console.log('[browser-console]', msg.text());
+  });
+
   // Remove the webdriver flag that sites use to detect automation
   await context.addInitScript(() => {
     Object.defineProperty(navigator, 'webdriver', { get: () => undefined });

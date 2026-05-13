@@ -150,11 +150,69 @@ async function extractDetailData(page, propId) {
     const lines   = rawText.split('\n').map(l => l.trim()).filter(Boolean);
     const stripped = pid.replace(/^r/i, '').toUpperCase();
 
-    // ── Owner name (clean, from detail page) ─────────────────────────────────
+    // ── DOM-based label:value map (most reliable on Kendo/SPA pages) ──────────
+    // Builds { 'legal description': 'A0002 ...', 'effective acres': '12.0000', ... }
+    const domMap = {};
+    // Scan all table cells: if a cell text looks like a label, use next sibling as value
+    Array.from(document.querySelectorAll('td, th')).forEach(el => {
+      const lbl = (el.innerText || '').replace(/\s+/g, ' ').trim().toLowerCase().replace(/[:\*]+$/, '').trim();
+      if (!lbl || lbl.length > 60 || lbl.length < 3) return;
+      const sib = el.nextElementSibling;
+      if (sib) {
+        const val = (sib.innerText || '').replace(/\s+/g, ' ').trim();
+        if (val && val.length < 300) domMap[lbl] = val;
+      }
+    });
+    // Scan definition lists (dt/dd)
+    Array.from(document.querySelectorAll('dt')).forEach(dt => {
+      const lbl = (dt.innerText || '').replace(/\s+/g, ' ').trim().toLowerCase().replace(/[:\*]+$/, '').trim();
+      const dd  = dt.nextElementSibling;
+      if (dd && dd.tagName === 'DD') {
+        const val = (dd.innerText || '').replace(/\s+/g, ' ').trim();
+        if (lbl && val) domMap[lbl] = val;
+      }
+    });
+    // Scan label/span pairs (common in Angular/React detail panels)
+    Array.from(document.querySelectorAll('[class*="label"],[class*="field-name"],[class*="detail-label"]')).forEach(el => {
+      const lbl = (el.innerText || '').replace(/\s+/g, ' ').trim().toLowerCase().replace(/[:\*]+$/, '').trim();
+      const sib = el.nextElementSibling || el.parentElement && el.parentElement.querySelector('[class*="value"],[class*="field-value"]');
+      if (sib && lbl && lbl.length < 60) {
+        const val = (sib.innerText || '').replace(/\s+/g, ' ').trim();
+        if (val && val.length < 300) domMap[lbl] = val;
+      }
+    });
+
+    // ── Adjacent-line label:value scan ────────────────────────────────────────
+    const KNOWN_LABELS = ['property type','property status','owner name','situs address',
+      'legal description','legal desc','effective acres','eff acres',
+      'land homesite value','land non-homesite value','land market value','land value',
+      'improvement homesite value','improvement market value','improvement value',
+      'account','assessed value','neighborhood','map number'];
+    const lineMap = {};
+    for (let i = 0; i < lines.length - 1; i++) {
+      const L    = lines[i].trim();
+      const lLow = L.toLowerCase().replace(/[:\*]+$/, '').trim();
+      if (KNOWN_LABELS.indexOf(lLow) >= 0) {
+        // Check inline "Label: Value"
+        const colonM = L.match(/^(.+?):\s*(.{2,200})$/);
+        if (colonM) {
+          lineMap[colonM[1].toLowerCase().trim()] = colonM[2].trim();
+        } else {
+          // Value is on next line
+          const nextL = lines[i + 1].trim();
+          if (nextL) lineMap[lLow] = nextL;
+        }
+      }
+    }
+
+    // Merge: DOM takes priority, then lineMap
+    const lmap = Object.assign({}, lineMap, domMap);
+
+    // ── Owner name ────────────────────────────────────────────────────────────
     let ownerName = '';
     const ownerM = text.match(/Owner\s*Name\s*([A-Z][A-Z\s&%']{4,60}?)(?:\s*Owner ID|\s*Exemptions|\s*Percent)/);
     if (ownerM) ownerName = ownerM[1].trim();
-
+    if (!ownerName) ownerName = lmap['owner name'] || '';
     if (!ownerName) {
       const SKIP = /DISCLAIMER|COUNTY APPRAISAL|TAX OFFICE|SEARCH|RESULTS|PROPERTY TYPE|PROPERTY STATUS|TAXING|ENTITY|ACCOUNT|ASSESSED|SELECT|COLUMNS|EXPORT/;
       const pidIdx = lines.findIndex(l => l === pid || l === stripped);
@@ -168,9 +226,11 @@ async function extractDetailData(page, propId) {
     }
 
     // ── Situs address ─────────────────────────────────────────────────────────
-    let situsAddress = '';
-    const addrM = text.match(/(?:Address|Situs)[:\s]+(\d+\s+(?:AN |)[A-Z][A-Z\s]+(?:ROAD|RD|ST|AVE|HWY|BLVD|DR|LN)[^\n\r]{0,40})/i);
-    if (addrM) situsAddress = addrM[1].trim();
+    let situsAddress = lmap['situs address'] || lmap['situs'] || '';
+    if (!situsAddress) {
+      const addrM = text.match(/(?:Address|Situs)[:\s]+(\d+\s+(?:AN |)[A-Z][A-Z\s]+(?:ROAD|RD|ST|AVE|HWY|BLVD|DR|LN)[^\n\r]{0,40})/i);
+      if (addrM) situsAddress = addrM[1].trim();
+    }
     if (!situsAddress) {
       const ROAD_RX = /\b(?:ROAD|RD|STREET|ST|AVENUE|AVE|HWY|HIGHWAY|BLVD|DRIVE|DR|LANE|LN|CO(?:UNTY)?\s*RD?)\b/i;
       for (const l of lines) {
@@ -180,10 +240,13 @@ async function extractDetailData(page, propId) {
 
     // ── Assessed value ────────────────────────────────────────────────────────
     let assessedValue = '';
-    // Specifically: "2025 CERTIFIED $8,478" or "Assessed Value ... $8,478"
     const avM = text.match(/CERTIFIED\s*\$?\s*([\d,]+)/i)
              || text.match(/Assessed\s*Value\s*[^$\n]{0,20}\$\s*([\d,]+)/i);
     if (avM) assessedValue = `$${avM[1]}`;
+    if (!assessedValue && lmap['assessed value']) {
+      const rawAv = lmap['assessed value'].replace(/[^0-9,]/g, '');
+      if (rawAv) assessedValue = `$${rawAv}`;
+    }
 
     // ── Account number ────────────────────────────────────────────────────────
     let accountNumber = '';
@@ -192,17 +255,19 @@ async function extractDetailData(page, propId) {
     if (acctM) accountNumber = acctM[1];
 
     // ── Legal description ─────────────────────────────────────────────────────
-    let legalDescription = '';
-    // Try 1: regex on whitespace-collapsed text
-    const legalM = text.match(/Legal\s*Description\s*:?\s*([A-Z0-9][^\n\r]{5,120}?)(?=\s+(?:Property\s+Status|Property\s+Type|Neighborhood|Account|Map\s*Number|Effective\s*Acres|\d{4}\s+(?:GENERAL|OWNER|CERTIFIED)))/i)
-                || text.match(/Legal\s*Description\s*:?\s*([A-Z0-9][^\n\r]{5,120})/i);
-    if (legalM) legalDescription = legalM[1].replace(/\s+/g, ' ').trim();
-    // Try 2: line-based fallback (handles label-only line or value split across lines)
+    let legalDescription = lmap['legal description'] || lmap['legal desc'] || '';
+    if (!legalDescription) {
+      // Try 1: regex on whitespace-collapsed text — allow any alphanumeric/hash start
+      const legalM = text.match(/Legal\s*Desc(?:ription)?\s*:?\s*([A-Za-z0-9#][^\n\r]{5,150}?)(?=\s+(?:Property\s+Status|Property\s+Type|Neighborhood|Account|Map\s*Number|Effective\s*Acres|\d{4}\s+(?:GENERAL|OWNER|CERTIFIED)))/i)
+                  || text.match(/Legal\s*Desc(?:ription)?\s*:?\s*([A-Za-z0-9#][^\n\r]{5,150})/i);
+      if (legalM) legalDescription = legalM[1].replace(/\s+/g, ' ').trim();
+    }
+    // Try 2: line scan with boundary detection
     if (!legalDescription) {
       const LBND = /^(Property\s+Status|Property\s+Type|Neighborhood|Account|Map|Effective\s+Acres|\d{4}\s+(GENERAL|OWNER|CERTIFIED)|Value\s+History|Situs|Owner\s+Name|Percent\s+Ownership)/i;
-      const lIdx = lines.findIndex(l => /^Legal\s*Description/i.test(l));
+      const lIdx = lines.findIndex(l => /^Legal\s*Desc/i.test(l));
       if (lIdx >= 0) {
-        const inline = lines[lIdx].replace(/^Legal\s*Description\s*:?\s*/i, '').trim();
+        const inline = lines[lIdx].replace(/^Legal\s*Desc(?:ription)?\s*:?\s*/i, '').trim();
         if (inline.length >= 5) {
           legalDescription = inline;
         } else {
@@ -217,9 +282,12 @@ async function extractDetailData(page, propId) {
     }
 
     // ── Effective acres ───────────────────────────────────────────────────────
-    let acres = '';
-    const acresM = text.match(/Effective\s*Acres\s*:?\s*([\d.]+)/i);
-    if (acresM) acres = acresM[1];
+    let acres = lmap['effective acres'] || lmap['eff acres'] || lmap['acres'] || '';
+    if (!acres) {
+      const acresM = text.match(/Effective\s*Acres?\s*:?\s*([\d.]+)/i)
+                  || text.match(/\bAcres?\s*:?\s*([\d.]+)/i);
+      if (acresM) acres = acresM[1];
+    }
     // Fallback: parse from legal description
     if (!acres && legalDescription) {
       const am = legalDescription.match(/([\d.]+)\s*ACRES?/i);
@@ -228,23 +296,46 @@ async function extractDetailData(page, propId) {
 
     // ── Land and improvement values ───────────────────────────────────────────
     let landValue = '', improvementValue = '';
+
+    // Try text regex first
     const lv1 = text.match(/Land\s+Homesite\s+Value\s*:?\s*\$?([\d,]+)/i);
     const lv2 = text.match(/Land\s+Non.Homesite\s+Value\s*:?\s*\$?([\d,]+)/i);
     const lv3 = text.match(/Land\s+(?:Market\s+)?Value\s*:?\s*\$?([\d,]+)/i);
     const rawLand = lv1 ? lv1[1] : lv2 ? lv2[1] : lv3 ? lv3[1] : '';
     if (rawLand) landValue = `$${rawLand.replace(/[^0-9,]/g, '')}`;
 
+    // DOM/line map fallback for land value
+    if (!landValue) {
+      const rawLv = lmap['land homesite value'] || lmap['land non-homesite value']
+                 || lmap['land market value'] || lmap['land value'] || '';
+      if (rawLv) landValue = rawLv.startsWith('$') ? rawLv : `$${rawLv.replace(/[^0-9,]/g, '')}`;
+    }
+
     const iv1 = text.match(/Improvement\s+(?:Homesite\s+)?(?:Market\s+)?Value\s*:?\s*\$?([\d,]+)/i);
     if (iv1) improvementValue = `$${iv1[1].replace(/[^0-9,]/g, '')}`;
 
-    // ── Property info ─────────────────────────────────────────────────────────
-    let propertyStatus = '';
-    const statusM = text.match(/Property\s*Status\s*:?\s*(Active|Inactive|[A-Za-z]+)/i);
-    if (statusM) propertyStatus = statusM[1].trim();
+    if (!improvementValue) {
+      const rawIv = lmap['improvement homesite value'] || lmap['improvement market value']
+                 || lmap['improvement value'] || '';
+      if (rawIv) improvementValue = rawIv.startsWith('$') ? rawIv : `$${rawIv.replace(/[^0-9,]/g, '')}`;
+    }
 
-    let propertyType = '';
-    const typeM = text.match(/Property\s*Type\s*:?\s*(Real|Personal|[A-Za-z]+)/i);
-    if (typeM) propertyType = typeM[1].trim();
+    // ── Property info ─────────────────────────────────────────────────────────
+    let propertyStatus = lmap['property status'] || '';
+    if (!propertyStatus) {
+      const statusM = text.match(/Property\s*Status\s*:?\s*(Active|Inactive|[A-Za-z]+)/i);
+      if (statusM) propertyStatus = statusM[1].trim();
+    }
+
+    let propertyType = lmap['property type'] || '';
+    if (!propertyType) {
+      const typeM = text.match(/Property\s*Type\s*:?\s*(Real|Personal|[A-Za-z]+)/i);
+      if (typeM) propertyType = typeM[1].trim();
+    }
+
+    // Debug log (visible in server stdout via Playwright page.on('console'))
+    const dbg = 'legalDesc=' + legalDescription + ' | acres=' + acres + ' | land=' + landValue + ' | impr=' + improvementValue;
+    console.log('[andersontax-extract] ' + dbg);
 
     return { ownerName, situsAddress, assessedValue, accountNumber, legalDescription, acres, landValue, improvementValue, propertyStatus, propertyType };
   }, propId).catch(() => ({ ownerName: '', situsAddress: '', assessedValue: '', accountNumber: '', legalDescription: '', propertyStatus: '', propertyType: '' }));
