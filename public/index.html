@@ -1815,6 +1815,48 @@
     return `<div class="dr"><div class="dl">${label}</div><div class="dv">${_re(value)}</div></div>`;
   }
 
+  // Classify a taxing entity name into one of: county / city / school / utility
+  function _classifyEntity(name, county) {
+    const n = (name || '').toLowerCase();
+    const cL = (county || '').toLowerCase();
+    if (n.includes('county') || (cL && n.includes(cL))) return 'county';
+    if (n.includes('city') || n.includes('muni') || n.includes('municipal')) return 'city';
+    if (n.includes('school') || n.includes('isd') || n.includes('college')) return 'school';
+    return 'utility';
+  }
+
+  // Vertical collecting-entities list; currentEntity row is highlighted
+  function _entityListHtml(currentEntity, allEntityNames, county) {
+    const cats = { county: [], city: [], school: [], utility: [] };
+    allEntityNames.forEach(function(name) {
+      const cat = _classifyEntity(name, county);
+      if (cats[cat].indexOf(name) < 0) cats[cat].push(name);
+    });
+    const currentCat = currentEntity ? _classifyEntity(currentEntity, county) : '';
+    const rows = [
+      { label: 'County',    key: 'county'  },
+      { label: 'City',      key: 'city'    },
+      { label: 'School',    key: 'school'  },
+      { label: 'Utilities', key: 'utility' },
+    ].map(function(item) {
+      const names = cats[item.key];
+      const isActive = item.key === currentCat;
+      const bg = isActive ? 'background:#dce6f4;font-weight:bold;' : '';
+      return '<div class="ec-row" style="' + bg + '">' +
+        '<label class="ec-item"><input type="checkbox" ' + (names.length ? 'checked' : '') + ' disabled> ' +
+        '<span style="min-width:65px;display:inline-block;">' + escHtml(item.label) + '</span></label>' +
+        '<span class="ec-name">' + escHtml(names.join(' / ') || '') + '</span>' +
+        '</div>';
+    });
+    rows.push(
+      '<div class="ec-row">' +
+      '<span style="font-weight:bold;font-size:7.5pt;min-width:65px;display:inline-block;">Others:</span>' +
+      '<input type="text" style="border:none;border-bottom:1px solid #777;flex:1;min-width:100px;font-size:8pt;outline:none;">' +
+      '</div>'
+    );
+    return '<div class="ec-list">' + rows.join('') + '</div>';
+  }
+
   // Build entity checkboxes from taxingUnits table (appraisal) or bill rows (tax)
   function _entityChkboxes(taxingUnits, county, billRows) {
     const cL = (county || '').toLowerCase();
@@ -1996,25 +2038,26 @@
   }
 
   // Build the TAX INFORMATION table HTML (dynamic columns, year separators)
-  function _taxTableHtml(rows) {
+  function _taxTableHtml(rows, hideEntity) {
     if (!rows.length) {
-      return `<table><thead><tr><th style="text-align:center;color:#aaa;padding:8px;">No tax bill records extracted</th></tr></thead></table>`;
+      return '<table><thead><tr><th style="text-align:center;color:#aaa;padding:8px;">No tax bill records extracted</th></tr></thead></table>';
     }
 
     // Only render columns that have at least one non-empty value
     const has = (key) => rows.some(r => r[key] && r[key].toString().trim());
     const COLS = [
-      { key: 'entity',   label: 'TAXING ENTITY',      cls: '' },
-      { key: 'taxYear',  label: 'YEAR',                cls: 'ct' },
-      { key: 'status',   label: 'STATUS',              cls: 'ct' },
-      { key: 'base',     label: 'BASE AMOUNT',         cls: 'amt', optional: true },
-      { key: 'pi',       label: 'P&I',                 cls: 'amt', optional: true },
-      { key: 'totalDue', label: 'TOTAL TAXES DUE',     cls: 'amt' },
-      { key: 'paid',     label: 'AMOUNT PAID',         cls: 'amt' },
-      { key: 'dueDate',  label: 'DUE DATE',            cls: 'ct',  optional: true },
-      { key: 'paidDate', label: 'DATE PAID',           cls: 'ct' },
-      { key: 'balance',  label: 'BALANCE',             cls: 'amt' },
-    ].filter(c => !c.optional || has(c.key));
+      { key: 'entity',      label: 'TAXING ENTITY',         cls: '',    skip: hideEntity },
+      { key: 'taxYear',     label: 'YEAR',                  cls: 'ct' },
+      { key: 'installment', label: 'INSTALLMENT',           cls: 'ct',  optional: true },
+      { key: 'status',      label: 'STATUS',                cls: 'ct' },
+      { key: 'base',        label: 'BASE AMOUNT',           cls: 'amt', optional: true },
+      { key: 'pi',          label: 'P&I',                   cls: 'amt', optional: true },
+      { key: 'totalDue',    label: 'TOTAL DUE',             cls: 'amt' },
+      { key: 'paid',        label: 'AMOUNT PAID',           cls: 'amt' },
+      { key: 'dueDate',     label: 'DUE DATE',              cls: 'ct',  optional: true },
+      { key: 'paidDate',    label: 'DATE PAID / GOOD THRU', cls: 'ct' },
+      { key: 'balance',     label: 'BALANCE',               cls: 'amt' },
+    ].filter(c => !c.skip && (!c.optional || has(c.key)));
 
     const span = cols => `colspan="${cols}"`;
     const thd  = `<thead><tr>${COLS.map(c => `<th>${c.label}</th>`).join('')}</tr></thead>`;
@@ -2051,79 +2094,78 @@
     const parcel       = aprRec.parcelId   || taxRec.parcelId
                       || tx['Account']     || tx['Account Number']    || '';
     const ownerName    = aprRec.ownerName  || taxRec.ownerName        || '';
-
-    // Legal description: try all common key variants (handler stores as 'Legal Description')
     const legalDesc    = aprRec.legalDescription || ap.legalDescription
                       || tx['Legal Description'] || tx['legalDescription']
-                      || taxRec.legalDescription || taxRec.legalDesc || '';
-
-    const locationAddr = aprRec.propertyAddress || taxRec.propertyAddress
-                      || tx['Property Address'] || tx['Situs Address'] || '';
+                      || taxRec.legalDescription || taxRec.legalDesc  || '';
+    const locationAddr = aprRec.propertyAddress  || taxRec.propertyAddress
+                      || tx['Property Address']  || tx['Situs Address'] || '';
     const mailingAddr  = ap.mailingAddress || locationAddr;
 
-    // Acres: try all known field variants then parse from legal description
-    let acres = ap.legalAcreage || ap.acres
-             || tx['Effective Acres'] || tx['Acres'] || tx['acres'] || '';
+    let acres = ap.legalAcreage || ap.acres || tx['Effective Acres'] || tx['Acres'] || tx['acres'] || '';
     if (!acres && legalDesc) {
       const m = legalDesc.match(/(\d+\.?\d*)\s*ACRES?/i);
       if (m) acres = m[1] + ' ac';
     }
 
+    // Block / Lot — parse from legal description
+    let blockLot = tx['Block Lot'] || '';
+    if (!blockLot && legalDesc) {
+      const blM = legalDesc.match(/(?:BLK|BLOCK)\s*(\S+)\s+(?:LOT|LT)\s*(\S+)/i)
+               || legalDesc.match(/(?:LOT|LT)\s*(\S+)\s+(?:BLK|BLOCK)\s*(\S+)/i);
+      if (blM) blockLot = 'BLK ' + blM[1] + ' LOT ' + blM[2];
+    }
+
     const propType     = ap.propertyType  || tx['Property Type'] || '';
-    // Tax year: newest year in year headers or from record
     const yearHeaders2 = tx['Year Headers'] || [];
     const taxYear      = aprRec.taxYear
                       || (yearHeaders2.length ? Math.max(...yearHeaders2.map(y => parseInt(y)||0)).toString() : '')
                       || new Date().getFullYear().toString();
 
-    // Assessment values: check all known key variants (handler + public portal)
-    const landVal  = ap.landMarketValue  || ap.landValue   || tx['Land Value']       || tx['Land Market Value']  || '';
-    const bldgVal  = ap.improvementValue || ap.bldgValue   || tx['Improvement Value']|| tx['Building Value']     || '';
-    const totalVal = ap.netAppraisedValue || ap.totalValue || tx['Assessed Value']   || tx['Total Value']        || tx['Market Value'] || '';
+    const landVal  = ap.landMarketValue  || ap.landValue   || tx['Land Value']        || tx['Land Market Value']  || '';
+    const bldgVal  = ap.improvementValue || ap.bldgValue   || tx['Improvement Value'] || tx['Building Value']     || '';
+    const totalVal = ap.netAppraisedValue || ap.totalValue || tx['Assessed Value']    || tx['Total Value']        || tx['Market Value'] || '';
 
-    const propStatus   = tx['Property Status'] || taxRec.paymentStatus || '';
-    const currentDue   = tx['Current Due']    || '';
-    const pastDue      = tx['Past Years Due'] || '';
-    const totalTaxDue  = tx['Total Taxes Due']|| '';
+    const propStatus  = tx['Property Status'] || taxRec.paymentStatus || '';
+    const currentDue  = tx['Current Due']     || '';
+    const pastDue     = tx['Past Years Due']  || '';
+    const totalTaxDue = tx['Total Taxes Due'] || '';
 
     // ── Bill table rows ─────────────────────────────────────────────────────
     const billTables  = tx['Bill Tables']  || [];
     const yearHeaders = tx['Year Headers'] || [];
     const taxRows     = _parseBillRows(billTables, yearHeaders);
 
-    // ── Auto-detect flags ───────────────────────────────────────────────────
-    const hasDelinquent  = taxRows.some(r => /delinq|past\s*due|unpaid/i.test(r.status));
+    // ── Group rows by entity ────────────────────────────────────────────────
+    const entityOrder   = [];
+    const entityRowsMap = {};
+    taxRows.forEach(r => {
+      if (!entityRowsMap[r.entity]) { entityRowsMap[r.entity] = []; entityOrder.push(r.entity); }
+      entityRowsMap[r.entity].push(r);
+    });
+
+    // ── Flags ───────────────────────────────────────────────────────────────
     const hasBankruptcy  = /bankrupt/i.test(propStatus);
     const hasForeclosure = /foreclosur/i.test(propStatus);
     const hasTaxLien     = taxRows.some(r => /\blien\b|\bsale\b/i.test(r.status));
     const chk = (v) => v ? 'checked' : '';
 
-    // ── Aggregate totals from tax rows ──────────────────────────────────────
     const _toDollars = (s) => parseFloat((s || '').replace(/[$,]/g, '')) || 0;
-    const totalPastDue = taxRows
-      .filter(r => /delinq|unpaid|past\s*due/i.test(r.status))
-      .reduce((sum, r) => sum + _toDollars(r.balance || r.totalDue), 0);
-    const paidYears    = [...new Set(taxRows.filter(r => /^paid$/i.test((r.status||'').trim())).map(r => r.taxYear))].sort().reverse();
-
-    // ── Auto-generated comments ─────────────────────────────────────────────
-    const autoComment = [
-      totalVal  ? `Assessed value: ${totalVal}.` : '',
-      acres     ? `Acres: ${acres}.` : '',
-      propType  ? `Property type: ${propType}.` : '',
-      paidYears.length ? `Paid years: ${paidYears.slice(0,5).join(', ')}${paidYears.length > 5 ? '…' : ''}.` : '',
-      taxRows.length ? `${taxRows.length} tax record${taxRows.length > 1 ? 's' : ''} retrieved.` : '',
-    ].filter(Boolean).join(' ');
-
-    const critComment = [
-      hasDelinquent  ? `DELINQUENT taxes on record${totalPastDue > 0 ? ' (past due: $' + totalPastDue.toFixed(2) + ')' : ''}.` : '',
-      hasBankruptcy  ? 'BANKRUPTCY status detected.'  : '',
-      hasForeclosure ? 'FORECLOSURE status detected.'  : '',
-      hasTaxLien     ? 'TAX LIEN / SALE on record.'   : '',
-    ].filter(Boolean).join(' ');
-
     const now = new Date().toLocaleDateString('en-US', { month:'2-digit', day:'2-digit', year:'numeric' });
 
-    // Pre-compute value history rows (avoid nested template literals inside outer template)
+    // ── Known collector contacts (county-level; same office collects all entities in TX) ──
+    const KNOWN_COLLECTOR = {
+      'anderson|tx': {
+        payableTo: 'Anderson County Tax Assessor-Collector',
+        address:   '500 N Church St, Palestine, TX 75801',
+        phone:     '(903) 723-7423',
+        fax:       '(903) 723-7801',
+        email:     'taxoffice@co.anderson.tx.us',
+      },
+    };
+    const countyKey  = (county + '|' + state).toLowerCase().replace(/\s+/g, '');
+    const collector  = KNOWN_COLLECTOR[countyKey] || {};
+
+    // ── Pre-compute value history rows ──────────────────────────────────────
     const valueHistoryRows = (() => {
       const vh = Array.isArray(ap.valueHistory) ? ap.valueHistory : [];
       return vh.slice(0, 5).map(function(row) {
@@ -2137,10 +2179,87 @@
           '<td class="amt">' + _re(lv) + '</td>' +
           '<td class="amt">' + _re(bv) + '</td>' +
           '<td class="amt">' + _re(tv) + '</td>' +
+          '<td class="amt">' + _re(lv) + '</td>' +
+          '<td class="amt">' + _re(bv) + '</td>' +
           '<td class="amt">' + _re(tv) + '</td>' +
           '<td class="amt"><span style="color:#bbb;">—</span></td>' +
           '<td><span style="color:#bbb;">—</span></td>' +
           '</tr>';
+      }).join('');
+    })();
+
+    // ── Pre-compute per-entity section blocks ───────────────────────────────
+    const entityBlocksHtml = (() => {
+      const ents = entityOrder.length > 0 ? entityOrder : [''];
+      return ents.map(function(ent) {
+        const eRows       = ent ? (entityRowsMap[ent] || []) : taxRows;
+        const hasDelinq   = eRows.some(r => /delinq|past\s*due|unpaid/i.test(r.status));
+        const entPastDue  = eRows
+          .filter(r => /delinq|unpaid|past\s*due/i.test(r.status))
+          .reduce(function(s, r) { return s + _toDollars(r.balance || r.totalDue); }, 0);
+        const paidEYears  = eRows
+          .filter(r => /^paid$/i.test((r.status||'').trim()))
+          .map(r => r.taxYear);
+        const uniquePaidYears = paidEYears.filter(function(y,i) { return paidEYears.indexOf(y) === i; }).sort().reverse();
+
+        const entAutoComment = [
+          uniquePaidYears.length ? 'Paid years: ' + uniquePaidYears.slice(0,5).join(', ') + '.' : '',
+          eRows.length ? eRows.length + ' tax record(s) retrieved for this entity.' : '',
+        ].filter(Boolean).join(' ');
+        const entCritComment = hasDelinq
+          ? 'DELINQUENT taxes on record' + (entPastDue > 0 ? ' (past due: $' + entPastDue.toFixed(2) + ')' : '') + '.'
+          : '';
+
+        // Total due / balance for this entity
+        const entTotalDue = eRows.reduce(function(s,r){ return s + _toDollars(r.totalDue); }, 0);
+        const entBalance  = eRows.reduce(function(s,r){ return s + _toDollars(r.balance);  }, 0);
+
+        const disbRows = [
+          ['ENTITY NAME',          ent || (county + ' Tax Office')],
+          ['DUPLICATE BILL FEE',   'REQUEST / PMT'],
+          ['CHECK PAYABLE TO',     collector.payableTo || (county + ' Tax Office')],
+          ['TAX CERTIFICATE FEE $',''],
+          ['ADDRESS',              collector.address || ''],
+          ['POSTMARK',             'YES / NO'],
+          ['PHONE #',              collector.phone   || ''],
+          ['FUNDS',                'MTG / CERT'],
+          ['FAX #',                collector.fax     || ''],
+          ['SOURCE',               'NETR Online / County Website'],
+          ['EMAIL ID',             collector.email   || ''],
+          ['CURRENT AMOUNT DUE',   entTotalDue > 0 ? '$' + entTotalDue.toFixed(2) : (currentDue || totalTaxDue || '')],
+          ['PAST YEARS DUE',       entPastDue  > 0 ? '$' + entPastDue.toFixed(2)  : (pastDue || '')],
+          ['TOTAL DUE',            entBalance  > 0 ? '$' + entBalance.toFixed(2)  : (entTotalDue > 0 ? '$' + entTotalDue.toFixed(2) : '')],
+        ];
+        const disbHtml = '<div class="disb">' + disbRows.map(r => _dRow(r[0], r[1])).join('') + '</div>';
+
+        return '<div class="entity-block">' +
+          '<div class="entity-block-title">&#9670; ENTITY: ' + escHtml(ent || 'All Entities') + '</div>' +
+          '<div class="sec">COLLECTING ENTITIES</div>' +
+          _entityListHtml(ent, entityOrder, county) +
+          '<div class="sec">TAX INFORMATION</div>' +
+          _taxTableHtml(eRows, true) +
+          '<div class="cmts">' +
+            '<div class="cbox"><div class="cl">COMMENTS:</div><div class="cv">' +
+              (entAutoComment ? escHtml(entAutoComment) : '&nbsp;') +
+            '</div></div>' +
+            '<div class="cbox"><div class="cl">CRITICAL COMMENTS:</div><div class="cv">' +
+              (entCritComment
+                ? '<span style="color:#991b1b;font-weight:bold;">' + escHtml(entCritComment) + '</span>'
+                : '&nbsp;') +
+            '</div></div>' +
+          '</div>' +
+          '<div class="flags">' +
+            '<div class="fi"><label><input type="checkbox" ' + chk(hasBankruptcy)  + ' disabled> BANKRUPTCY</label></div>' +
+            '<div class="fi"><label><input type="checkbox" ' + chk(hasForeclosure) + ' disabled> FORECLOSURE</label></div>' +
+            '<div class="fi"><label><input type="checkbox" ' + chk(hasTaxLien || hasDelinq) + ' disabled> TAX SALE/LIEN</label></div>' +
+            '<div class="fi"><label><input type="checkbox" disabled> H/O CHANGE</label></div>' +
+            '<div class="fi"><label><input type="checkbox" disabled> EXEMPT/DEFERRAL</label></div>' +
+            '<div style="flex:1;display:flex;align-items:center;gap:6px;font-size:8pt;"><b>OTHERS:</b> ' +
+              '<input type="text" style="border:none;border-bottom:1px solid #777;flex:1;font-size:8pt;outline:none;">' +
+            '</div>' +
+          '</div>' +
+          '<div class="sec">TAX DISBURSEMENT</div>' + disbHtml +
+          '</div>';
       }).join('');
     })();
 
@@ -2152,9 +2271,11 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:Arial,Helvetica,sans-serif;font-size:8pt;color:#000;background:#fff;padding:10px 16px;}
-.btn-bar{display:flex;gap:8px;margin-bottom:10px;}
+.btn-bar{display:flex;gap:8px;margin-bottom:8px;}
 .btn{padding:6px 16px;border:none;border-radius:4px;cursor:pointer;font-size:8.5pt;font-weight:bold;}
 .bp{background:#1e3a7e;color:#fff;} .bc{background:#777;color:#fff;}
+.rlogo{text-align:center;margin-bottom:6px;}
+.rlogo svg{height:42px;width:auto;}
 .rtitle{text-align:center;font-weight:bold;font-size:13pt;color:#1e3a7e;border:2px solid #1e3a7e;padding:5px 0;margin-bottom:5px;letter-spacing:1px;}
 .obar{display:flex;border:1px solid #bbb;padding:3px 8px;margin-bottom:5px;gap:10px;font-size:7.5pt;align-items:center;}
 .of{display:flex;align-items:center;gap:4px;flex:1;} .of b{white-space:nowrap;}
@@ -2169,9 +2290,11 @@ th{background:#bdd7ee;border:1px solid #2f75b6;padding:2px 5px;font-weight:bold;
 td{border:1px solid #bbb;padding:2px 5px;vertical-align:middle;}
 .ct{text-align:center;} .amt{text-align:right;}
 tr.paid-r td{color:#14532d;background:#f0fdf4;} tr.due-r td{color:#991b1b;background:#fff5f5;}
-.ents{display:flex;gap:14px;flex-wrap:wrap;padding:4px 8px;border:1px solid #bdd7ee;margin-bottom:3px;align-items:center;}
-.ec-item{display:flex;align-items:center;gap:4px;font-size:8pt;cursor:default;}
+.ec-list{border:1px solid #bdd7ee;padding:3px 8px;margin-bottom:3px;}
+.ec-row{display:flex;align-items:center;gap:6px;padding:2px 3px;border-radius:3px;margin-bottom:1px;}
+.ec-item{display:flex;align-items:center;gap:4px;font-size:8pt;min-width:95px;cursor:default;}
 .ec-item input{width:12px;height:12px;}
+.ec-name{font-size:8pt;flex:1;}
 .cmts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:3px 0;}
 .cbox{border:1px solid #bbb;padding:4px 6px;min-height:42px;}
 .cl{font-weight:bold;font-size:7.5pt;color:#1e3a7e;margin-bottom:2px;} .cv{font-size:8pt;}
@@ -2182,18 +2305,22 @@ tr.paid-r td{color:#14532d;background:#f0fdf4;} tr.due-r td{color:#991b1b;backgr
 .dr{display:flex;align-items:baseline;gap:5px;border-bottom:1px solid #e8e8e8;padding:2px 0;}
 .dl{font-weight:bold;min-width:130px;font-size:7.5pt;color:#333;flex-shrink:0;}
 .dv{flex:1;font-size:8pt;min-height:14px;}
+.entity-block{margin-top:10px;border-top:2px solid #1e3a7e;padding-top:2px;}
+.entity-block-title{background:#1e3a7e;color:#fff;padding:3px 10px;font-weight:bold;font-size:8.5pt;letter-spacing:.5px;margin-bottom:4px;}
 @media print{
   .btn-bar{display:none;}body{padding:3px 8px;}
-  th,.sec{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  th,.sec,.entity-block-title{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   tr.paid-r td,tr.due-r td{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
 }
 </style>
 </head>
 <body>
 <div class="btn-bar">
-  <button class="btn bp" onclick="window.print()">🖨️ Print / Save PDF</button>
-  <button class="btn bc" onclick="window.close()">✕ Close</button>
+  <button class="btn bp" onclick="window.print()">&#128424; Print / Save PDF</button>
+  <button class="btn bc" onclick="window.close()">&#10005; Close</button>
 </div>
+
+<div class="rlogo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 891.92 219.75"><defs><style>.cls-1,.cls-2{font-family:CaviarDreams-Bold,'Caviar Dreams',Arial,sans-serif;font-size:170.33px;font-weight:700;letter-spacing:-.07em;}.cls-1,.cls-3{fill:#27aae1;}.cls-2,.cls-4{fill:#1c75bc;}.cls-5{fill:#fff;}</style></defs><g><path class="cls-4" d="M50.11,191.06c21.95-11.5,44.94-21.59,68.96-30.11,23.99-8.51,48.19-15.16,72.43-20.06-10.68-20.18-20.21-41.25-28.4-63.21-9.57-25.68-16.98-51.63-22.39-77.67-23.99,4.88-47.94,11.46-71.67,19.89C44.98,28.41,21.95,38.55,0,50.06c5.43,26.78,13.02,53.48,22.86,79.9,7.9,21.18,17.03,41.57,27.25,61.1"/><path class="cls-3" d="M50.07,191.06c16.31-7.77,33.36-14.5,51.11-20.04,17.74-5.54,35.55-9.73,53.37-12.62-7.22-15.01-13.6-30.63-18.96-46.88-6.27-18.98-10.95-38.12-14.17-57.29-17.63,2.91-35.29,7.05-52.83,12.54-17.77,5.57-34.84,12.31-51.17,20.09,3.22,19.68,8.02,39.36,14.47,58.89,5.17,15.67,11.25,30.79,18.18,45.31"/><path class="cls-4" d="M50.04,191.06c11.95-4.78,24.4-8.8,37.27-11.95,12.87-3.14,25.75-5.3,38.55-6.55-4.47-11-8.27-22.42-11.36-34.23-3.59-13.78-6.04-27.61-7.47-41.36-12.67,1.27-25.41,3.4-38.14,6.5-12.9,3.15-25.34,7.16-37.32,11.95,1.39,14.15,3.9,28.37,7.6,42.56,2.97,11.39,6.6,22.44,10.86,33.09"/><path class="cls-5" d="M50.14,191.06c8.27-2.55,16.81-4.54,25.6-5.94,8.77-1.4,17.5-2.15,26.15-2.28-2.39-7.62-4.32-15.47-5.72-23.54-1.66-9.43-2.56-18.8-2.74-28.08-8.55.15-17.19.88-25.88,2.26-8.81,1.39-17.34,3.4-25.62,5.96.17,9.55,1.06,19.21,2.75,28.92,1.37,7.77,3.21,15.35,5.48,22.7"/></g><text class="cls-2" transform="translate(204.31 191.06)"><tspan x="0" y="0">Opus</tspan></text><text class="cls-1" transform="translate(591.29 191.06)"><tspan x="0" y="0">One</tspan></text></svg></div>
 
 <div class="rtitle">ORCHESTRATE TAX SYSTEM</div>
 
@@ -2208,7 +2335,7 @@ tr.paid-r td{color:#14532d;background:#f0fdf4;} tr.due-r td{color:#991b1b;backgr
   ${_pRow('PARCEL #', parcel)}
   ${_pRow('LEGAL DESCRIPTION', legalDesc)}
   ${_pRow('OWNER NAME', ownerName)}
-  ${_pRow('BLOCK / LOT', '')}
+  ${_pRow('BLOCK / LOT', blockLot)}
   ${_pRow('MAILING ADDRESS', mailingAddr)}
   ${_pRow('ACRES', acres)}
   ${_pRow('LOCATION ADDRESS', locationAddr)}
@@ -2225,6 +2352,7 @@ tr.paid-r td{color:#14532d;background:#f0fdf4;} tr.due-r td{color:#991b1b;backgr
 <table>
   <thead><tr>
     <th>TAX YEAR</th><th>LAND VALUE</th><th>BUILDING VALUE</th><th>TOTAL VALUE</th>
+    <th>ASSESSED LAND VALUE</th><th>ASSESSED BUILDING VALUE</th>
     <th>TOTAL ASSESSED VALUE</th><th>TAXABLE ASSESSMENT</th><th>EXEMPTION</th>
   </tr></thead>
   <tbody>
@@ -2233,77 +2361,17 @@ tr.paid-r td{color:#14532d;background:#f0fdf4;} tr.due-r td{color:#991b1b;backgr
       <td class="amt">${_re(landVal)}</td>
       <td class="amt">${_re(bldgVal)}</td>
       <td class="amt">${_re(totalVal)}</td>
+      <td class="amt">${_re(landVal)}</td>
+      <td class="amt">${_re(bldgVal)}</td>
       <td class="amt">${_re(totalVal)}</td>
-      <td class="amt"><span style="color:#bbb;">—</span></td>
-      <td><span style="color:#bbb;">—</span></td>
+      <td class="amt"><span style="color:#bbb;">&#8212;</span></td>
+      <td><span style="color:#bbb;">&#8212;</span></td>
     </tr>
     ${valueHistoryRows}
   </tbody>
 </table>
 
-<div class="sec">Collecting Entities</div>
-<div class="ents">${_entityChkboxes(ap.taxingUnits, county, taxRows)}</div>
-
-<div class="sec">TAX INFORMATION</div>
-${_taxTableHtml(taxRows)}
-
-<div class="cmts">
-  <div class="cbox">
-    <div class="cl">COMMENTS:</div>
-    <div class="cv">${autoComment ? escHtml(autoComment) : '&nbsp;'}</div>
-  </div>
-  <div class="cbox">
-    <div class="cl">CRITICAL COMMENTS:</div>
-    <div class="cv">${critComment
-      ? `<span style="color:#991b1b;font-weight:bold;">${escHtml(critComment)}</span>`
-      : '&nbsp;'}</div>
-  </div>
-</div>
-
-<div class="flags">
-  <div class="fi"><label><input type="checkbox" ${chk(hasBankruptcy)} disabled> BANKRUPTCY</label></div>
-  <div class="fi"><label><input type="checkbox" ${chk(hasForeclosure)} disabled> FORECLOSURE</label></div>
-  <div class="fi"><label><input type="checkbox" ${chk(hasTaxLien)} disabled> TAX SALE/LIEN</label></div>
-  <div class="fi"><label><input type="checkbox" disabled> H/O CHANGE</label></div>
-  <div class="fi"><label><input type="checkbox" disabled> EXEMPT/DEFERRAL</label></div>
-  <div style="flex:1;display:flex;align-items:center;gap:6px;font-size:8pt;">
-    <b>OTHERS:</b> <input type="text" style="border:none;border-bottom:1px solid #777;flex:1;font-size:8pt;outline:none;">
-  </div>
-</div>
-
-<div class="sec">TAX DISBURSEMENT</div>
-${(() => {
-  // Known collecting-entity contact info per county (expand as needed)
-  const KNOWN = {
-    'anderson|tx': {
-      entityName:  'Anderson County Tax Office',
-      payableTo:   'Anderson County Tax Assessor-Collector',
-      address:     '500 N Church St, Palestine, TX 75801',
-      phone:       '(903) 723-7423',
-      fax:         '(903) 723-7801',
-      email:       'taxoffice@co.anderson.tx.us',
-    },
-  };
-  const key = (county + '|' + state).toLowerCase().replace(/\s+/g, '');
-  const info = KNOWN[key] || {};
-  const disburseRows = [
-    ['ENTITY NAME',          info.entityName  || county + ' Tax Office'],
-    ['DUPLICATE BILL FEE',   'REQUEST / PMT'],
-    ['CHECK PAYABLE TO',     info.payableTo   || county + ' Tax Office'],
-    ['TAX CERTIFICATE FEE $',''],
-    ['ADDRESS',              info.address     || ''],
-    ['POSTMARK',             'YES / NO'],
-    ['PHONE #',              info.phone       || ''],
-    ['FUNDS',                'MTG / CERT'],
-    ['FAX #',                info.fax         || ''],
-    ['SOURCE',               'NETR Online / County Website'],
-    ['EMAIL ID',             info.email       || ''],
-    ['CURRENT AMOUNT DUE',   currentDue || totalTaxDue || ''],
-    ['PAST YEARS DUE',       pastDue || (totalPastDue > 0 ? '$' + totalPastDue.toFixed(2) : '')],
-    ['TOTAL DUE',            totalTaxDue || (totalPastDue > 0 ? '$' + totalPastDue.toFixed(2) : '')],
-  ];
-  return '<div class="disb">' + disburseRows.map(r => _dRow(r[0], r[1])).join('') + '</div>';
-})()}
+${entityBlocksHtml}
 
 </body></html>`;
   }

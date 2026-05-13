@@ -193,10 +193,28 @@ async function extractDetailData(page, propId) {
 
     // ── Legal description ─────────────────────────────────────────────────────
     let legalDescription = '';
-    // Allow optional colon after "Description" and handle multiline-collapsed text
+    // Try 1: regex on whitespace-collapsed text
     const legalM = text.match(/Legal\s*Description\s*:?\s*([A-Z0-9][^\n\r]{5,120}?)(?=\s+(?:Property\s+Status|Property\s+Type|Neighborhood|Account|Map\s*Number|Effective\s*Acres|\d{4}\s+(?:GENERAL|OWNER|CERTIFIED)))/i)
                 || text.match(/Legal\s*Description\s*:?\s*([A-Z0-9][^\n\r]{5,120})/i);
     if (legalM) legalDescription = legalM[1].replace(/\s+/g, ' ').trim();
+    // Try 2: line-based fallback (handles label-only line or value split across lines)
+    if (!legalDescription) {
+      const LBND = /^(Property\s+Status|Property\s+Type|Neighborhood|Account|Map|Effective\s+Acres|\d{4}\s+(GENERAL|OWNER|CERTIFIED)|Value\s+History|Situs|Owner\s+Name|Percent\s+Ownership)/i;
+      const lIdx = lines.findIndex(l => /^Legal\s*Description/i.test(l));
+      if (lIdx >= 0) {
+        const inline = lines[lIdx].replace(/^Legal\s*Description\s*:?\s*/i, '').trim();
+        if (inline.length >= 5) {
+          legalDescription = inline;
+        } else {
+          const parts = [];
+          for (let i = lIdx + 1; i < Math.min(lIdx + 5, lines.length); i++) {
+            if (LBND.test(lines[i])) break;
+            parts.push(lines[i]);
+          }
+          if (parts.length) legalDescription = parts.join(' ').trim();
+        }
+      }
+    }
 
     // ── Effective acres ───────────────────────────────────────────────────────
     let acres = '';
