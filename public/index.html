@@ -433,44 +433,71 @@
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
-    /* Tax bill history table */
+    /* Tax bill history — collapsible year blocks */
     .bill-history-section {
-      margin-top: 16px;
-      padding-top: 14px;
+      margin-top: 14px;
+      padding-top: 12px;
       border-top: 2px solid var(--gray-100);
       width: 100%;
     }
     .bill-history-title {
       font-size: .72rem; font-weight: 700; letter-spacing: .06em;
       text-transform: uppercase; color: var(--gray-500);
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
-    .bill-year-block { margin-bottom: 20px; overflow-x: auto; width: 100%; }
-    .bill-year-label {
-      font-size: .82rem; font-weight: 800; color: #1a56db;
-      background: #eff6ff; border-left: 3px solid #1a56db;
-      padding: 4px 10px; margin-bottom: 4px; border-radius: 0 4px 4px 0;
-      display: inline-block;
+    .bill-year-block {
+      border: 1px solid var(--gray-200);
+      border-radius: 5px;
+      margin-bottom: 4px;
+      overflow: hidden;
     }
+    .bill-year-summary {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 12px;
+      background: #f8faff;
+      cursor: pointer;
+      user-select: none;
+      font-size: .82rem; font-weight: 700; color: #1a56db;
+      list-style: none;
+    }
+    .bill-year-summary::-webkit-details-marker { display: none; }
+    .bill-year-summary::marker { content: ''; }
+    .bill-year-summary .yr-chevron {
+      font-size: .7rem; color: var(--gray-400); margin-left: auto;
+      transition: transform .15s;
+    }
+    .bill-year-block[open] > .bill-year-summary {
+      background: #eff6ff;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .bill-year-block[open] > .bill-year-summary .yr-chevron { transform: rotate(90deg); }
+    .bill-year-totals-badge {
+      font-size: .75rem; font-weight: 600; color: var(--gray-600);
+      background: var(--gray-100); padding: 1px 7px; border-radius: 10px;
+    }
+    .bill-table-wrap { overflow-x: auto; }
     .bill-table {
-      width: 100%; min-width: 540px; border-collapse: collapse; font-size: .8rem;
-      margin-bottom: 0;
+      width: 100%; border-collapse: collapse; font-size: .78rem;
     }
     .bill-table th {
       background: var(--gray-100); color: var(--gray-600);
       font-weight: 600; text-align: left;
       padding: 5px 10px; border-bottom: 1px solid var(--gray-200);
-      font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
+      font-size: .70rem; text-transform: uppercase; letter-spacing: .04em;
+      white-space: nowrap;
     }
     .bill-table td {
-      padding: 5px 10px; border-bottom: 1px solid var(--gray-100);
-      color: var(--gray-900);
+      padding: 4px 10px; border-bottom: 1px solid var(--gray-100);
+      color: var(--gray-900); white-space: nowrap;
     }
     .bill-table tr.totals-row td {
       font-weight: 700; background: var(--gray-50); border-top: 1px solid var(--gray-300);
     }
+    .bill-table tr.subrow-row td {
+      font-size: .72rem; color: var(--gray-400); padding: 2px 10px;
+      background: #fafafa;
+    }
     .bill-table tr.paid-row td { color: #065f46; }
-    .bill-table tr.unpaid-row td { color: var(--gray-900); }
     .bill-table td.balance-due  { color: var(--red) !important; font-weight: 700; }
     .bill-table td.balance-paid { color: var(--green) !important; }
     .bill-table td.date-paid    { color: #6b7280; }
@@ -1083,45 +1110,79 @@
     ).join('');
 
     // ── Bill history ──────────────────────────────────────────────────────────
+    const SUB_ROW_DISPLAY_RX = /^(Levy|P&I|Att\.?\s*Fee|Credits\s*\/?\s*Disc\.?|Discount)\b/i;
     let billHtml = '';
+    let renderedYears = 0;
     if (billTables.length > 0) {
-      billHtml = `<div class="bill-history-section">
-        <div class="bill-history-title">Tax Bill History (${billTables.length} year${billTables.length !== 1 ? 's' : ''})</div>`;
-
+      let yearBlocksHtml = '';
       billTables.forEach((tableRows, idx) => {
         if (!tableRows || tableRows.length < 2) return;
-        const yr = yearHeaders[idx] || '';
-        const yearLabel = yr ? `<span class="bill-year-label">${escHtml(yr)}</span>` : '';
-        const [header, ...dataRows] = tableRows;
 
-        billHtml += `<div class="bill-year-block">${yearLabel}
-          <table class="bill-table"><thead><tr>`;
-        header.forEach(h => { billHtml += `<th>${escHtml(h)}</th>`; });
-        billHtml += '</tr></thead><tbody>';
+        // Strip a leading "Details" expand-column Kendo adds (not real data)
+        const cleanRows = tableRows.map(row => {
+          if ((row[0] || '').trim().toLowerCase() === 'details') return row.slice(1);
+          return row;
+        });
+
+        const [header, ...dataRows] = cleanRows;
+        if (!dataRows.length) return;
+
+        const yr = yearHeaders[idx] || '';
+        // Find totals row to show amount in the collapsed summary
+        const totalsRow = dataRows.find(r => /^TOTALS?$/i.test((r[0] || '')));
+        const totalAmt  = totalsRow ? (totalsRow[1] || '') : '';
+        const badge     = totalAmt
+          ? `<span class="bill-year-totals-badge">${escHtml(totalAmt)}</span>` : '';
+
+        // First 3 years open, rest collapsed
+        const isOpen = renderedYears < 3;
+        renderedYears++;
+
+        let tbl = `<table class="bill-table"><thead><tr>`;
+        header.forEach(h => { tbl += `<th>${escHtml(h)}</th>`; });
+        tbl += '</tr></thead><tbody>';
 
         dataRows.forEach(row => {
-          const isTotals  = /^TOTALS?$/i.test(row[0] || '');
-          // Balance is last column; Date Paid is typically column index 2
-          const lastIdx   = row.length - 1;
-          const balVal    = parseFloat((row[lastIdx] || '').replace(/[^0-9.]/g, ''));
-          const isPaidRow = !isTotals && row.some((c, i) => i > 0 && i < lastIdx && /\d{1,2}-\d{1,2}-\d{4}/.test(c));
+          const first    = (row[0] || '').trim();
+          const isTotals = /^TOTALS?$/i.test(first);
+          const isSubRow = SUB_ROW_DISPLAY_RX.test(first);
+          const lastIdx  = row.length - 1;
+          const balVal   = parseFloat((row[lastIdx] || '').replace(/[^0-9.]/g, ''));
+          const isPaid   = !isTotals && !isSubRow && row.some((c, i) =>
+            i > 0 && i < lastIdx && /\d{1,2}-\d{1,2}-\d{4}/.test(c));
 
-          let rowCls = isTotals ? 'totals-row' : (isPaidRow ? 'paid-row' : '');
-          billHtml += `<tr class="${rowCls}">`;
+          const rowCls = isTotals ? 'totals-row' : isSubRow ? 'subrow-row' : isPaid ? 'paid-row' : '';
+          tbl += `<tr class="${rowCls}">`;
           row.forEach((cell, ci) => {
             let cls = '';
-            if (ci === lastIdx) {
+            if (!isSubRow && ci === lastIdx) {
               cls = (cell && balVal > 0) ? 'balance-due' : (cell && cell.includes('$') ? 'balance-paid' : '');
-            } else if (ci === 2 && /\d{1,2}-\d{1,2}-\d{4}/.test(cell)) {
+            } else if (!isSubRow && /\d{1,2}-\d{1,2}-\d{4}/.test(cell)) {
               cls = 'date-paid';
             }
-            billHtml += `<td class="${cls}">${escHtml(cell)}</td>`;
+            tbl += `<td class="${cls}">${escHtml(cell)}</td>`;
           });
-          billHtml += '</tr>';
+          tbl += '</tr>';
         });
-        billHtml += '</tbody></table></div>';
+        tbl += '</tbody></table>';
+
+        yearBlocksHtml += `
+          <details class="bill-year-block"${isOpen ? ' open' : ''}>
+            <summary class="bill-year-summary">
+              ${yr ? escHtml(yr) : 'Year'}
+              ${badge}
+              <span class="yr-chevron">&#9658;</span>
+            </summary>
+            <div class="bill-table-wrap">${tbl}</div>
+          </details>`;
       });
-      billHtml += '</div>';
+
+      if (renderedYears > 0) {
+        billHtml = `<div class="bill-history-section">
+          <div class="bill-history-title">Tax Bill History (${renderedYears} year${renderedYears !== 1 ? 's' : ''})</div>
+          ${yearBlocksHtml}
+        </div>`;
+      }
     }
 
     const detailLink = detailUrl
