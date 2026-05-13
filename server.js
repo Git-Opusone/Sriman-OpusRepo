@@ -228,6 +228,26 @@ app.get('/api/county-sources', async (req, res) => {
   }
 });
 
+// ─── Source-type classifier (for NETR sources) ────────────────────────────────
+
+function classifyNetronlineSource(name, url) {
+  const n = (name || '').toLowerCase();
+  const u = (url  || '').toLowerCase();
+  if (n.includes('mapping') || n.includes('gis') || u.includes('/gis') || u.includes('maps.'))
+    return 'skip';
+  if (n.includes('aerial') || u.includes('historicaerials.com') || u.includes('aerials.com'))
+    return 'link';
+  if (n.includes('appraisal') || n.includes('assessor') || n.includes('appraiser') ||
+      n.includes(' cad') || n.startsWith('cad '))
+    return 'appraisal';
+  if (n.includes('tax') || n.includes('treasurer') || n.includes('collector'))
+    return 'tax';
+  if (n.includes('clerk') || n.includes('recorder') || n.includes('deed') ||
+      n.includes('court') || n.includes('probate') || n.includes('register'))
+    return 'clerk';
+  return 'search';
+}
+
 // ─── Health check ─────────────────────────────────────────────────────────────
 
 app.get('/api/health', (_req, res) => {
@@ -467,6 +487,157 @@ app.get('/api/search/dual/stream', async (req, res) => {
     activeSearches -= 2;
     metrics.activeSearchesGauge.set(activeSearches);
     console.log(`[server] dual search finished — active: ${activeSearches}/${MAX_CONCURRENT}`);
+    clearInterval(heartbeat);
+    res.end();
+  }
+});
+
+// ─── Multi-Source Search (All NETR sources for a county) ─────────────────────
+//
+// For account-number searches: searches ALL non-GIS/non-aerial NETR sources in
+// parallel.  For name-only searches: searches the appraisal (CAD) source only.
+//
+// Emits SSE events: sources | source_progress | source_result |
+//                   source_link | source_error | done
+
+app.get('/api/search/multi/stream', async (req, res) => {
+  const { state, county, firstName, lastName, fullName, accountNumber } = req.query;
+
+  if (!state || !county) {
+    return res.status(400).json({ error: 'state and county are required' });
+  }
+  if (!firstName && !lastName && !fullName && !accountNumber) {
+    return res.status(400).json({ error: 'Provide a name or account number to search' });
+  }
+
+  // SSE setup
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
+
+  const sendEvent = (event, data) => {
+    res.write(`event: ${event}\n`);
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+    if (typeof res.flush === 'function') res.flush();
+  };
+
+  const heartbeat = setInterval(() => res.write(': heartbeat\n\n'), 15000);
+  req.on('close', () => clearInterval(heartbeat));
+
+  const multiTimer = metrics.searchDurationSeconds.startTimer({ endpoint: 'multi' });
+  let startedCount = 0;
+
+  try {
+    sendEvent('status', { message: `Loading county sources for ${county}, ${state}...` });
+
+    const [netronlineSources, countyUrlInfo] = await Promise.all([
+      getAllNetronlineSources(state, county).catch(() => []),
+      Promise.resolve(getCountyUrl(state, county)),
+    ]);
+
+    // Build a de-duplicated source list
+    const seen = new Set();
+    const allSources = [];
+
+    if (countyUrlInfo.url) {
+      const key = countyUrlInfo.url.replace(/\/$/, '').toLowerCase();
+      seen.add(key);
+      allSources.push({
+        id: 'appraisal_dir',
+        name: 'Appraisal (CAD)',
+        type: 'appraisal',
+        url: countyUrlInfo.url,
+        linkOnly: false,
+      });
+    }
+
+    for (const src of netronlineSources) {
+      if (!src.onlineUrl) continue;
+      const type = classifyNetronlineSource(src.name, src.onlineUrl);
+      if (type === 'skip') continue;
+      const key = src.onlineUrl.replace(/\/$/, '').toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      allSources.push({
+        id: src.name.toLowerCase().replace(/\W+/g, '_').replace(/_+/g, '_'),
+        name: src.name,
+        type,
+        url: src.onlineUrl,
+        linkOnly: type === 'link',
+      });
+    }
+
+    // Name-only → appraisal only; account number → all searchable sources
+    const isNameSearch = !accountNumber;
+    const searchable = isNameSearch
+      ? allSources.filter(s => !s.linkOnly && s.type === 'appraisal')
+      : allSources.filter(s => !s.linkOnly);
+    const linkSources = allSources.filter(s => s.linkOnly);
+
+    sendEvent('sources', { sources: allSources, searchMode: isNameSearch ? 'name' : 'account' });
+
+    for (const src of linkSources) {
+      sendEvent('source_link', { id: src.id, name: src.name, url: src.url });
+    }
+
+    if (searchable.length === 0) {
+      sendEvent('done', { success: true, isMulti: true });
+      return;
+    }
+
+    // Cap at 4 concurrent browser instances
+    const toSearch = searchable.slice(0, 4);
+
+    if (activeSearches + toSearch.length > MAX_CONCURRENT + 2) {
+      metrics.concurrencyRejectedTotal.inc();
+      sendEvent('error', { message: `Server busy — ${activeSearches} searches running. Try again in a moment.` });
+      return;
+    }
+
+    startedCount = toSearch.length;
+    activeSearches += startedCount;
+    metrics.activeSearchesGauge.set(activeSearches);
+    console.log(`[server] multi search started (${startedCount} sources) — active: ${activeSearches}/${MAX_CONCURRENT}`);
+
+    const commonParams = {
+      firstName:     firstName     || '',
+      lastName:      lastName      || '',
+      fullName:      fullName      || '',
+      accountNumber: accountNumber || '',
+    };
+
+    await Promise.allSettled(toSearch.map(async (src) => {
+      sendEvent('source_progress', { id: src.id, message: `Starting search at ${src.name}...` });
+      try {
+        const result = await runBrowserAgentWithTimeout({
+          url: src.url,
+          ...commonParams,
+          onProgress: (msg) => sendEvent('source_progress', { id: src.id, message: msg }),
+        });
+        sendEvent('source_result', {
+          id: src.id, name: src.name, type: src.type, url: src.url, ...result,
+        });
+        metrics.searchesTotal.inc({ endpoint: 'multi', status: result.error ? 'error' : 'success' });
+      } catch (err) {
+        sendEvent('source_error', { id: src.id, name: src.name, message: err.message });
+        metrics.searchesTotal.inc({ endpoint: 'multi', status: 'error' });
+      }
+    }));
+
+    sendEvent('done', { success: true, isMulti: true });
+  } catch (err) {
+    console.error('[server] multi search error:', err.message);
+    metrics.searchesTotal.inc({ endpoint: 'multi', status: 'error' });
+    sendEvent('error', { message: err.message || 'Unexpected error during multi-source search' });
+  } finally {
+    multiTimer();
+    if (startedCount > 0) {
+      activeSearches -= startedCount;
+      metrics.activeSearchesGauge.set(activeSearches);
+    }
+    console.log(`[server] multi search finished — active: ${activeSearches}/${MAX_CONCURRENT}`);
     clearInterval(heartbeat);
     res.end();
   }

@@ -839,6 +839,10 @@
       <div id="taxSummaryText" style="font-size:.88rem;color:var(--gray-600);margin-bottom:16px;"></div>
       <div id="taxRecordsContainer"></div>
     </div>
+
+    <!-- Multi-source dynamic tabs (account number search across all NETR sources) -->
+    <div class="result-tabs" id="multiTabsNav" style="display:none;flex-wrap:wrap;"></div>
+    <div id="multiTabPanels"></div>
   </section>
 
 </main>
@@ -1415,10 +1419,12 @@
     const accountNumber = val('accountNumber');
 
     const url = manualUrl || resolvedUrl;
-    const dual = isAndersonTX() && !manualUrl; // dual mode: Anderson TX, no manual override
 
-    // Validate
-    if (!dual && !url && !state) {
+    // Routing: account number + state/county → multi-source; otherwise single/dual
+    const useMulti = !!(accountNumber && state && county && !manualUrl);
+    const dual = !useMulti && isAndersonTX() && !manualUrl;
+
+    if (!useMulti && !dual && !url && !state) {
       alert('Please select a State and County, or enter a URL manually.');
       document.getElementById('stateSelect').focus();
       return;
@@ -1435,13 +1441,23 @@
     hide('resultsSection');
     document.getElementById('progressLog').innerHTML = '';
     document.getElementById('resultTabsNav').style.display = 'none';
-    // Reset tab panels
-    document.getElementById('appraisalTabPanel').classList.add('active');
+    document.getElementById('multiTabsNav').style.display = 'none';
+    document.getElementById('multiTabPanels').innerHTML = '';
+    // For multi-source: static panels are hidden; dynamic tabs will render
+    if (useMulti) {
+      document.getElementById('appraisalTabPanel').classList.remove('active');
+    } else {
+      document.getElementById('appraisalTabPanel').classList.add('active');
+    }
     document.getElementById('taxTabPanel').classList.remove('active');
     document.getElementById('tabBtnAppraisal').classList.add('active');
     document.getElementById('tabBtnTax').classList.remove('active');
     document.getElementById('appraisalTabBadge').textContent = '';
     document.getElementById('taxTabBadge').textContent = '';
+    document.getElementById('recordsContainer').innerHTML = '';
+    document.getElementById('countBadge').textContent = '';
+    document.getElementById('sourceUrl').textContent = '';
+    document.getElementById('summaryText').textContent = '';
     document.getElementById('taxRecordsContainer').innerHTML = '';
     document.getElementById('taxCountBadge').textContent = '';
     document.getElementById('taxSourceUrl').textContent = '';
@@ -1456,11 +1472,13 @@
     if (accountNumber) params.set('accountNumber', accountNumber);
 
     let endpoint;
-    if (dual) {
-      // Anderson TX dual search — no URL needed, server hardcodes both URLs
+    if (useMulti) {
+      params.set('state', state);
+      params.set('county', county);
+      endpoint = `/api/search/multi/stream?${params.toString()}`;
+    } else if (dual) {
       endpoint = `/api/search/dual/stream?${params.toString()}`;
     } else {
-      // Standard single-source search
       if (url)    params.set('url', url);
       if (state)  params.set('state', state);
       if (county) params.set('county', county);
@@ -1489,10 +1507,8 @@
     evtSource.addEventListener('appraisalResults', (e) => {
       const data = JSON.parse(e.data);
       renderResults(data, 'https://andersoncad.net');
-      // Update appraisal tab badge
       const n = (data.records || []).length;
       document.getElementById('appraisalTabBadge').textContent = n > 0 ? String(n) : '';
-      // Show tabs nav
       document.getElementById('resultTabsNav').style.display = 'flex';
     });
 
@@ -1503,6 +1519,44 @@
       const n = (data.records || []).length;
       document.getElementById('taxTabBadge').textContent = n > 0 ? String(n) : '';
       document.getElementById('resultTabsNav').style.display = 'flex';
+    });
+
+    // ── Multi-source events ──────────────────────────────────────────────────
+
+    // sources: build dynamic tabs immediately
+    evtSource.addEventListener('sources', (e) => {
+      const { sources } = JSON.parse(e.data);
+      createDynamicTabs(sources);
+      show('resultsSection');
+    });
+
+    // per-source progress log
+    evtSource.addEventListener('source_progress', (e) => {
+      const { id, message } = JSON.parse(e.data);
+      const srcName = document.getElementById(`dynTabBtn_${id}`)?.dataset?.name || id;
+      log(`[${srcName}] ${message}`);
+    });
+
+    // per-source results
+    evtSource.addEventListener('source_result', (e) => {
+      renderSourceResult(JSON.parse(e.data));
+    });
+
+    // link-only source (e.g. Historic Aerials)
+    evtSource.addEventListener('source_link', (e) => {
+      renderSourceLink(JSON.parse(e.data));
+    });
+
+    // per-source error
+    evtSource.addEventListener('source_error', (e) => {
+      const { id, name, message } = JSON.parse(e.data);
+      const recordsEl = document.getElementById(`dynRecords_${id}`);
+      if (recordsEl) recordsEl.innerHTML =
+        `<div class="no-results"><div class="icon">⚠️</div><p>${escHtml(name)}: ${escHtml(message)}</p></div>`;
+      const countEl = document.getElementById(`dynCount_${id}`);
+      if (countEl) countEl.textContent = 'Error';
+      const badgeEl = document.getElementById(`dynBadge_${id}`);
+      if (badgeEl) badgeEl.textContent = '';
     });
 
     evtSource.addEventListener('done', () => {
@@ -1531,6 +1585,117 @@
       box.textContent = '⚠ Connection lost or server busy — please try again in a moment.';
       show('errorBox');
     };
+  }
+
+  // ── Multi-source tab helpers ─────────────────────────────────────────────────
+
+  const SOURCE_ICON = { appraisal: '🏠', tax: '💰', clerk: '🏛️', search: '🔍', link: '🔗' };
+
+  function createDynamicTabs(sources) {
+    const nav    = document.getElementById('multiTabsNav');
+    const panels = document.getElementById('multiTabPanels');
+    nav.innerHTML    = '';
+    panels.innerHTML = '';
+
+    sources.forEach((src, i) => {
+      // Tab button
+      const btn = document.createElement('button');
+      btn.className      = 'tab-btn' + (i === 0 ? ' active' : '');
+      btn.id             = `dynTabBtn_${src.id}`;
+      btn.dataset.name   = src.name;
+      btn.onclick        = () => switchDynTab(src.id);
+      const icon = SOURCE_ICON[src.type] || '📄';
+      btn.innerHTML = `${icon} ${escHtml(src.name)}&nbsp;<span id="dynBadge_${src.id}" style="font-size:.75rem;font-weight:700;padding:1px 8px;border-radius:10px;background:var(--blue-light);color:var(--blue);"></span>`;
+      nav.appendChild(btn);
+
+      // Tab panel
+      const panel     = document.createElement('div');
+      panel.id        = `dynPanel_${src.id}`;
+      panel.className = 'tab-panel' + (i === 0 ? ' active' : '');
+
+      if (src.linkOnly) {
+        panel.innerHTML = `<div style="padding:32px;text-align:center;">
+          <div style="font-size:2rem;margin-bottom:12px;">${icon}</div>
+          <p style="margin-bottom:16px;color:var(--gray-600);">Loading ${escHtml(src.name)}...</p>
+        </div>`;
+      } else {
+        panel.innerHTML = `
+          <div class="results-summary">
+            <span id="dynCount_${src.id}" class="badge-count">Searching...</span>
+            <span id="dynUrl_${src.id}" class="badge-url">${escHtml(src.url || '')}</span>
+          </div>
+          <div id="dynSummary_${src.id}" style="font-size:.88rem;color:var(--gray-600);margin-bottom:16px;"></div>
+          <div id="dynRecords_${src.id}">
+            <div class="status-header" style="padding:20px 0;justify-content:center;">
+              <div class="spinner"></div>
+              <span>Searching ${escHtml(src.name)}...</span>
+            </div>
+          </div>`;
+      }
+      panels.appendChild(panel);
+    });
+
+    nav.style.display = 'flex';
+  }
+
+  function switchDynTab(sourceId) {
+    document.querySelectorAll('#multiTabsNav .tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#multiTabPanels .tab-panel').forEach(p => p.classList.remove('active'));
+    const btn   = document.getElementById(`dynTabBtn_${sourceId}`);
+    const panel = document.getElementById(`dynPanel_${sourceId}`);
+    if (btn)   btn.classList.add('active');
+    if (panel) panel.classList.add('active');
+  }
+
+  function renderSourceResult(data) {
+    const { id, type, url, records = [], totalFound, summary, error, rawText, captchaBlocked } = data;
+
+    const countEl   = document.getElementById(`dynCount_${id}`);
+    const summaryEl = document.getElementById(`dynSummary_${id}`);
+    const recordsEl = document.getElementById(`dynRecords_${id}`);
+    const badgeEl   = document.getElementById(`dynBadge_${id}`);
+    if (!recordsEl) return;
+
+    const total = totalFound ?? records.length;
+    if (countEl)   countEl.textContent   = total === 0 ? 'No records found' : `${total} record${total !== 1 ? 's' : ''} found`;
+    if (summaryEl) summaryEl.textContent = summary || '';
+    if (badgeEl)   badgeEl.textContent   = total > 0 ? String(total) : '';
+
+    if (captchaBlocked) {
+      recordsEl.innerHTML = `<div class="no-results"><div class="icon">🔒</div>
+        <p>CAPTCHA blocked access. <a href="${escHtml(url || '')}" target="_blank" rel="noopener">Open directly →</a></p></div>`;
+    } else if (error) {
+      recordsEl.innerHTML = `<div class="no-results"><div class="icon">⚠️</div><p>Error: ${escHtml(error)}</p></div>`;
+    } else if (records.length === 0 && rawText) {
+      recordsEl.innerHTML = `
+        <div style="margin-bottom:8px;padding:8px 12px;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;font-size:.82rem;color:#5d4037;">
+          ℹ️ The AI agent reached the results page but could not parse structured records.
+        </div>
+        <pre style="white-space:pre-wrap;word-break:break-word;font-family:monospace;font-size:.8rem;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;padding:16px;max-height:400px;overflow-y:auto;">${escHtml(rawText)}</pre>`;
+    } else if (records.length === 0) {
+      recordsEl.innerHTML = `<div class="no-results"><div class="icon">📭</div><p>No records found.</p></div>`;
+    } else {
+      recordsEl.innerHTML = (type === 'tax')
+        ? records.map(renderTaxRecord).join('')
+        : records.map(renderRecord).join('');
+    }
+
+    show('resultsSection');
+  }
+
+  function renderSourceLink(data) {
+    const { id, name, url } = data;
+    const panel = document.getElementById(`dynPanel_${id}`);
+    if (!panel) return;
+    const icon = SOURCE_ICON['link'];
+    panel.innerHTML = `<div style="padding:32px;text-align:center;">
+      <div style="font-size:2.5rem;margin-bottom:14px;">${icon}</div>
+      <p style="margin-bottom:18px;color:var(--gray-700);font-size:.95rem;">${escHtml(name)} is available as an external resource.</p>
+      <a href="${escHtml(url)}" target="_blank" rel="noopener"
+         style="display:inline-block;padding:10px 28px;background:var(--blue);color:#fff;border-radius:6px;font-weight:600;text-decoration:none;">
+        Open ${escHtml(name)} →
+      </a>
+    </div>`;
   }
 
   function renderResults(data, sourceUrl) {
@@ -1612,6 +1777,8 @@
     hide('resultsSection');
     document.getElementById('progressLog').innerHTML      = '';
     document.getElementById('resultTabsNav').style.display = 'none';
+    document.getElementById('multiTabsNav').style.display  = 'none';
+    document.getElementById('multiTabPanels').innerHTML    = '';
     document.getElementById('appraisalTabPanel').classList.add('active');
     document.getElementById('taxTabPanel').classList.remove('active');
     document.getElementById('tabBtnAppraisal').classList.add('active');
