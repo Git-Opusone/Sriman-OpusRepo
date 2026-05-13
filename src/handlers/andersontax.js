@@ -389,7 +389,46 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
     // ── 5. Extract all data ───────────────────────────────────────────────────
     onProgress('Extracting property data...');
     const detail = await extractDetailData(page, propId);
-    const bill   = await extractBillData(page);
+
+    // ── 5b. Click "Payment History" tab to load bill tables ──────────────────
+    // The tax office detail page has tabs (Details / Bills / Payment History).
+    // Bill tables only render after that tab is activated.
+    onProgress('Loading payment history...');
+    const HISTORY_TAB_SELECTORS = [
+      'a:has-text("Payment History")',
+      'a:has-text("Bills")',
+      'li:has-text("Payment History") a',
+      'li:has-text("Bills") a',
+      '[href*="PaymentHistory"]',
+      '[href*="payment-history"]',
+      '[href*="Bills"]',
+    ];
+    let clickedHistoryTab = false;
+    for (const sel of HISTORY_TAB_SELECTORS) {
+      try {
+        const el = page.locator(sel).first();
+        if (await el.count({ timeout: 2000 }) > 0 && await el.isVisible({ timeout: 2000 })) {
+          await el.click({ timeout: 5000 });
+          await page.waitForTimeout(2500);
+          await handleDisclaimerIfPresent(page, 'payment-history-tab');
+          console.log(`[andersontax] clicked history tab via: ${sel}`);
+          clickedHistoryTab = true;
+          break;
+        }
+      } catch (_) {}
+    }
+
+    // If no tab found, scroll to bottom to trigger any lazy-loaded sections
+    if (!clickedHistoryTab) {
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)).catch(() => {});
+      await page.waitForTimeout(1500);
+    }
+
+    // Wait for at least one bill table to appear (up to 8 s)
+    await page.waitForSelector('table', { timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(1000);
+
+    const bill = await extractBillData(page);
 
     const ownerName    = detail.ownerName    || basic.ownerName    || '';
     const situsAddress = detail.situsAddress || basic.situsAddress || '';
