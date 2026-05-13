@@ -1562,6 +1562,10 @@
     document.getElementById('taxSourceUrl').textContent      = '';
     document.getElementById('taxSummaryText').textContent    = '';
     document.getElementById('searchBtn').disabled = false;
+    document.getElementById('zipInput').value = '';
+    document.getElementById('zipHint').textContent = 'Auto-fills state & county';
+    document.getElementById('sourcesPanel').style.display = 'none';
+    document.getElementById('sourcesBody').innerHTML = '';
   }
 
   // Allow Enter key on inputs to trigger search
