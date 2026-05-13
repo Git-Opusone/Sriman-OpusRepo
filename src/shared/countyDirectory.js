@@ -15,7 +15,7 @@ const fs   = require('fs');
 const path = require('path');
 const axios = require('axios');
 
-const DB_PATH = path.join(__dirname, '../data/counties.json');
+const DB_PATH = path.join(__dirname, '../../data/counties.json');
 
 const STATE_NAMES = {
   AL:'Alabama', AK:'Alaska', AZ:'Arizona', AR:'Arkansas', CA:'California',

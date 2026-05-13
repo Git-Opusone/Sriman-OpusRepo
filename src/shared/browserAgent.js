@@ -14,16 +14,16 @@ const OpenAI = require('openai');
 // Apply stealth plugin — bypasses Cloudflare and other bot-detection systems
 chromiumExtra.use(StealthPlugin());
 
-const { detectFromUrl, detectFromHtml, platformLabel } = require('./src/platformDetector');
-const qpublicHandler          = require('./src/handlers/qpublic');
-const tylerHandler            = require('./src/handlers/tyler');
-const beaconHandler           = require('./src/handlers/beacon');
-const patriotHandler          = require('./src/handlers/patriot');
-const visionHandler           = require('./src/handlers/vision');
-const bisHandler              = require('./src/handlers/bis');
-const publicPortalHandler     = require('./src/handlers/publicportal');
-const andersonTaxHandler      = require('./src/handlers/andersontax');
-const { detectCaptcha }       = require('./src/captchaDetector');
+const { detectFromUrl, detectFromHtml, platformLabel } = require('./platformDetector');
+const qpublicHandler          = require('../tax/handlers/qpublic');
+const tylerHandler            = require('../tax/handlers/tyler');
+const beaconHandler           = require('../tax/handlers/beacon');
+const patriotHandler          = require('../tax/handlers/patriot');
+const visionHandler           = require('../tax/handlers/vision');
+const bisHandler              = require('../tax/handlers/bis');
+const publicPortalHandler     = require('../tax/handlers/publicportal');
+const andersonTaxHandler      = require('../tax/handlers/andersontax');
+const { detectCaptcha }       = require('./captchaDetector');
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 

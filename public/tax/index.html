@@ -1,0 +1,2436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orchestrate-Mortgage Title &amp; Tax Search</title>
+  <style>
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:       #1a56db;
+      --blue-light: #ebf3ff;
+      --blue-dark:  #1040b0;
+      --green:      #057a55;
+      --green-light:#f0fdf4;
+      --red:        #c81e1e;
+      --red-light:  #fff5f5;
+      --gray-50:    #f9fafb;
+      --gray-100:   #f3f4f6;
+      --gray-200:   #e5e7eb;
+      --gray-400:   #9ca3af;
+      --gray-500:   #6b7280;
+      --gray-600:   #4b5563;
+      --gray-700:   #374151;
+      --gray-900:   #111827;
+      --radius:     10px;
+      --shadow:     0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
+      --shadow-md:  0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -1px rgba(0,0,0,.06);
+    }
+    html { font-size: 16px; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-900);
+      min-height: 100vh;
+    }
+
+    /* ── Shared header (matches home page) ── */
+    header {
+      background: #111827;
+      color: #fff;
+      padding: 10px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .header-logo { height: 32px; width: auto; flex-shrink: 0; }
+    .header-center {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex: 1;
+      justify-content: center;
+    }
+    .header-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.82);
+      text-decoration: none;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+    .header-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+    header nav { flex-shrink: 0; }
+    header nav a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      margin-left: 22px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+    header nav a:hover { color: #fff; }
+    header nav a.active { color: #4a9eff; border-bottom: 2px solid #4a9eff; padding-bottom: 2px; }
+    /* ── Page title bar ── */
+    .page-bar {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1a56db 100%);
+      color: #fff;
+      padding: 16px 32px;
+      text-align: center;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      position: relative;
+    }
+    .page-bar-badge {
+      position: absolute;
+      top: 50%;
+      left: 22px;
+      transform: translateY(-50%);
+      display: inline-block;
+      background: rgba(255,255,255,0.13);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #ddeeff;
+      font-size: 0.86rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      padding: 6px 18px;
+      border-radius: 20px;
+    }
+
+    /* ── Main layout ── */
+    main { max-width: 860px; margin: 32px auto; padding: 0 16px 60px; }
+
+    /* ── Card ── */
+    .card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--gray-700);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .icon {
+      width: 28px; height: 28px;
+      background: var(--blue-light);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .9rem;
+    }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 16px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media(max-width:560px) { .form-row { grid-template-columns: 1fr; } }
+
+    label {
+      display: block;
+      font-size: .83rem;
+      font-weight: 600;
+      color: var(--gray-600);
+      margin-bottom: 6px;
+      letter-spacing: .01em;
+      text-transform: uppercase;
+    }
+    label .req { color: var(--red); margin-left: 2px; }
+    .hint { font-size: .77rem; color: var(--gray-400); margin-top: 4px; }
+
+    select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 7px;
+      font-size: .95rem;
+      color: var(--gray-900);
+      background: #fff;
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+      cursor: pointer;
+    }
+    select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(26,86,219,.12);
+    }
+    select:disabled { background: var(--gray-50); color: var(--gray-400); cursor: not-allowed; }
+
+    .url-alive    { background:#d1fae5; color:#065f46; }
+    .url-refreshed{ background:#fef3c7; color:#92400e; }
+    .url-dead     { background:#fee2e2; color:#991b1b; }
+    .url-checking { background:#e0e7ff; color:#3730a3; }
+
+    input[type="text"], input[type="url"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 7px;
+      font-size: .95rem;
+      color: var(--gray-900);
+      background: #fff;
+      transition: border-color .15s, box-shadow .15s;
+      outline: none;
+    }
+    input[type="text"]:focus, input[type="url"]:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(26,86,219,.12);
+    }
+    input::placeholder { color: var(--gray-400); }
+
+    .divider {
+      display: flex; align-items: center; gap: 10px;
+      margin: 4px 0 16px;
+      color: var(--gray-400); font-size: .8rem;
+    }
+    .divider::before, .divider::after {
+      content: ''; flex: 1;
+      height: 1px; background: var(--gray-200);
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 11px 28px;
+      border: none; border-radius: 7px;
+      font-size: .95rem; font-weight: 600;
+      cursor: pointer; transition: background .15s, transform .1s;
+    }
+    .btn-primary {
+      background: var(--blue); color: #fff; width: 100%;
+    }
+    .btn-primary:hover:not(:disabled) { background: var(--blue-dark); }
+    .btn-primary:active:not(:disabled) { transform: scale(.98); }
+    .btn-primary:disabled { background: var(--gray-400); cursor: not-allowed; }
+
+    .btn-clear {
+      background: var(--gray-100); color: var(--gray-700);
+      font-size: .85rem; padding: 8px 16px;
+      border: 1px solid var(--gray-200);
+      margin-top: 10px; width: 100%;
+    }
+    .btn-clear:hover { background: var(--gray-200); }
+
+    /* ── Status / Progress ── */
+    #statusBox {
+      display: none;
+      background: var(--blue-light);
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      margin-bottom: 24px;
+    }
+    .status-header {
+      display: flex; align-items: center; gap: 10px;
+      font-weight: 600; color: var(--blue);
+      margin-bottom: 10px;
+    }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(26,86,219,.25);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #progressLog {
+      font-size: .82rem; color: var(--gray-600);
+      max-height: 120px; overflow-y: auto;
+      background: rgba(255,255,255,.6);
+      border-radius: 6px; padding: 8px 10px;
+    }
+    #progressLog p { padding: 1px 0; }
+    #progressLog p:last-child { color: var(--blue); font-weight: 500; }
+
+    /* ── Error ── */
+    #errorBox {
+      display: none;
+      background: var(--red-light);
+      border: 1px solid #fecaca;
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      color: var(--red);
+      font-size: .9rem;
+    }
+
+    #captchaBox {
+      display: none;
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      font-size: .9rem;
+    }
+    #captchaBox .captcha-title {
+      font-weight: 600;
+      color: #92400e;
+      margin-bottom: 6px;
+    }
+    #captchaBox .captcha-body {
+      color: #78350f;
+      line-height: 1.5;
+    }
+    #captchaBox .captcha-note {
+      margin-top: 10px;
+      font-size: .82rem;
+      color: #92400e;
+      border-top: 1px solid #fcd34d;
+      padding-top: 8px;
+    }
+
+    /* ── Results ── */
+    #resultsSection { display: none; }
+
+    .results-summary {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 8px;
+      margin-bottom: 16px;
+    }
+    .badge-count {
+      background: var(--green-light);
+      color: var(--green);
+      border: 1px solid #a7f3d0;
+      border-radius: 20px;
+      padding: 4px 12px; font-size: .82rem; font-weight: 600;
+    }
+    .badge-url {
+      font-size: .78rem; color: var(--gray-400);
+      word-break: break-all;
+    }
+
+    /* Property record card */
+    .record-card {
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow);
+    }
+    .record-header {
+      background: linear-gradient(90deg, #1e3a8a, #1a56db);
+      color: #fff;
+      padding: 12px 18px;
+      display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+    }
+    .record-header-info { min-width: 0; flex: 1; }
+    .record-owner { font-size: 1rem; font-weight: 700; word-break: break-word; overflow-wrap: anywhere; }
+    .record-parcel { font-size: .8rem; opacity: .85; word-break: break-word; overflow-wrap: anywhere; }
+    .status-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: .75rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .status-paid    { background: #d1fae5; color: #065f46; }
+    .status-unpaid  { background: #fee2e2; color: #991b1b; }
+    .status-partial { background: #fef3c7; color: #92400e; }
+    .status-default { background: #e5e7eb; color: #374151; }
+
+    .record-body { padding: 16px 18px; }
+    .fields-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .field-item {}
+    .field-label {
+      font-size: .72rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--gray-400); margin-bottom: 2px;
+    }
+    .field-value { font-size: .9rem; color: var(--gray-900); font-weight: 500; }
+    .field-value.large { font-size: 1.1rem; color: var(--blue); font-weight: 700; }
+    .field-value.addr  { font-size: .88rem; color: var(--gray-700); }
+    .field-value.empty { color: var(--gray-400); font-style: italic; }
+
+    /* Property detail grid (replaces old accordion) */
+    .property-detail-grid {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 2px solid var(--gray-100);
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .det-section { }
+    .det-section-title {
+      font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--gray-500);
+      margin-bottom: 6px; padding-bottom: 4px;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .det-table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+    .det-label {
+      padding: 4px 8px 4px 0; color: var(--gray-500);
+      font-weight: 500; vertical-align: top; width: 45%;
+    }
+    .det-value {
+      padding: 4px 0; color: #111827;
+      font-weight: 600; vertical-align: top;
+    }
+
+    /* No results */
+    .no-results {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--gray-400);
+    }
+    .no-results .icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .no-results p { font-size: .95rem; }
+
+    /* ── Dual-search info banner ── */
+    #dualSearchBanner {
+      display: none;
+      background: linear-gradient(135deg, #f0fdf4, #ebf3ff);
+      border: 1px solid #a7f3d0;
+      border-radius: var(--radius);
+      padding: 12px 18px;
+      margin-bottom: 16px;
+      font-size: .85rem;
+      color: var(--gray-700);
+    }
+    #dualSearchBanner strong { color: var(--blue); }
+
+    /* ── Result tabs ── */
+    .result-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 2px solid var(--gray-200);
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      padding: 10px 22px;
+      font-size: .9rem;
+      font-weight: 600;
+      color: var(--gray-500);
+      cursor: pointer;
+      transition: color .15s, border-color .15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tab-btn:hover { color: var(--blue); }
+    .tab-btn.active {
+      color: var(--blue);
+      border-bottom-color: var(--blue);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Tax bill history — collapsible year blocks */
+    .bill-history-section {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 2px solid var(--gray-100);
+      width: 100%;
+    }
+    .bill-history-title {
+      font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--gray-500);
+      margin-bottom: 8px;
+    }
+    .bill-year-block {
+      border: 1px solid var(--gray-200);
+      border-radius: 5px;
+      margin-bottom: 4px;
+      overflow: hidden;
+    }
+    .bill-year-summary {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 12px;
+      background: #f8faff;
+      cursor: pointer;
+      user-select: none;
+      font-size: .82rem; font-weight: 700; color: #1a56db;
+      list-style: none;
+    }
+    .bill-year-summary::-webkit-details-marker { display: none; }
+    .bill-year-summary::marker { content: ''; }
+    .bill-year-summary .yr-chevron {
+      font-size: .7rem; color: var(--gray-400); margin-left: auto;
+      transition: transform .15s;
+    }
+    .bill-year-block[open] > .bill-year-summary {
+      background: #eff6ff;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .bill-year-block[open] > .bill-year-summary .yr-chevron { transform: rotate(90deg); }
+    .bill-year-totals-badge {
+      font-size: .75rem; font-weight: 600; color: var(--gray-600);
+      background: var(--gray-100); padding: 1px 7px; border-radius: 10px;
+    }
+    .bill-table-wrap { overflow-x: auto; }
+    .bill-table {
+      width: 100%; border-collapse: collapse; font-size: .78rem;
+    }
+    .bill-table th {
+      background: var(--gray-100); color: var(--gray-600);
+      font-weight: 600; text-align: left;
+      padding: 5px 10px; border-bottom: 1px solid var(--gray-200);
+      font-size: .70rem; text-transform: uppercase; letter-spacing: .04em;
+      white-space: nowrap;
+    }
+    .bill-table td {
+      padding: 4px 10px; border-bottom: 1px solid var(--gray-100);
+      color: var(--gray-900); white-space: nowrap;
+    }
+    .bill-table tr.totals-row td {
+      font-weight: 700; background: var(--gray-50); border-top: 1px solid var(--gray-300);
+    }
+    .bill-table tr.subrow-row td {
+      font-size: .72rem; color: var(--gray-400); padding: 2px 10px;
+      background: #fafafa;
+    }
+    .bill-table tr.paid-row td { color: #065f46; }
+    .bill-table td.balance-due  { color: var(--red) !important; font-weight: 700; }
+    .bill-table td.balance-paid { color: var(--green) !important; }
+    .bill-table td.date-paid    { color: #6b7280; }
+
+    /* Appraisal detail sections (Value History, Taxing Units, Land, Deed History) */
+    .appr-detail-section {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 2px solid var(--gray-100);
+      overflow-x: auto;
+      width: 100%;
+    }
+    .appr-detail-title {
+      font-size: .72rem; font-weight: 700; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--gray-500);
+      margin-bottom: 10px;
+    }
+    .appr-detail-table {
+      width: 100%; min-width: 420px; border-collapse: collapse; font-size: .8rem; margin-bottom: 6px;
+    }
+    .appr-detail-table th {
+      background: var(--gray-100); color: var(--gray-600); font-weight: 600;
+      text-align: left; padding: 6px 10px;
+      font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .appr-detail-table td {
+      padding: 5px 10px; border-bottom: 1px solid var(--gray-100); color: var(--gray-900);
+    }
+    .appr-detail-table tr:last-child td { border-bottom: none; }
+    .appr-value-pills {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; margin-bottom: 4px;
+    }
+    .appr-pill {
+      background: var(--blue-light); border: 1px solid #bfdbfe;
+      border-radius: 8px; padding: 6px 14px; font-size: .82rem;
+    }
+    .appr-pill .pill-label {
+      font-size: .65rem; font-weight: 700; text-transform: uppercase;
+      color: var(--gray-500); letter-spacing: .05em; display: block; margin-bottom: 2px;
+    }
+    .appr-pill .pill-value { font-weight: 700; color: var(--blue-dark); }
+
+    /* Tax summary card */
+    .tax-summary-box {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 12px;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 14px 0;
+    }
+    .tax-summary-item .tax-label {
+      font-size: .68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .05em; color: var(--gray-400); margin-bottom: 3px;
+    }
+    .tax-summary-item .tax-value {
+      font-size: 1rem; font-weight: 700; color: var(--gray-900);
+      word-break: break-word;
+    }
+    .tax-summary-item .tax-value.amount-due { color: var(--red); }
+    .tax-summary-item .tax-value.amount-paid { color: var(--green); }
+    .tax-summary-item.wide { grid-column: 1 / -1; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      font-size: .78rem;
+      color: var(--gray-400);
+      padding-top: 24px;
+    }
+
+    /* ── ZIP code lookup row ── */
+    .zip-lookup-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .zip-lookup-row input[type="text"] {
+      width: 160px;
+      font-size: .88rem;
+    }
+    .btn-zip {
+      padding: 9px 20px;
+      background: #f5c842;
+      color: #222;
+      border: none;
+      border-radius: 6px;
+      font-size: .88rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s;
+    }
+    .btn-zip:hover { background: #e0b320; }
+    .btn-zip:disabled { opacity: .5; cursor: default; }
+    .zip-hint { font-size: .75rem; color: var(--gray-400); }
+
+    /* ── NETR sources — URL card list ── */
+    #sourcesPanel {
+      margin-bottom: 12px;
+    }
+    #sourcesPanel .sources-title {
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--gray-500);
+      margin-bottom: 10px;
+    }
+    .source-url-item {
+      margin-bottom: 14px;
+    }
+    .source-url-item label {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--gray-700);
+      margin-bottom: 5px;
+    }
+    .source-url-item .source-badge {
+      margin-left: 8px;
+      font-size: .75rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .source-url-item input[type="url"],
+    .source-url-item input[type="text"] {
+      background: var(--gray-50);
+      color: var(--gray-600);
+      font-size: .82rem;
+    }
+    .source-url-item .hint { margin-top: 3px; }
+    #sourcesPanel .sources-loading {
+      font-size: .8rem;
+      color: var(--gray-400);
+      padding: 4px 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/"><img src="/OpusOne-Svg.svg" alt="OpusOne" class="header-logo" /></a>
+  <div class="header-center">
+    <a class="header-btn"
+       href="https://opusone-ai.orchestrate.com/docs/staging-test-tracker.html"
+       target="_blank" rel="noopener">
+      &#128203; Staging Test Tracker
+    </a>
+    <a class="header-btn"
+       href="https://srimanopusoneai.grafana.net/public-dashboards/5599a7a5ae9b43afac030c60dee2e90f"
+       target="_blank" rel="noopener">
+      &#128202; Live Monitoring Dashboard
+    </a>
+  </div>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/tax/" class="active">Tax Search</a>
+    <a href="/title/">Title Search</a>
+  </nav>
+</header>
+<div class="page-bar">
+  <span class="page-bar-badge">AI-POWERED</span>
+  &#127963; Tax Search
+</div>
+
+<main>
+
+  <!-- ── Search Form ── -->
+  <div class="card">
+    <div class="card-title">
+      <span class="icon">🔍</span> Search Parameters
+    </div>
+
+    <!-- ZIP code auto-fill -->
+    <div class="zip-lookup-row">
+      <input type="text" id="zipInput" maxlength="5" placeholder="Enter ZIP code"
+        onkeydown="if(event.key==='Enter') lookupByZip()" />
+      <button class="btn-zip" id="zipBtn" onclick="lookupByZip()">Find!</button>
+      <span class="zip-hint" id="zipHint">Auto-fills state &amp; county</span>
+    </div>
+
+    <!-- State + County selectors -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="stateSelect">State <span class="req">*</span></label>
+        <select id="stateSelect" onchange="onStateChange()">
+          <option value="">— Select State —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="countySelect">County <span class="req">*</span></label>
+        <select id="countySelect" onchange="onCountyChange()" disabled>
+          <option value="">— Select County —</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Resolved URL (read-only, shown after county selected) -->
+    <div class="form-group" id="urlRow" style="display:none;">
+      <label>County Search URL
+        <span id="urlStatusBadge" style="margin-left:8px;font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:10px;"></span>
+      </label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="url" id="countyUrl" readonly
+          style="background:var(--gray-50);color:var(--gray-600);font-size:.82rem;" />
+        <span id="platformBadge" style="white-space:nowrap;font-size:.75rem;color:var(--gray-400);"></span>
+      </div>
+      <p class="hint" id="urlHint"></p>
+    </div>
+
+    <!-- Manual URL override (collapsed by default) -->
+    <details style="margin-bottom:12px;">
+      <summary style="font-size:.8rem;color:var(--gray-400);cursor:pointer;user-select:none;">
+        Enter URL manually (override)
+      </summary>
+      <div class="form-group" style="margin-top:10px;">
+        <input type="url" id="manualUrl"
+          placeholder="https://esearch.andrewscad.org/" />
+        <p class="hint">Overrides the auto-looked-up URL above</p>
+      </div>
+    </details>
+
+    <!-- NETR online data sources — shown after county selection -->
+    <div id="sourcesPanel" style="display:none;">
+      <div class="divider" style="margin-bottom:14px;">
+        Additional County Data Sources
+        <span style="font-size:.7rem;font-weight:400;color:var(--gray-400);margin-left:6px;">via publicrecords.netronline.com</span>
+      </div>
+      <div id="sourcesBody"></div>
+    </div>
+
+    <div class="divider">Owner / Taxpayer Name</div>
+
+    <!-- Name fields -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="firstName">First Name</label>
+        <input type="text" id="firstName" placeholder="John" />
+      </div>
+      <div class="form-group">
+        <label for="lastName">Last Name</label>
+        <input type="text" id="lastName" placeholder="Smith" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="fullName">Full Name <span style="font-weight:400;text-transform:none;letter-spacing:0;">(optional — overrides first/last)</span></label>
+      <input type="text" id="fullName" placeholder="John Smith" />
+      <p class="hint">Leave blank to use First + Last Name above</p>
+    </div>
+
+    <div class="divider">Property Identifier</div>
+
+    <div class="form-group">
+      <label for="accountNumber">Account Number / Property ID / Parcel ID</label>
+      <input type="text" id="accountNumber" placeholder="e.g. 12345-678-0001" />
+      <p class="hint">Optional — enter if you know the exact parcel or account number</p>
+    </div>
+
+    <!-- Dual-search mode banner (shown when Anderson TX is selected) -->
+    <div id="dualSearchBanner">
+      <strong>Dual Search Mode</strong> — Anderson County, TX has two data sources:<br>
+      🏠 <strong>Appraisal (CAD)</strong> → andersoncad.net &nbsp;|&nbsp;
+      💰 <strong>Tax Office</strong> → tax.co.anderson.tx.us<br>
+      <span style="font-size:.8rem;color:var(--gray-500);margin-top:4px;display:block;">
+        Both sources will be searched in parallel. Results appear in separate tabs below.
+        <em>Property ID search recommended (e.g. 60110 or R60110).</em>
+      </span>
+    </div>
+
+    <button class="btn btn-primary" id="searchBtn" onclick="startSearch()">
+      <span>&#128269;</span> Search County Records
+    </button>
+    <button class="btn btn-clear" onclick="clearAll()">Clear Form &amp; Results</button>
+  </div>
+
+  <!-- ── Progress / Status ── -->
+  <div id="statusBox">
+    <div class="status-header">
+      <div class="spinner"></div>
+      <span>AI Agent Searching...</span>
+    </div>
+    <div id="progressLog"></div>
+  </div>
+
+  <!-- ── Error ── -->
+  <div id="errorBox"></div>
+
+  <!-- ── CAPTCHA warning ── -->
+  <div id="captchaBox">
+    <div class="captcha-title">⚠ Search Blocked — CAPTCHA Challenge Detected</div>
+    <div class="captcha-body" id="captchaBody"></div>
+    <div class="captcha-note">
+      <strong>Order note:</strong> This search could not be completed automatically because the county website
+      presented a CAPTCHA challenge that requires human verification. Please note this order for manual
+      follow-up or contact the county assessor's office directly. A future upgrade will add automated
+      CAPTCHA resolution.
+    </div>
+  </div>
+
+  <!-- ── Results ── -->
+  <section id="resultsSection">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <div class="card-title" style="margin-bottom:0;">
+        <span class="icon">📋</span> Search Results
+      </div>
+      <button id="reportBtn" onclick="generateTaxReport()"
+              style="display:none;padding:8px 18px;background:#1e3a7e;color:#fff;border:none;
+                     border-radius:5px;font-size:.85rem;font-weight:700;cursor:pointer;letter-spacing:.3px;">
+        📄 Generate Tax Report
+      </button>
+    </div>
+
+    <!-- Tab navigation (visible for dual search only) -->
+    <div class="result-tabs" id="resultTabsNav" style="display:none;">
+      <button class="tab-btn active" id="tabBtnAppraisal" onclick="switchResultTab('appraisal')">
+        🏠 Appraisal (CAD)
+        <span id="appraisalTabBadge" style="font-size:.75rem;font-weight:700;padding:1px 8px;border-radius:10px;background:var(--blue-light);color:var(--blue);"></span>
+      </button>
+      <button class="tab-btn" id="tabBtnTax" onclick="switchResultTab('tax')">
+        💰 Tax Office
+        <span id="taxTabBadge" style="font-size:.75rem;font-weight:700;padding:1px 8px;border-radius:10px;background:var(--blue-light);color:var(--blue);"></span>
+      </button>
+    </div>
+
+    <!-- Appraisal tab panel (also used for single/non-dual searches) -->
+    <div id="appraisalTabPanel" class="tab-panel active">
+      <div class="results-summary">
+        <span id="countBadge" class="badge-count"></span>
+        <span id="sourceUrl" class="badge-url"></span>
+      </div>
+      <div id="summaryText" style="font-size:.88rem;color:var(--gray-600);margin-bottom:16px;"></div>
+      <div id="recordsContainer"></div>
+    </div>
+
+    <!-- Tax Office tab panel (dual search only) -->
+    <div id="taxTabPanel" class="tab-panel">
+      <div class="results-summary">
+        <span id="taxCountBadge" class="badge-count"></span>
+        <span id="taxSourceUrl" class="badge-url"></span>
+      </div>
+      <div id="taxSummaryText" style="font-size:.88rem;color:var(--gray-600);margin-bottom:16px;"></div>
+      <div id="taxRecordsContainer"></div>
+    </div>
+
+    <!-- Multi-source dynamic tabs (account number search across all NETR sources) -->
+    <div class="result-tabs" id="multiTabsNav" style="display:none;flex-wrap:wrap;"></div>
+    <div id="multiTabPanels"></div>
+  </section>
+
+</main>
+
+<footer>
+  <p>Orchestrate-Mortgage Title &amp; Tax Search &mdash; Powered by Claude claude-opus-4-6 + Playwright</p>
+</footer>
+
+<script>
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  function val(id) {
+    return document.getElementById(id).value.trim();
+  }
+
+  function show(id)    { document.getElementById(id).style.display = 'block'; }
+  function hide(id)    { document.getElementById(id).style.display = 'none'; }
+
+  function log(message) {
+    const log = document.getElementById('progressLog');
+    const p = document.createElement('p');
+    p.textContent = message;
+    log.appendChild(p);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function statusPill(status) {
+    if (!status) return '<span class="status-badge status-default">Unknown</span>';
+    const s = status.toLowerCase();
+    if (s.includes('paid') && !s.includes('unpaid') && !s.includes('over')) {
+      return `<span class="status-badge status-paid">${status}</span>`;
+    }
+    if (s.includes('unpaid') || s.includes('due') || s.includes('delinquent')) {
+      return `<span class="status-badge status-unpaid">${status}</span>`;
+    }
+    if (s.includes('partial')) {
+      return `<span class="status-badge status-partial">${status}</span>`;
+    }
+    return `<span class="status-badge status-default">${status}</span>`;
+  }
+
+  function fieldHtml(label, value, cls = '') {
+    const display = value
+      ? `<div class="field-value ${cls}">${escHtml(String(value))}</div>`
+      : `<div class="field-value empty">—</div>`;
+    return `<div class="field-item"><div class="field-label">${label}</div>${display}</div>`;
+  }
+
+  function escHtml(str) {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // Report state — populated after dual/multi search completes
+  let _reportState = { appraisalData: null, taxData: null, state: '', county: '' };
+
+  // Fields already shown prominently or rendered as deep tables — exclude from the detail grid
+  const PRIMARY_FIELDS = new Set([
+    'owner name','ownername','owner','property address','situs address','address','situs',
+    'legal description','legal desc','tax amount due','amount due','appraised',
+    'market value','assessed value','mineral value','tax year','payment status',
+    'county','state','property id','propertyid','parcel id',
+    // deep table keys — these are rendered as proper tables, not key-value rows
+    'valuehistory','taxingunits','landdata','improvementdata','deedhistory',
+    'detailpageurl','detailurl',
+  ]);
+
+  function renderDetailGrid(details) {
+    let parsed = details;
+    if (typeof details === 'string') {
+      try { parsed = JSON.parse(details); } catch (_) { return ''; }
+    }
+    if (!parsed || typeof parsed !== 'object') return '';
+
+    // Separate into key sections based on common CAD field names
+    const sections = {
+      'Account': ['Property ID','Geographic ID','Geo ID','Type','Zoning','Property Use'],
+      'Location': ['Situs Address','Address','Map ID','Mapsco','Legal Description','Abstract/Subdivision','Neighborhood'],
+      'Owner': ['Owner Name','Owner','Owner ID','Mailing Address','Exemptions'],
+      'Property Values': ['Mineral Value','Market Value','Assessed Value','Appraised','Land Value','Improvement Value'],
+    };
+
+    const shown = new Set();
+    let html = '';
+
+    for (const [section, keys] of Object.entries(sections)) {
+      const rows = keys
+        .filter(k => parsed[k] != null && parsed[k] !== '')
+        .map(k => { shown.add(k); return `<tr><td class="det-label">${escHtml(k)}</td><td class="det-value">${escHtml(String(parsed[k]))}</td></tr>`; })
+        .join('');
+      if (rows) html += `<div class="det-section"><div class="det-section-title">${section}</div><table class="det-table">${rows}</table></div>`;
+    }
+
+    // Everything else not already shown — skip arrays (rendered as proper tables elsewhere)
+    const extras = Object.entries(parsed)
+      .filter(([k, v]) => !shown.has(k) && v != null && v !== ''
+        && !PRIMARY_FIELDS.has(k.toLowerCase())
+        && !Array.isArray(v) && typeof v !== 'object')
+      .map(([k, v]) => `<tr><td class="det-label">${escHtml(k)}</td><td class="det-value">${escHtml(String(v))}</td></tr>`)
+      .join('');
+    if (extras) html += `<div class="det-section"><div class="det-section-title">Other Fields</div><table class="det-table">${extras}</table></div>`;
+
+    return html ? `<div class="property-detail-grid">${html}</div>` : '';
+  }
+
+  function renderApprDetailTable(title, tableData) {
+    if (!tableData || tableData.length < 2) return '';
+    const [headers, ...rows] = tableData;
+    let html = `<div class="appr-detail-section">
+      <div class="appr-detail-title">${escHtml(title)}</div>
+      <table class="appr-detail-table"><thead><tr>`;
+    headers.forEach(h => { html += `<th>${escHtml(h)}</th>`; });
+    html += '</tr></thead><tbody>';
+    rows.forEach(row => {
+      html += '<tr>';
+      row.forEach(cell => { html += `<td>${escHtml(cell)}</td>`; });
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+    return html;
+  }
+
+  function renderRecord(rec, index) {
+    const detail = renderDetailGrid(rec.additionalDetails);
+    // Pull key values from detail data too
+    let parsed = {};
+    if (rec.additionalDetails) {
+      try { parsed = typeof rec.additionalDetails === 'string' ? JSON.parse(rec.additionalDetails) : rec.additionalDetails; } catch (_) {}
+    }
+    const marketValue   = parsed['Market Value']   || parsed['Assessed Value'] || rec.taxAmountDue || '';
+    const appraisedVal  = parsed['Appraised']       || parsed['netAppraisedValue'] || '';
+    const taxYear       = rec.taxYear || parsed['Tax Year'] || parsed['year'] || '';
+    const payStatus     = rec.paymentStatus || parsed['Payment Status'] || '';
+    const detailPageUrl = parsed['detailPageUrl'] || '';
+
+    // Deep appraisal data (from property detail page navigation)
+    const valueHistory    = parsed['valueHistory']    || null;
+    const taxingUnits     = parsed['taxingUnits']     || null;
+    const landData        = parsed['landData']        || null;
+    const improvementData = parsed['improvementData'] || null;
+    const deedHistory     = parsed['deedHistory']     || null;
+    const netAppr    = parsed['netAppraisedValue'] || '';
+    const landMkt    = parsed['landMarketValue']   || '';
+    const imprvVal   = parsed['improvementValue']  || '';
+    const legalDesc  = rec.legalDescription || parsed['legalDescription'] || '';
+    const legalAcres = parsed['legalAcreage'] || '';
+    const propType   = parsed['propertyType'] || parsed['type'] || '';
+    const neighborhood = parsed['neighborhoodCode'] || '';
+    const mailingAddr  = parsed['mailingAddress'] || '';
+    const hasDeepData  = valueHistory || taxingUnits || landData || improvementData || deedHistory;
+
+    // Value pills — show for both basic and deep-data modes when amounts available
+    const pillNetAppr = netAppr || (hasDeepData ? appraisedVal || marketValue : '');
+    let pillsHtml = '';
+    const pills = [
+      { label: 'Net Appraised', value: pillNetAppr },
+      { label: 'Land Market',   value: landMkt  },
+      { label: 'Improvement',   value: imprvVal  },
+      { label: 'Market Value',  value: !hasDeepData ? '' : marketValue },
+    ].filter(p => p.value);
+    if (pills.length) {
+      pillsHtml = `<div class="appr-value-pills">${
+        pills.map(p => `<div class="appr-pill"><span class="pill-label">${escHtml(p.label)}</span><span class="pill-value">${escHtml(p.value)}</span></div>`).join('')
+      }</div>`;
+    }
+
+    const detailLink = detailPageUrl
+      ? `<a href="${escHtml(detailPageUrl)}" target="_blank" rel="noopener"
+           style="font-size:.78rem;color:var(--blue);text-decoration:none;margin-top:4px;display:inline-block;">
+           View full detail ↗</a>`
+      : '';
+
+    return `
+      <div class="record-card">
+        <div class="record-header">
+          <div class="record-header-info">
+            <div class="record-owner">${escHtml(rec.ownerName || 'Unknown Owner')}</div>
+            ${rec.parcelId ? `<div class="record-parcel">Parcel / Account: ${escHtml(rec.parcelId)}</div>` : ''}
+          </div>
+          ${statusPill(payStatus)}
+        </div>
+        <div class="record-body">
+          <div class="fields-grid">
+            ${fieldHtml('Property Address', rec.propertyAddress, 'addr')}
+            ${!hasDeepData ? fieldHtml('Market / Assessed Value', marketValue, 'large') : ''}
+            ${!hasDeepData && appraisedVal ? fieldHtml('Appraised Value', appraisedVal) : ''}
+            ${taxYear      ? fieldHtml('Tax Year',          taxYear)     : ''}
+            ${legalDesc    ? fieldHtml('Legal Description', legalDesc)   : ''}
+            ${legalAcres   ? fieldHtml('Legal Acreage',     legalAcres)  : ''}
+            ${propType     ? fieldHtml('Property Type',     propType)    : ''}
+            ${neighborhood ? fieldHtml('Neighborhood',      neighborhood): ''}
+            ${mailingAddr  ? fieldHtml('Mailing Address',   mailingAddr) : ''}
+            ${payStatus    ? fieldHtml('Payment Status',    payStatus)   : ''}
+            ${rec.county   ? fieldHtml('County',            rec.county)  : ''}
+            ${rec.state    ? fieldHtml('State',             rec.state)   : ''}
+          </div>
+          ${pillsHtml}
+          ${detailLink}
+          ${detail}
+          ${renderApprDetailTable('Value History', valueHistory)}
+          ${renderApprDetailTable('Taxing Units', taxingUnits)}
+          ${renderApprDetailTable('Land', landData)}
+          ${renderApprDetailTable('Improvements', improvementData)}
+          ${renderApprDetailTable('Deed History', deedHistory)}
+        </div>
+      </div>`;
+  }
+
+  // ── Tab switching ────────────────────────────────────────────────────────
+
+  function switchResultTab(tab) {
+    const isAppraisal = tab === 'appraisal';
+    document.getElementById('appraisalTabPanel').classList.toggle('active', isAppraisal);
+    document.getElementById('taxTabPanel').classList.toggle('active', !isAppraisal);
+    document.getElementById('tabBtnAppraisal').classList.toggle('active', isAppraisal);
+    document.getElementById('tabBtnTax').classList.toggle('active', !isAppraisal);
+  }
+
+  // ── Tax record renderer ──────────────────────────────────────────────────
+
+  function renderTaxRecord(rec) {
+    let parsed = {};
+    try {
+      parsed = typeof rec.additionalDetails === 'string'
+        ? JSON.parse(rec.additionalDetails) : (rec.additionalDetails || {});
+    } catch (_) {}
+
+    const totalDue    = parsed['Total Taxes Due'] || rec.taxAmountDue || '';
+    const currentDue  = parsed['Current Due']     || '';
+    const pastDue     = parsed['Past Years Due']  || '';
+    const assessed    = parsed['Assessed Value']  || '';
+    const detailUrl   = parsed['Detail URL']      || '';
+    const billTables  = parsed['Bill Tables']     || [];
+    const yearHeaders = parsed['Year Headers']    || [];
+    const acctNum     = parsed['Account']         || '';
+    const legalDesc   = parsed['Legal Description'] || '';
+    const propStatus  = parsed['Property Status']   || '';
+    const propType    = parsed['Property Type']     || '';
+
+    // Strip boilerplate disclaimer text from display fields
+    const DISCLAIMER_RX = /disclaimer|every effort|anderson county tax office makes/i;
+    const ownerDisplay  = (rec.ownerName    || '').length > 80 || DISCLAIMER_RX.test(rec.ownerName    || '') ? '' : rec.ownerName;
+    const addrDisplay   = (rec.propertyAddress || '').length > 120 || DISCLAIMER_RX.test(rec.propertyAddress || '') ? '' : rec.propertyAddress;
+
+    const payStatus = rec.paymentStatus || '';
+    let payClass = 'status-default';
+    if (payStatus.toLowerCase().includes('paid') && !payStatus.toLowerCase().includes('balance')) payClass = 'status-paid';
+    else if (payStatus.toLowerCase().includes('balance') || payStatus.toLowerCase().includes('due') || payStatus.toLowerCase().includes('past')) payClass = 'status-unpaid';
+
+    // ── Summary grid ──────────────────────────────────────────────────────────
+    const amtCls = (v) => v && parseFloat(v.replace(/[^0-9.]/g,'')) > 0 ? 'amount-due' : (v ? 'amount-paid' : '');
+    const summaryItems = [
+      { label: 'Property ID',     value: rec.parcelId  },
+      { label: 'Account',         value: acctNum       },
+      { label: 'Assessed Value',  value: assessed      },
+      { label: 'Total Taxes Due', value: totalDue,  cls: amtCls(totalDue)  },
+      { label: 'Current Due',     value: currentDue, cls: amtCls(currentDue) },
+      { label: 'Past Years Due',  value: pastDue,   cls: amtCls(pastDue)   },
+      { label: 'Status',          value: propStatus  },
+      { label: 'Type',            value: propType    },
+      { label: 'Legal',           value: legalDesc, wide: true },
+    ].filter(i => i.value);
+
+    const summaryHtml = summaryItems.map(i =>
+      `<div class="tax-summary-item${i.wide ? ' wide' : ''}">
+        <div class="tax-label">${i.label}</div>
+        <div class="tax-value ${i.cls || ''}">${escHtml(String(i.value))}</div>
+      </div>`
+    ).join('');
+
+    // ── Bill history ──────────────────────────────────────────────────────────
+    const SUB_ROW_DISPLAY_RX = /^(Levy|P&I|Att\.?\s*Fee|Credits\s*\/?\s*Disc\.?|Discount)\b/i;
+    let billHtml = '';
+    let renderedYears = 0;
+    if (billTables.length > 0) {
+      let yearBlocksHtml = '';
+      billTables.forEach((tableRows, idx) => {
+        if (!tableRows || tableRows.length < 2) return;
+
+        // Strip a leading "Details" expand-column Kendo adds (not real data)
+        const cleanRows = tableRows.map(row => {
+          if ((row[0] || '').trim().toLowerCase() === 'details') return row.slice(1);
+          return row;
+        });
+
+        const [header, ...dataRows] = cleanRows;
+        if (!dataRows.length) return;
+
+        const yr = yearHeaders[idx] || '';
+        // Find totals row to show amount in the collapsed summary
+        const totalsRow = dataRows.find(r => /^TOTALS?$/i.test((r[0] || '')));
+        const totalAmt  = totalsRow ? (totalsRow[1] || '') : '';
+        const badge     = totalAmt
+          ? `<span class="bill-year-totals-badge">${escHtml(totalAmt)}</span>` : '';
+
+        // First 3 years open, rest collapsed
+        const isOpen = renderedYears < 3;
+        renderedYears++;
+
+        let tbl = `<table class="bill-table"><thead><tr>`;
+        header.forEach(h => { tbl += `<th>${escHtml(h)}</th>`; });
+        tbl += '</tr></thead><tbody>';
+
+        dataRows.forEach(row => {
+          const first    = (row[0] || '').trim();
+          const isTotals = /^TOTALS?$/i.test(first);
+          const isSubRow = SUB_ROW_DISPLAY_RX.test(first);
+          const lastIdx  = row.length - 1;
+          const balVal   = parseFloat((row[lastIdx] || '').replace(/[^0-9.]/g, ''));
+          const isPaid   = !isTotals && !isSubRow && row.some((c, i) =>
+            i > 0 && i < lastIdx && /\d{1,2}-\d{1,2}-\d{4}/.test(c));
+
+          const rowCls = isTotals ? 'totals-row' : isSubRow ? 'subrow-row' : isPaid ? 'paid-row' : '';
+          tbl += `<tr class="${rowCls}">`;
+          row.forEach((cell, ci) => {
+            let cls = '';
+            if (!isSubRow && ci === lastIdx) {
+              cls = (cell && balVal > 0) ? 'balance-due' : (cell && cell.includes('$') ? 'balance-paid' : '');
+            } else if (!isSubRow && /\d{1,2}-\d{1,2}-\d{4}/.test(cell)) {
+              cls = 'date-paid';
+            }
+            tbl += `<td class="${cls}">${escHtml(cell)}</td>`;
+          });
+          tbl += '</tr>';
+        });
+        tbl += '</tbody></table>';
+
+        yearBlocksHtml += `
+          <details class="bill-year-block"${isOpen ? ' open' : ''}>
+            <summary class="bill-year-summary">
+              ${yr ? escHtml(yr) : 'Year'}
+              ${badge}
+              <span class="yr-chevron">&#9658;</span>
+            </summary>
+            <div class="bill-table-wrap">${tbl}</div>
+          </details>`;
+      });
+
+      if (renderedYears > 0) {
+        billHtml = `<div class="bill-history-section">
+          <div class="bill-history-title">Tax Bill History (${renderedYears} year${renderedYears !== 1 ? 's' : ''})</div>
+          ${yearBlocksHtml}
+        </div>`;
+      }
+    }
+
+    const detailLink = detailUrl
+      ? `<a href="${escHtml(detailUrl)}" target="_blank" rel="noopener"
+           style="font-size:.78rem;color:var(--blue);text-decoration:none;">
+           View on Tax Office site ↗</a>`
+      : '';
+
+    return `
+      <div class="record-card">
+        <div class="record-header">
+          <div class="record-header-info">
+            <div class="record-owner">${escHtml(ownerDisplay || rec.parcelId || 'Tax Record')}</div>
+            ${addrDisplay ? `<div class="record-parcel">${escHtml(addrDisplay)}</div>` : ''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+            ${payStatus ? `<span class="status-badge ${payClass}">${escHtml(payStatus)}</span>` : ''}
+            ${detailLink}
+          </div>
+        </div>
+        <div class="record-body">
+          <div class="tax-summary-box">${summaryHtml}</div>
+          ${billHtml}
+        </div>
+      </div>`;
+  }
+
+  // ── ZIP code auto-fill ───────────────────────────────────────────────────
+
+  async function lookupByZip() {
+    const zip = (document.getElementById('zipInput').value || '').trim();
+    if (!/^\d{5}$/.test(zip)) {
+      document.getElementById('zipHint').textContent = 'Enter a valid 5-digit ZIP code.';
+      return;
+    }
+    const btn  = document.getElementById('zipBtn');
+    const hint = document.getElementById('zipHint');
+    btn.disabled = true;
+    hint.textContent = 'Looking up…';
+
+    try {
+      const data = await fetch(`/api/zip-lookup?zip=${encodeURIComponent(zip)}`).then(r => r.json());
+      if (data.error) {
+        hint.textContent = data.error;
+        btn.disabled = false;
+        return;
+      }
+
+      // Select the state in the dropdown
+      const stateSel = document.getElementById('stateSelect');
+      stateSel.value = data.state;
+      await onStateChange();   // populates county dropdown
+
+      // Wait a tick for the county options to render, then select
+      await new Promise(r => setTimeout(r, 50));
+      const countySel = document.getElementById('countySelect');
+      // Try exact match first, then case-insensitive
+      let matched = [...countySel.options].find(o => o.value === data.county);
+      if (!matched) matched = [...countySel.options].find(o => o.value.toLowerCase() === data.county.toLowerCase());
+      if (matched) {
+        countySel.value = matched.value;
+        await onCountyChange();
+        hint.textContent = `Found: ${matched.value}, ${data.state}`;
+      } else {
+        hint.textContent = `State set to ${data.state} — select county manually.`;
+      }
+    } catch (_) {
+      hint.textContent = 'Lookup failed — please select state and county manually.';
+    }
+    btn.disabled = false;
+  }
+
+  // ── NETR county data sources ─────────────────────────────────────────────
+
+  async function loadCountySources(state, county) {
+    const panel = document.getElementById('sourcesPanel');
+    const body  = document.getElementById('sourcesBody');
+    panel.style.display = 'block';
+    body.innerHTML = '<div class="sources-loading">Loading data sources…</div>';
+
+    try {
+      const data = await fetch(`/api/county-sources?state=${encodeURIComponent(state)}&county=${encodeURIComponent(county)}`).then(r => r.json());
+      const sources = data.sources || [];
+
+      if (sources.length === 0) {
+        body.innerHTML = '<div class="sources-loading">No additional data sources found on publicrecords.netronline.com for this county.</div>';
+        return;
+      }
+
+      // Render each source as a URL card — same visual style as the main "County Search URL" row
+      let html = '';
+      sources.forEach(s => {
+        const haUrl = !!s.onlineUrl;
+        const badge = haUrl
+          ? `<span class="source-badge url-alive">✓ Active</span>`
+          : `<span class="source-badge url-dead">No URL</span>`;
+
+        const hint = s.phone
+          ? `URL verified active. &nbsp;·&nbsp; <strong>${escHtml(s.phone)}</strong>`
+          : (haUrl ? 'URL verified active.' : 'No online URL available for this source.');
+
+        const urlField = haUrl
+          ? `<input type="url" readonly value="${escHtml(s.onlineUrl)}" />`
+          : `<input type="text" readonly value="—" style="color:var(--gray-400);" />`;
+
+        const openLink = haUrl
+          ? `<a href="${escHtml(s.onlineUrl)}" target="_blank" rel="noopener"
+               style="white-space:nowrap;font-size:.75rem;color:var(--blue);text-decoration:none;margin-left:6px;">
+               ↗ Open</a>`
+          : '';
+
+        html += `
+          <div class="form-group source-url-item">
+            <label>${escHtml(s.name)}${badge}</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              ${urlField}${openLink}
+            </div>
+            <p class="hint">${hint}</p>
+          </div>`;
+      });
+
+      body.innerHTML = html;
+    } catch (_) {
+      body.innerHTML = '<div class="sources-loading">Could not load county data sources.</div>';
+    }
+  }
+
+  // ── State / County directory ─────────────────────────────────────────────
+
+  async function loadStates() {
+    try {
+      const states = await fetch('/api/states').then(r => r.json());
+      const sel = document.getElementById('stateSelect');
+      states.forEach(({ code, name }) => {
+        const opt = document.createElement('option');
+        opt.value = code; opt.textContent = name;
+        sel.appendChild(opt);
+      });
+    } catch (_) {}
+  }
+
+  async function onStateChange() {
+    const state  = val('stateSelect');
+    const cSel   = document.getElementById('countySelect');
+    cSel.innerHTML = '<option value="">— Select County —</option>';
+    cSel.disabled  = true;
+    hide('urlRow');
+    hide('dualSearchBanner');
+    document.getElementById('sourcesPanel').style.display = 'none';
+    if (!state) return;
+
+    try {
+      const counties = await fetch(`/api/counties?state=${state}`).then(r => r.json());
+      counties.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name;
+        cSel.appendChild(opt);
+      });
+      cSel.disabled = false;
+    } catch (_) {}
+  }
+
+  function isAndersonTX() {
+    return val('stateSelect') === 'TX' && val('countySelect').toLowerCase() === 'anderson';
+  }
+
+  async function onCountyChange() {
+    const state  = val('stateSelect');
+    const county = val('countySelect');
+    if (!state || !county) {
+      hide('urlRow');
+      hide('dualSearchBanner');
+      document.getElementById('sourcesPanel').style.display = 'none';
+      return;
+    }
+
+    // Show dual-search banner for Anderson, TX
+    if (isAndersonTX()) {
+      show('dualSearchBanner');
+    } else {
+      hide('dualSearchBanner');
+    }
+
+    const badge = document.getElementById('urlStatusBadge');
+    const hint  = document.getElementById('urlHint');
+    const urlInput = document.getElementById('countyUrl');
+    badge.textContent = 'checking…';
+    badge.className   = 'url-checking';
+    urlInput.value    = '';
+    document.getElementById('platformBadge').textContent = '';
+    show('urlRow');
+
+    try {
+      const data = await fetch(`/api/county-url?state=${encodeURIComponent(state)}&county=${encodeURIComponent(county)}`).then(r => r.json());
+      urlInput.value = data.url || '';
+      document.getElementById('platformBadge').textContent = data.platformLabel ? `Platform: ${data.platformLabel}` : '';
+
+      if (data.status === 'alive') {
+        badge.textContent = '✓ Active'; badge.className = 'url-alive';
+        hint.textContent  = 'URL verified active.';
+      } else if (data.status === 'refreshed') {
+        badge.textContent = '↻ Updated'; badge.className = 'url-refreshed';
+        hint.textContent  = data.message;
+      } else if (data.status === 'dead') {
+        badge.textContent = '✗ Inactive'; badge.className = 'url-dead';
+        hint.textContent  = data.message || 'URL may be inactive. Try the manual override below.';
+      } else {
+        badge.textContent = 'Not found'; badge.className = 'url-dead';
+        hint.textContent  = data.message || 'County not in directory. Use manual URL below.';
+      }
+    } catch (_) {
+      badge.textContent = 'Error'; badge.className = 'url-dead';
+      hint.textContent  = 'Could not resolve county URL.';
+    }
+
+    // Load all NETR data sources for this county (runs in parallel with the URL check)
+    loadCountySources(state, county);
+  }
+
+  // ── Main search ──────────────────────────────────────────────────────────
+
+  function startSearch() {
+    const state         = val('stateSelect');
+    const county        = val('countySelect');
+    const manualUrl     = val('manualUrl');
+    const resolvedUrl   = val('countyUrl');
+    const firstName     = val('firstName');
+    const lastName      = val('lastName');
+    const fullName      = val('fullName');
+    const accountNumber = val('accountNumber');
+
+    const url = manualUrl || resolvedUrl;
+
+    // Routing: account number + state/county → multi-source; otherwise single/dual
+    const useMulti = !!(accountNumber && state && county && !manualUrl);
+    const dual = !useMulti && isAndersonTX() && !manualUrl;
+
+    if (!useMulti && !dual && !url && !state) {
+      alert('Please select a State and County, or enter a URL manually.');
+      document.getElementById('stateSelect').focus();
+      return;
+    }
+    if (!firstName && !lastName && !fullName && !accountNumber) {
+      alert('Please enter at least a name or account number to search.');
+      document.getElementById('firstName').focus();
+      return;
+    }
+
+    // Reset UI
+    _reportState = { appraisalData: null, taxData: null, state, county };
+    document.getElementById('reportBtn').style.display = 'none';
+    hide('errorBox');
+    hide('captchaBox');
+    hide('resultsSection');
+    document.getElementById('progressLog').innerHTML = '';
+    document.getElementById('resultTabsNav').style.display = 'none';
+    document.getElementById('multiTabsNav').style.display = 'none';
+    document.getElementById('multiTabPanels').innerHTML = '';
+    // For multi-source: static panels are hidden; dynamic tabs will render
+    if (useMulti) {
+      document.getElementById('appraisalTabPanel').classList.remove('active');
+    } else {
+      document.getElementById('appraisalTabPanel').classList.add('active');
+    }
+    document.getElementById('taxTabPanel').classList.remove('active');
+    document.getElementById('tabBtnAppraisal').classList.add('active');
+    document.getElementById('tabBtnTax').classList.remove('active');
+    document.getElementById('appraisalTabBadge').textContent = '';
+    document.getElementById('taxTabBadge').textContent = '';
+    document.getElementById('recordsContainer').innerHTML = '';
+    document.getElementById('countBadge').textContent = '';
+    document.getElementById('sourceUrl').textContent = '';
+    document.getElementById('summaryText').textContent = '';
+    document.getElementById('taxRecordsContainer').innerHTML = '';
+    document.getElementById('taxCountBadge').textContent = '';
+    document.getElementById('taxSourceUrl').textContent = '';
+    document.getElementById('taxSummaryText').textContent = '';
+    show('statusBox');
+    document.getElementById('searchBtn').disabled = true;
+
+    const params = new URLSearchParams();
+    if (firstName)     params.set('firstName', firstName);
+    if (lastName)      params.set('lastName', lastName);
+    if (fullName)      params.set('fullName', fullName);
+    if (accountNumber) params.set('accountNumber', accountNumber);
+
+    let endpoint;
+    if (useMulti) {
+      params.set('state', state);
+      params.set('county', county);
+      endpoint = `/api/tax/search/multi/stream?${params.toString()}`;
+    } else if (dual) {
+      endpoint = `/api/tax/search/dual/stream?${params.toString()}`;
+    } else {
+      if (url)    params.set('url', url);
+      if (state)  params.set('state', state);
+      if (county) params.set('county', county);
+      endpoint = `/api/tax/search/stream?${params.toString()}`;
+    }
+
+    const evtSource = new EventSource(endpoint);
+
+    evtSource.addEventListener('status',   (e) => { log(JSON.parse(e.data).message); });
+    evtSource.addEventListener('progress', (e) => { log(JSON.parse(e.data).message); });
+
+    evtSource.addEventListener('captcha', (e) => {
+      const d = JSON.parse(e.data);
+      document.getElementById('captchaBody').textContent =
+        `${d.type} was detected at: ${d.searchedUrl || url}`;
+      show('captchaBox');
+      log(`⚠ CAPTCHA detected (${d.type}) — search blocked.`);
+    });
+
+    // Standard single-source results
+    evtSource.addEventListener('results', (e) => {
+      renderResults(JSON.parse(e.data), url);
+    });
+
+    // Dual: appraisal results
+    evtSource.addEventListener('appraisalResults', (e) => {
+      const data = JSON.parse(e.data);
+      renderResults(data, 'https://andersoncad.net');
+      const n = (data.records || []).length;
+      document.getElementById('appraisalTabBadge').textContent = n > 0 ? String(n) : '';
+      document.getElementById('resultTabsNav').style.display = 'flex';
+      _reportState.appraisalData = data;
+    });
+
+    // Dual: tax results
+    evtSource.addEventListener('taxResults', (e) => {
+      const data = JSON.parse(e.data);
+      renderTaxResults(data);
+      const n = (data.records || []).length;
+      document.getElementById('taxTabBadge').textContent = n > 0 ? String(n) : '';
+      document.getElementById('resultTabsNav').style.display = 'flex';
+      _reportState.taxData = data;
+    });
+
+    // ── Multi-source events ──────────────────────────────────────────────────
+
+    // sources: build dynamic tabs immediately
+    evtSource.addEventListener('sources', (e) => {
+      const { sources } = JSON.parse(e.data);
+      createDynamicTabs(sources);
+      show('resultsSection');
+    });
+
+    // per-source progress log
+    evtSource.addEventListener('source_progress', (e) => {
+      const { id, message } = JSON.parse(e.data);
+      const srcName = document.getElementById(`dynTabBtn_${id}`)?.dataset?.name || id;
+      log(`[${srcName}] ${message}`);
+    });
+
+    // per-source results
+    evtSource.addEventListener('source_result', (e) => {
+      const data = JSON.parse(e.data);
+      renderSourceResult(data);
+      // Capture for report generation
+      if (data.type === 'appraisal' && !_reportState.appraisalData) _reportState.appraisalData = data;
+      if (data.type === 'tax'       && !_reportState.taxData)       _reportState.taxData = data;
+    });
+
+    // link-only source (e.g. Historic Aerials)
+    evtSource.addEventListener('source_link', (e) => {
+      renderSourceLink(JSON.parse(e.data));
+    });
+
+    // per-source error
+    evtSource.addEventListener('source_error', (e) => {
+      const { id, name, message } = JSON.parse(e.data);
+      const recordsEl = document.getElementById(`dynRecords_${id}`);
+      if (recordsEl) recordsEl.innerHTML =
+        `<div class="no-results"><div class="icon">⚠️</div><p>${escHtml(name)}: ${escHtml(message)}</p></div>`;
+      const countEl = document.getElementById(`dynCount_${id}`);
+      if (countEl) countEl.textContent = 'Error';
+      const badgeEl = document.getElementById(`dynBadge_${id}`);
+      if (badgeEl) badgeEl.textContent = '';
+    });
+
+    evtSource.addEventListener('done', () => {
+      evtSource.close();
+      hide('statusBox');
+      document.getElementById('searchBtn').disabled = false;
+      // Show report button if we have appraisal or tax data
+      if (_reportState.appraisalData || _reportState.taxData) {
+        document.getElementById('reportBtn').style.display = '';
+      }
+    });
+
+    evtSource.addEventListener('error', (e) => {
+      evtSource.close();
+      hide('statusBox');
+      document.getElementById('searchBtn').disabled = false;
+      let msg = 'An error occurred during the search.';
+      try { msg = JSON.parse(e.data).message || msg; } catch (_) {}
+      const box = document.getElementById('errorBox');
+      box.textContent = '⚠ ' + msg;
+      show('errorBox');
+    });
+
+    evtSource.onerror = () => {
+      if (evtSource.readyState === EventSource.CLOSED) return;
+      evtSource.close();
+      hide('statusBox');
+      document.getElementById('searchBtn').disabled = false;
+      const box = document.getElementById('errorBox');
+      box.textContent = '⚠ Connection lost or server busy — please try again in a moment.';
+      show('errorBox');
+    };
+  }
+
+  // ── Multi-source tab helpers ─────────────────────────────────────────────────
+
+  const SOURCE_ICON = { appraisal: '🏠', tax: '💰', clerk: '🏛️', search: '🔍', link: '🔗' };
+
+  function createDynamicTabs(sources) {
+    const nav    = document.getElementById('multiTabsNav');
+    const panels = document.getElementById('multiTabPanels');
+    nav.innerHTML    = '';
+    panels.innerHTML = '';
+
+    sources.forEach((src, i) => {
+      // Tab button
+      const btn = document.createElement('button');
+      btn.className      = 'tab-btn' + (i === 0 ? ' active' : '');
+      btn.id             = `dynTabBtn_${src.id}`;
+      btn.dataset.name   = src.name;
+      btn.onclick        = () => switchDynTab(src.id);
+      const icon = SOURCE_ICON[src.type] || '📄';
+      btn.innerHTML = `${icon} ${escHtml(src.name)}&nbsp;<span id="dynBadge_${src.id}" style="font-size:.75rem;font-weight:700;padding:1px 8px;border-radius:10px;background:var(--blue-light);color:var(--blue);"></span>`;
+      nav.appendChild(btn);
+
+      // Tab panel
+      const panel     = document.createElement('div');
+      panel.id        = `dynPanel_${src.id}`;
+      panel.className = 'tab-panel' + (i === 0 ? ' active' : '');
+
+      if (src.linkOnly) {
+        panel.innerHTML = `<div style="padding:32px;text-align:center;">
+          <div style="font-size:2rem;margin-bottom:12px;">${icon}</div>
+          <p style="margin-bottom:16px;color:var(--gray-600);">Loading ${escHtml(src.name)}...</p>
+        </div>`;
+      } else {
+        panel.innerHTML = `
+          <div class="results-summary">
+            <span id="dynCount_${src.id}" class="badge-count">Searching...</span>
+            <span id="dynUrl_${src.id}" class="badge-url">${escHtml(src.url || '')}</span>
+          </div>
+          <div id="dynSummary_${src.id}" style="font-size:.88rem;color:var(--gray-600);margin-bottom:16px;"></div>
+          <div id="dynRecords_${src.id}">
+            <div class="status-header" style="padding:20px 0;justify-content:center;">
+              <div class="spinner"></div>
+              <span>Searching ${escHtml(src.name)}...</span>
+            </div>
+          </div>`;
+      }
+      panels.appendChild(panel);
+    });
+
+    nav.style.display = 'flex';
+  }
+
+  function switchDynTab(sourceId) {
+    document.querySelectorAll('#multiTabsNav .tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#multiTabPanels .tab-panel').forEach(p => p.classList.remove('active'));
+    const btn   = document.getElementById(`dynTabBtn_${sourceId}`);
+    const panel = document.getElementById(`dynPanel_${sourceId}`);
+    if (btn)   btn.classList.add('active');
+    if (panel) panel.classList.add('active');
+  }
+
+  function renderSourceResult(data) {
+    const { id, type, url, records = [], totalFound, summary, error, rawText, captchaBlocked } = data;
+
+    const countEl   = document.getElementById(`dynCount_${id}`);
+    const summaryEl = document.getElementById(`dynSummary_${id}`);
+    const recordsEl = document.getElementById(`dynRecords_${id}`);
+    const badgeEl   = document.getElementById(`dynBadge_${id}`);
+    if (!recordsEl) return;
+
+    const total = totalFound ?? records.length;
+    if (countEl)   countEl.textContent   = total === 0 ? 'No records found' : `${total} record${total !== 1 ? 's' : ''} found`;
+    if (summaryEl) summaryEl.textContent = summary || '';
+    if (badgeEl)   badgeEl.textContent   = total > 0 ? String(total) : '';
+
+    if (captchaBlocked) {
+      recordsEl.innerHTML = `<div class="no-results"><div class="icon">🔒</div>
+        <p>CAPTCHA blocked access. <a href="${escHtml(url || '')}" target="_blank" rel="noopener">Open directly →</a></p></div>`;
+    } else if (error) {
+      recordsEl.innerHTML = `<div class="no-results"><div class="icon">⚠️</div><p>Error: ${escHtml(error)}</p></div>`;
+    } else if (records.length === 0 && rawText) {
+      recordsEl.innerHTML = `
+        <div style="margin-bottom:8px;padding:8px 12px;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;font-size:.82rem;color:#5d4037;">
+          ℹ️ The AI agent reached the results page but could not parse structured records.
+        </div>
+        <pre style="white-space:pre-wrap;word-break:break-word;font-family:monospace;font-size:.8rem;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;padding:16px;max-height:400px;overflow-y:auto;">${escHtml(rawText)}</pre>`;
+    } else if (records.length === 0) {
+      recordsEl.innerHTML = `<div class="no-results"><div class="icon">📭</div><p>No records found.</p></div>`;
+    } else {
+      recordsEl.innerHTML = (type === 'tax')
+        ? records.map(renderTaxRecord).join('')
+        : records.map(renderRecord).join('');
+    }
+
+    show('resultsSection');
+  }
+
+  function renderSourceLink(data) {
+    const { id, name, url } = data;
+    const panel = document.getElementById(`dynPanel_${id}`);
+    if (!panel) return;
+    const icon = SOURCE_ICON['link'];
+    panel.innerHTML = `<div style="padding:32px;text-align:center;">
+      <div style="font-size:2.5rem;margin-bottom:14px;">${icon}</div>
+      <p style="margin-bottom:18px;color:var(--gray-700);font-size:.95rem;">${escHtml(name)} is available as an external resource.</p>
+      <a href="${escHtml(url)}" target="_blank" rel="noopener"
+         style="display:inline-block;padding:10px 28px;background:var(--blue);color:#fff;border-radius:6px;font-weight:600;text-decoration:none;">
+        Open ${escHtml(name)} →
+      </a>
+    </div>`;
+  }
+
+  function renderResults(data, sourceUrl) {
+    const records = data.records || [];
+    const total   = data.totalFound ?? records.length;
+    const summary = data.summary || '';
+
+    document.getElementById('countBadge').textContent =
+      total === 0 ? 'No records found' : `${total} record${total !== 1 ? 's' : ''} found`;
+
+    document.getElementById('sourceUrl').textContent = data.searchedUrl || sourceUrl;
+    document.getElementById('summaryText').textContent = summary;
+
+    const container = document.getElementById('recordsContainer');
+    if (records.length === 0 && data.rawText) {
+      container.innerHTML = `
+        <div style="margin-bottom:10px;padding:8px 12px;background:#fff8e1;border:1px solid #ffe082;border-radius:6px;font-size:.82rem;color:#5d4037;">
+          ℹ️ The AI agent reached the results page but could not parse structured records.
+          Raw page content is shown below.
+        </div>
+        <pre style="white-space:pre-wrap;word-break:break-word;font-family:monospace;font-size:.8rem;background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;padding:16px;max-height:600px;overflow-y:auto;">${escHtml(data.rawText)}</pre>`;
+    } else if (records.length === 0) {
+      container.innerHTML = `
+        <div class="no-results">
+          <div class="icon">📭</div>
+          <p>No property or tax records were found for the given search criteria.</p>
+          <p style="margin-top:8px;font-size:.82rem;">Try a different name format or check the county URL.</p>
+        </div>`;
+    } else {
+      container.innerHTML = records.map(renderRecord).join('');
+    }
+
+    show('resultsSection');
+  }
+
+  function renderTaxResults(data) {
+    const records = data.records || [];
+    const total   = data.totalFound ?? records.length;
+    const summary = data.summary || '';
+
+    document.getElementById('taxCountBadge').textContent =
+      total === 0 ? 'No tax records found' : `${total} tax record${total !== 1 ? 's' : ''} found`;
+    document.getElementById('taxSourceUrl').textContent = data.searchedUrl || 'tax.co.anderson.tx.us';
+    document.getElementById('taxSummaryText').textContent = summary;
+
+    const container = document.getElementById('taxRecordsContainer');
+    if (data.error) {
+      container.innerHTML = `<div class="no-results"><div class="icon">⚠️</div><p>Tax search error: ${escHtml(data.error)}</p></div>`;
+    } else if (records.length === 0) {
+      container.innerHTML = `
+        <div class="no-results">
+          <div class="icon">📭</div>
+          <p>No tax records found for the given property.</p>
+          <p style="margin-top:8px;font-size:.82rem;">Verify the Property ID (e.g. 60110 or R60110).</p>
+        </div>`;
+    } else {
+      container.innerHTML = records.map(renderTaxRecord).join('');
+    }
+
+    show('resultsSection');
+  }
+
+  // ── Tax Report Generator ──────────────────────────────────────────────────────
+
+  function generateTaxReport() {
+    const { appraisalData: aprData, taxData, state, county } = _reportState;
+    if (!aprData && !taxData) {
+      alert('No search data available. Please run a search first.');
+      return;
+    }
+    const html = _buildReportHtml(aprData, taxData, state || 'TX', county || 'Anderson');
+    const win  = window.open('', '_blank', 'width=1140,height=920,scrollbars=yes,resizable=yes');
+    if (!win) {
+      alert('Popup was blocked. Please allow popups for this site and try again.');
+      return;
+    }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+  }
+
+  // HTML-escape + em-dash for empty
+  function _re(v) {
+    if (!v) return '<span style="color:#bbb;">—</span>';
+    return escHtml(String(v));
+  }
+
+  // Property description row
+  function _pRow(label, value) {
+    return `<div class="pr"><div class="pl">${label}</div><div class="pv">${_re(value)}</div></div>`;
+  }
+
+  // Disbursement row
+  function _dRow(label, value) {
+    return `<div class="dr"><div class="dl">${label}</div><div class="dv">${_re(value)}</div></div>`;
+  }
+
+  // Classify a taxing entity name into one of: county / city / school / utility
+  function _classifyEntity(name, county) {
+    const n = (name || '').toLowerCase();
+    const cL = (county || '').toLowerCase();
+    if (n.includes('county') || (cL && n.includes(cL))) return 'county';
+    if (n.includes('city') || n.includes('muni') || n.includes('municipal')) return 'city';
+    if (n.includes('school') || n.includes('isd') || n.includes('college')) return 'school';
+    return 'utility';
+  }
+
+  // Vertical collecting-entities list; currentEntity row is highlighted
+  function _entityListHtml(currentEntity, allEntityNames, county) {
+    const cats = { county: [], city: [], school: [], utility: [] };
+    allEntityNames.forEach(function(name) {
+      const cat = _classifyEntity(name, county);
+      if (cats[cat].indexOf(name) < 0) cats[cat].push(name);
+    });
+    const currentCat = currentEntity ? _classifyEntity(currentEntity, county) : '';
+    const rows = [
+      { label: 'County',    key: 'county'  },
+      { label: 'City',      key: 'city'    },
+      { label: 'School',    key: 'school'  },
+      { label: 'Utilities', key: 'utility' },
+    ].map(function(item) {
+      const names = cats[item.key];
+      const isActive = item.key === currentCat;
+      const bg = isActive ? 'background:#dce6f4;font-weight:bold;' : '';
+      return '<div class="ec-row" style="' + bg + '">' +
+        '<label class="ec-item"><input type="checkbox" ' + (names.length ? 'checked' : '') + ' disabled> ' +
+        '<span style="min-width:65px;display:inline-block;">' + escHtml(item.label) + '</span></label>' +
+        '<span class="ec-name">' + escHtml(names.join(' / ') || '') + '</span>' +
+        '</div>';
+    });
+    rows.push(
+      '<div class="ec-row">' +
+      '<span style="font-weight:bold;font-size:7.5pt;min-width:65px;display:inline-block;">Others:</span>' +
+      '<input type="text" style="border:none;border-bottom:1px solid #777;flex:1;min-width:100px;font-size:8pt;outline:none;">' +
+      '</div>'
+    );
+    return '<div class="ec-list">' + rows.join('') + '</div>';
+  }
+
+  // Build entity checkboxes from taxingUnits table (appraisal) or bill rows (tax)
+  function _entityChkboxes(taxingUnits, county, billRows) {
+    const cL = (county || '').toLowerCase();
+    let hasCounty = false, hasCity = false, hasSchool = false, hasUtil = false;
+    const extras = [];
+
+    const classify = (n) => {
+      if (!n) return;
+      if (n.includes('county') || n.includes(cL))           hasCounty = true;
+      else if (n.includes('city') || n.includes('muni') || n.includes('municipal')) hasCity = true;
+      else if (n.includes('school') || n.includes('isd') || n.includes('college')) hasSchool = true;
+      else if (n.includes('util') || n.includes('water') || n.includes('district') ||
+               n.includes('fire') || n.includes('flood') || n.includes('conserv') ||
+               n.includes('fmfc') || n.includes('drainage') || n.includes('hosp'))  hasUtil = true;
+    };
+
+    if (Array.isArray(taxingUnits)) {
+      taxingUnits.slice(1).forEach(row => {
+        const n = (row[0] || '').toLowerCase();
+        classify(n);
+        if (!hasCounty && !hasCity && !hasSchool && !hasUtil && row[0] && extras.length < 3) extras.push(row[0]);
+      });
+    }
+
+    // Fallback: scan bill rows when appraisal taxingUnits is empty
+    if (!hasCounty && !hasCity && !hasSchool && !hasUtil && Array.isArray(billRows)) {
+      billRows.forEach(r => classify((r.entity || '').toLowerCase()));
+    }
+
+    const cb = (checked, label) =>
+      `<label class="ec-item"><input type="checkbox" ${checked ? 'checked' : ''} disabled> ${escHtml(label)}</label>`;
+
+    return [
+      cb(hasCounty, 'County'), cb(hasCity, 'City'),
+      cb(hasSchool, 'School'), cb(hasUtil, 'Utilities'),
+      ...extras.map(e => cb(true, e)),
+      `<span style="display:flex;align-items:center;gap:5px;margin-left:auto;font-weight:bold;font-size:7.5pt;">
+        OTHERS: <input type="text" style="border:none;border-bottom:1px solid #777;min-width:100px;font-size:8pt;outline:none;">
+       </span>`,
+    ].join('');
+  }
+
+  // Parse bill tables → flat report rows
+  function _parseBillRows(billTables, yearHeaders) {
+    const rows = [];
+    if (!Array.isArray(billTables)) return rows;
+
+    // Strip responsive-label prefix that Kendo grids embed in cell text
+    // e.g. "TOTAL TAXES DUE: $39.82" → "$39.82"
+    const stripLbl = (s) => (s || '').replace(/^[A-Z][A-Z\s\/&]+:\s*/i, '').trim();
+
+    const isDollar = (s) => /\$?[\d,]+\.\d{2}/.test(s || '');
+
+    // Patterns that positively identify junk (non-entity) rows
+    const JUNK_ENTITY = [
+      /^property\b/i, /^r\d{4,}/i,             // "Property", "R60110"
+      /^certified\b/i, /^details?\b/i,
+      /^estimate\s+taxes/i, /^neighborhood\b/i,
+      /^\d{4}\s+(general|owner|certified)/i,    // "2025 GENERAL INFORMATION"
+      /^general\s+information/i, /^owner\s+information/i,
+      /^value\s+history/i, /^year\b/i,          // "YEAR" header or "YEAR: 2024"
+      /^percent\s+ownership/i, /^agent\b/i,
+      /^land\s+(homesite|non.homesite|timber|value|market)/i,
+      /^agricultural\s+use/i, /^timber\s+use/i,
+      /^special\s+exemptions/i, /^effective\s+acres/i,
+      /^map\s+number/i, /^account\b/i,
+      /^(current|past\s+years?)\s+(amount\s+)?due/i,
+      /^enter\s+a\s+custom/i, /^custom\s+(amount|values)/i,
+      /^(cancel|payment\s+amount|ag\s+rollback|your\s+total|change\s+of\s+use)/i,
+      /^property\s+status/i, /^property\s+type/i,
+      /^mailing\b/i, /^situs\b/i, /^assessed\b/i,
+      /^legal\s+desc/i,                         // "Legal Description" (was missing!)
+      /^improvement\b/i, /^exemption\b/i,
+      /^\*.*total\s+due\s+shown/i,              // "*Total Due shown may not reflect..."
+      /^taxing\s+entity\s*$/i,
+      /^land\s+timber/i, /^timber\s+market/i,
+    ];
+
+    const seenKeys = new Set();
+
+    billTables.forEach((tableRows, ti) => {
+      if (!Array.isArray(tableRows) || tableRows.length === 0) return;
+      const year = String((yearHeaders || [])[ti] || '').replace(/\D/g, '').slice(0, 4) || '';
+
+      // Scan ALL rows (no limit) to find the header row with "TAXING ENTITY"
+      let hdrIdx = -1;
+      for (let i = 0; i < tableRows.length; i++) {
+        const r = tableRows[i];
+        if (!Array.isArray(r)) continue;
+        const flat = r.join(' ').toUpperCase();
+        if (flat.includes('TAXING ENTITY') || (flat.includes('ENTITY') && flat.includes('DUE'))) {
+          hdrIdx = i;
+          break;
+        }
+      }
+      if (hdrIdx < 0) hdrIdx = 0;
+
+      const hdr = (Array.isArray(tableRows[hdrIdx]) ? tableRows[hdrIdx] : [])
+        .map(h => stripLbl(h).toLowerCase().trim());
+      const ci = (kws) => {
+        const i = hdr.findIndex(h => kws.some(k => h.includes(k)));
+        return i >= 0 ? i : -1;
+      };
+      const C = {
+        entity:   ci(['taxing entity', 'entity', 'tax unit']),
+        status:   ci(['status']),
+        base:     ci(['base amount', 'base tax']),
+        pi:       ci(['p&i', 'penalty', 'interest']),
+        totalDue: ci(['total taxes due', 'total due', 'total amount due', 'amount due']),
+        paid:     ci(['amount paid', 'paid amount', 'paid amt']),
+        dueDate:  ci(['due date', 'duedate']),
+        paidDate: ci(['date paid', 'paid date', 'good thru', 'thru']),
+        balance:  ci(['balance']),
+      };
+
+      const dataRows = tableRows.slice(hdrIdx + 1);
+      dataRows.forEach(row => {
+        if (!Array.isArray(row) || row.length === 0) return;
+        const g = (i) => (i >= 0 && i < row.length)
+          ? stripLbl((row[i] || '').toString().trim())
+          : '';
+
+        let entity = (C.entity >= 0 ? g(C.entity) : '') || stripLbl(g(0));
+        entity = entity.replace(/^TAXING\s+ENTITY:\s*/i, '').trim();
+        // Normalize: strip leading tax-unit code prefix "G01- ", "RD1- ", "S08- " etc.
+        entity = entity.replace(/^[A-Z]{1,4}\d{0,2}[-–]\s+/i, '').trim();
+
+        if (!entity) return;
+        if (/^\$[\d,]+\.\d{2}$/.test(entity)) return;      // "$0.00" as entity
+        if (/^\d{4}$/.test(entity)) return;                 // bare year number
+        if (entity.length > 70) return;
+        if (JUNK_ENTITY.some(p => p.test(entity))) return;
+        if (/^(Levy|P&I|Att\.?\s*Fee|Credits|Discount|Attorney)\b/i.test(entity)) return;
+        if (/^TOTAL[S]?\b/i.test(entity)) return;
+
+        // Extract and strip label prefixes from value cells
+        const totalDue = g(C.totalDue);
+        const paid     = g(C.paid);
+        const balance  = g(C.balance);
+        const paidDate = g(C.paidDate);
+
+        // Skip rows with NO meaningful data at all
+        if (!totalDue && !paid && !balance && !g(C.status) && !isDollar(row.join(' '))) return;
+
+        // Derive + OVERRIDE status from actual balance (authoritative)
+        let status = g(C.status);
+        const balNum  = parseFloat((balance  || '').replace(/[$,]/g, '')) || 0;
+        const paidNum = parseFloat((paid     || '').replace(/[$,]/g, '')) || 0;
+        const tdNum   = parseFloat((totalDue || '').replace(/[$,]/g, '')) || 0;
+        if (balance && balNum > 0.005) {
+          status = 'Delinquent';
+        } else if (balance && balNum <= 0.005) {
+          status = paidDate && paidDate !== '-' ? 'Paid' : (paidNum > 0 ? 'Paid' : (status || 'Paid'));
+        } else if (!status) {
+          if (paid || paidDate) status = 'Paid';
+          else if (tdNum > 0)   status = 'Delinquent';
+        }
+
+        // Format zero-balance date placeholder as empty
+        const cleanPaidDate = (paidDate === '-' || paidDate === '—') ? '' : paidDate;
+
+        // Deduplicate by entity+year
+        const key = `${entity.toLowerCase()}|${year}`;
+        if (seenKeys.has(key)) return;
+        seenKeys.add(key);
+
+        rows.push({
+          entity, taxYear: year, status,
+          base: g(C.base), pi: g(C.pi),
+          totalDue, paid,
+          dueDate: g(C.dueDate), paidDate: cleanPaidDate, balance,
+        });
+      });
+    });
+
+    // Sort year DESC
+    rows.sort((a, b) => (parseInt(b.taxYear) || 0) - (parseInt(a.taxYear) || 0));
+    return rows;
+  }
+
+  // Build the TAX INFORMATION table HTML (dynamic columns, year separators)
+  function _taxTableHtml(rows, hideEntity) {
+    if (!rows.length) {
+      return '<table><thead><tr><th style="text-align:center;color:#aaa;padding:8px;">No tax bill records extracted</th></tr></thead></table>';
+    }
+
+    // Only render columns that have at least one non-empty value
+    const has = (key) => rows.some(r => r[key] && r[key].toString().trim());
+    const COLS = [
+      { key: 'entity',      label: 'TAXING ENTITY',         cls: '',    skip: hideEntity },
+      { key: 'taxYear',     label: 'YEAR',                  cls: 'ct' },
+      { key: 'installment', label: 'INSTALLMENT',           cls: 'ct',  optional: true },
+      { key: 'status',      label: 'STATUS',                cls: 'ct' },
+      { key: 'base',        label: 'BASE AMOUNT',           cls: 'amt', optional: true },
+      { key: 'pi',          label: 'P&I',                   cls: 'amt', optional: true },
+      { key: 'totalDue',    label: 'TOTAL DUE',             cls: 'amt' },
+      { key: 'paid',        label: 'AMOUNT PAID',           cls: 'amt' },
+      { key: 'dueDate',     label: 'DUE DATE',              cls: 'ct',  optional: true },
+      { key: 'paidDate',    label: 'DATE PAID / GOOD THRU', cls: 'ct' },
+      { key: 'balance',     label: 'BALANCE',               cls: 'amt' },
+    ].filter(c => !c.skip && (!c.optional || has(c.key)));
+
+    const span = cols => `colspan="${cols}"`;
+    const thd  = `<thead><tr>${COLS.map(c => `<th>${c.label}</th>`).join('')}</tr></thead>`;
+
+    let tbody    = '';
+    let lastYear = null;
+    rows.forEach(r => {
+      if (r.taxYear && r.taxYear !== lastYear) {
+        tbody += `<tr><td ${span(COLS.length)} style="background:#dce6f4;font-weight:bold;color:#1e3a7e;padding:3px 6px;font-size:7.5pt;border-top:2px solid #2f75b6;">◆ Tax Year ${escHtml(r.taxYear)}</td></tr>`;
+        lastYear = r.taxYear;
+      }
+      const st  = (r.status || '').toLowerCase();
+      const isDue  = /delinq|past\s*due|unpaid/i.test(st);
+      const isPaid = /^paid$/i.test(st.trim());
+      const cls    = isDue ? 'due-r' : isPaid ? 'paid-r' : '';
+      tbody += `<tr class="${cls}">${COLS.map(c => `<td class="${c.cls}">${_re(r[c.key])}</td>`).join('')}</tr>`;
+    });
+
+    return `<table>${thd}<tbody>${tbody}</tbody></table>`;
+  }
+
+  function _buildReportHtml(aprData, taxData, state, county) {
+    // ── Parse appraisal record ──────────────────────────────────────────────
+    const aprRec = (aprData?.records || [])[0] || {};
+    let ap = {};
+    try { ap = typeof aprRec.additionalDetails === 'string' ? JSON.parse(aprRec.additionalDetails) : (aprRec.additionalDetails || {}); } catch(_) {}
+
+    // ── Parse tax record ────────────────────────────────────────────────────
+    const taxRec = (taxData?.records || [])[0] || {};
+    let tx = {};
+    try { tx = typeof taxRec.additionalDetails === 'string' ? JSON.parse(taxRec.additionalDetails) : (taxRec.additionalDetails || {}); } catch(_) {}
+
+    // ── Field extraction ────────────────────────────────────────────────────
+    const parcel       = aprRec.parcelId   || taxRec.parcelId
+                      || tx['Account']     || tx['Account Number']    || '';
+    const ownerName    = aprRec.ownerName  || taxRec.ownerName        || '';
+    const legalDesc    = aprRec.legalDescription || ap.legalDescription
+                      || tx['Legal Description'] || tx['legalDescription']
+                      || taxRec.legalDescription || taxRec.legalDesc  || '';
+    const locationAddr = aprRec.propertyAddress  || taxRec.propertyAddress
+                      || tx['Property Address']  || tx['Situs Address'] || '';
+    const mailingAddr  = ap.mailingAddress || locationAddr;
+
+    let acres = ap.legalAcreage || ap.acres || tx['Effective Acres'] || tx['Acres'] || tx['acres'] || '';
+    if (!acres && legalDesc) {
+      const m = legalDesc.match(/(\d+\.?\d*)\s*ACRES?/i);
+      if (m) acres = m[1] + ' ac';
+    }
+
+    // Block / Lot — parse from legal description
+    let blockLot = tx['Block Lot'] || '';
+    if (!blockLot && legalDesc) {
+      const blM = legalDesc.match(/(?:BLK|BLOCK)\s*(\S+)\s+(?:LOT|LT)\s*(\S+)/i)
+               || legalDesc.match(/(?:LOT|LT)\s*(\S+)\s+(?:BLK|BLOCK)\s*(\S+)/i);
+      if (blM) blockLot = 'BLK ' + blM[1] + ' LOT ' + blM[2];
+    }
+
+    const propType     = ap.propertyType  || tx['Property Type'] || '';
+    const yearHeaders2 = tx['Year Headers'] || [];
+    const taxYear      = aprRec.taxYear
+                      || (yearHeaders2.length ? Math.max(...yearHeaders2.map(y => parseInt(y)||0)).toString() : '')
+                      || new Date().getFullYear().toString();
+
+    const landVal  = ap.landMarketValue  || ap.landValue   || tx['Land Value']        || tx['Land Market Value']  || '';
+    const bldgVal  = ap.improvementValue || ap.bldgValue   || tx['Improvement Value'] || tx['Building Value']     || '';
+    const totalVal = ap.netAppraisedValue || ap.totalValue || tx['Assessed Value']    || tx['Total Value']        || tx['Market Value'] || '';
+
+    const propStatus  = tx['Property Status'] || taxRec.paymentStatus || '';
+    const currentDue  = tx['Current Due']     || '';
+    const pastDue     = tx['Past Years Due']  || '';
+    const totalTaxDue = tx['Total Taxes Due'] || '';
+
+    // ── Bill table rows ─────────────────────────────────────────────────────
+    const billTables  = tx['Bill Tables']  || [];
+    const yearHeaders = tx['Year Headers'] || [];
+    const taxRows     = _parseBillRows(billTables, yearHeaders);
+
+    // ── Group rows by entity ────────────────────────────────────────────────
+    const entityOrder   = [];
+    const entityRowsMap = {};
+    taxRows.forEach(r => {
+      if (!entityRowsMap[r.entity]) { entityRowsMap[r.entity] = []; entityOrder.push(r.entity); }
+      entityRowsMap[r.entity].push(r);
+    });
+
+    // ── Flags ───────────────────────────────────────────────────────────────
+    const hasBankruptcy  = /bankrupt/i.test(propStatus);
+    const hasForeclosure = /foreclosur/i.test(propStatus);
+    const hasTaxLien     = taxRows.some(r => /\blien\b|\bsale\b/i.test(r.status));
+    const chk = (v) => v ? 'checked' : '';
+
+    const _toDollars = (s) => parseFloat((s || '').replace(/[$,]/g, '')) || 0;
+    const now = new Date().toLocaleDateString('en-US', { month:'2-digit', day:'2-digit', year:'numeric' });
+
+    // ── Known collector contacts (county-level; same office collects all entities in TX) ──
+    const KNOWN_COLLECTOR = {
+      'anderson|tx': {
+        payableTo: 'Anderson County Tax Assessor-Collector',
+        address:   '500 N Church St, Palestine, TX 75801',
+        phone:     '(903) 723-7423',
+        fax:       '(903) 723-7801',
+        email:     'taxoffice@co.anderson.tx.us',
+      },
+    };
+    const countyKey  = (county + '|' + state).toLowerCase().replace(/\s+/g, '');
+    const collector  = KNOWN_COLLECTOR[countyKey] || {};
+
+    // ── Pre-compute value history rows ──────────────────────────────────────
+    const valueHistoryRows = (() => {
+      const vh = Array.isArray(ap.valueHistory) ? ap.valueHistory : [];
+      return vh.slice(0, 5).map(function(row) {
+        const yr = Array.isArray(row) ? row[0] : (row.year || '');
+        const lv = Array.isArray(row) ? row[1] : (row.land || '');
+        const bv = Array.isArray(row) ? row[2] : (row.improvement || '');
+        const tv = Array.isArray(row) ? row[3] : (row.total || '');
+        if (!yr || yr === taxYear) return '';
+        return '<tr style="background:#fafafa;color:#555;">' +
+          '<td class="ct">' + _re(yr) + '</td>' +
+          '<td class="amt">' + _re(lv) + '</td>' +
+          '<td class="amt">' + _re(bv) + '</td>' +
+          '<td class="amt">' + _re(tv) + '</td>' +
+          '<td class="amt">' + _re(lv) + '</td>' +
+          '<td class="amt">' + _re(bv) + '</td>' +
+          '<td class="amt">' + _re(tv) + '</td>' +
+          '<td class="amt"><span style="color:#bbb;">—</span></td>' +
+          '<td><span style="color:#bbb;">—</span></td>' +
+          '</tr>';
+      }).join('');
+    })();
+
+    // ── Pre-compute per-entity section blocks ───────────────────────────────
+    const entityBlocksHtml = (() => {
+      const ents = entityOrder.length > 0 ? entityOrder : [''];
+      return ents.map(function(ent) {
+        const eRows       = ent ? (entityRowsMap[ent] || []) : taxRows;
+        const hasDelinq   = eRows.some(r => /delinq|past\s*due|unpaid/i.test(r.status));
+        const entPastDue  = eRows
+          .filter(r => /delinq|unpaid|past\s*due/i.test(r.status))
+          .reduce(function(s, r) { return s + _toDollars(r.balance || r.totalDue); }, 0);
+        const paidEYears  = eRows
+          .filter(r => /^paid$/i.test((r.status||'').trim()))
+          .map(r => r.taxYear);
+        const uniquePaidYears = paidEYears.filter(function(y,i) { return paidEYears.indexOf(y) === i; }).sort().reverse();
+
+        const entAutoComment = [
+          uniquePaidYears.length ? 'Paid years: ' + uniquePaidYears.slice(0,5).join(', ') + '.' : '',
+          eRows.length ? eRows.length + ' tax record(s) retrieved for this entity.' : '',
+        ].filter(Boolean).join(' ');
+        const entCritComment = hasDelinq
+          ? 'DELINQUENT taxes on record' + (entPastDue > 0 ? ' (past due: $' + entPastDue.toFixed(2) + ')' : '') + '.'
+          : '';
+
+        // Total due / balance for this entity
+        const entTotalDue = eRows.reduce(function(s,r){ return s + _toDollars(r.totalDue); }, 0);
+        const entBalance  = eRows.reduce(function(s,r){ return s + _toDollars(r.balance);  }, 0);
+
+        const disbRows = [
+          ['ENTITY NAME',          ent || (county + ' Tax Office')],
+          ['DUPLICATE BILL FEE',   'REQUEST / PMT'],
+          ['CHECK PAYABLE TO',     collector.payableTo || (county + ' Tax Office')],
+          ['TAX CERTIFICATE FEE $',''],
+          ['ADDRESS',              collector.address || ''],
+          ['POSTMARK',             'YES / NO'],
+          ['PHONE #',              collector.phone   || ''],
+          ['FUNDS',                'MTG / CERT'],
+          ['FAX #',                collector.fax     || ''],
+          ['SOURCE',               'NETR Online / County Website'],
+          ['EMAIL ID',             collector.email   || ''],
+          ['CURRENT AMOUNT DUE',   entTotalDue > 0 ? '$' + entTotalDue.toFixed(2) : (currentDue || totalTaxDue || '')],
+          ['PAST YEARS DUE',       entPastDue  > 0 ? '$' + entPastDue.toFixed(2)  : (pastDue || '')],
+          ['TOTAL DUE',            entBalance  > 0 ? '$' + entBalance.toFixed(2)  : (entTotalDue > 0 ? '$' + entTotalDue.toFixed(2) : '')],
+        ];
+        const disbHtml = '<div class="disb">' + disbRows.map(r => _dRow(r[0], r[1])).join('') + '</div>';
+
+        return '<div class="entity-block">' +
+          '<div class="entity-block-title">&#9670; ENTITY: ' + escHtml(ent || 'All Entities') + '</div>' +
+          '<div class="sec">COLLECTING ENTITIES</div>' +
+          _entityListHtml(ent, entityOrder, county) +
+          '<div class="sec">TAX INFORMATION</div>' +
+          _taxTableHtml(eRows, true) +
+          '<div class="cmts">' +
+            '<div class="cbox"><div class="cl">COMMENTS:</div><div class="cv">' +
+              (entAutoComment ? escHtml(entAutoComment) : '&nbsp;') +
+            '</div></div>' +
+            '<div class="cbox"><div class="cl">CRITICAL COMMENTS:</div><div class="cv">' +
+              (entCritComment
+                ? '<span style="color:#991b1b;font-weight:bold;">' + escHtml(entCritComment) + '</span>'
+                : '&nbsp;') +
+            '</div></div>' +
+          '</div>' +
+          '<div class="flags">' +
+            '<div class="fi"><label><input type="checkbox" ' + chk(hasBankruptcy)  + ' disabled> BANKRUPTCY</label></div>' +
+            '<div class="fi"><label><input type="checkbox" ' + chk(hasForeclosure) + ' disabled> FORECLOSURE</label></div>' +
+            '<div class="fi"><label><input type="checkbox" ' + chk(hasTaxLien || hasDelinq) + ' disabled> TAX SALE/LIEN</label></div>' +
+            '<div class="fi"><label><input type="checkbox" disabled> H/O CHANGE</label></div>' +
+            '<div class="fi"><label><input type="checkbox" disabled> EXEMPT/DEFERRAL</label></div>' +
+            '<div style="flex:1;display:flex;align-items:center;gap:6px;font-size:8pt;"><b>OTHERS:</b> ' +
+              '<input type="text" style="border:none;border-bottom:1px solid #777;flex:1;font-size:8pt;outline:none;">' +
+            '</div>' +
+          '</div>' +
+          '<div class="sec">TAX DISBURSEMENT</div>' + disbHtml +
+          '</div>';
+      }).join('');
+    })();
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Orchestrate Tax Report — ${escHtml(parcel || ownerName || 'Report')}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,Helvetica,sans-serif;font-size:8pt;color:#000;background:#fff;padding:10px 16px;}
+.btn-bar{display:flex;gap:8px;margin-bottom:8px;}
+.btn{padding:6px 16px;border:none;border-radius:4px;cursor:pointer;font-size:8.5pt;font-weight:bold;}
+.bp{background:#1e3a7e;color:#fff;} .bc{background:#777;color:#fff;}
+.rlogo{text-align:center;margin-bottom:6px;}
+.rlogo svg{height:42px;width:auto;}
+.rtitle{text-align:center;font-weight:bold;font-size:13pt;color:#1e3a7e;border:2px solid #1e3a7e;padding:5px 0;margin-bottom:5px;letter-spacing:1px;}
+.obar{display:flex;border:1px solid #bbb;padding:3px 8px;margin-bottom:5px;gap:10px;font-size:7.5pt;align-items:center;}
+.of{display:flex;align-items:center;gap:4px;flex:1;} .of b{white-space:nowrap;}
+.ofv{border-bottom:1px solid #888;flex:1;min-height:13px;padding:0 3px;}
+.sec{text-align:center;font-weight:bold;background:#bdd7ee;border:1px solid #2f75b6;padding:2px 6px;margin:4px 0 3px;font-size:8.5pt;color:#1e3a7e;letter-spacing:.5px;}
+.pg{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
+.pr{display:flex;align-items:baseline;gap:5px;border-bottom:1px solid #e8e8e8;padding:2px 0;}
+.pl{font-weight:bold;min-width:115px;font-size:7.5pt;color:#333;flex-shrink:0;}
+.pv{flex:1;font-size:8pt;min-height:14px;}
+table{width:100%;border-collapse:collapse;font-size:7pt;margin-bottom:3px;}
+th{background:#bdd7ee;border:1px solid #2f75b6;padding:2px 5px;font-weight:bold;text-align:center;color:#1e3a7e;line-height:1.3;}
+td{border:1px solid #bbb;padding:2px 5px;vertical-align:middle;}
+.ct{text-align:center;} .amt{text-align:right;}
+tr.paid-r td{color:#14532d;background:#f0fdf4;} tr.due-r td{color:#991b1b;background:#fff5f5;}
+.ec-list{border:1px solid #bdd7ee;padding:3px 8px;margin-bottom:3px;}
+.ec-row{display:flex;align-items:center;gap:6px;padding:2px 3px;border-radius:3px;margin-bottom:1px;}
+.ec-item{display:flex;align-items:center;gap:4px;font-size:8pt;min-width:95px;cursor:default;}
+.ec-item input{width:12px;height:12px;}
+.ec-name{font-size:8pt;flex:1;}
+.cmts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:3px 0;}
+.cbox{border:1px solid #bbb;padding:4px 6px;min-height:42px;}
+.cl{font-weight:bold;font-size:7.5pt;color:#1e3a7e;margin-bottom:2px;} .cv{font-size:8pt;}
+.flags{display:flex;gap:10px;flex-wrap:wrap;border:1px solid #bdd7ee;padding:3px 8px;margin:3px 0;align-items:center;}
+.fi label{display:flex;align-items:center;gap:4px;font-size:8pt;cursor:default;}
+.fi input{width:12px;height:12px;}
+.disb{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
+.dr{display:flex;align-items:baseline;gap:5px;border-bottom:1px solid #e8e8e8;padding:2px 0;}
+.dl{font-weight:bold;min-width:130px;font-size:7.5pt;color:#333;flex-shrink:0;}
+.dv{flex:1;font-size:8pt;min-height:14px;}
+.entity-block{margin-top:10px;border-top:2px solid #1e3a7e;padding-top:2px;}
+.entity-block-title{background:#1e3a7e;color:#fff;padding:3px 10px;font-weight:bold;font-size:8.5pt;letter-spacing:.5px;margin-bottom:4px;}
+@media print{
+  .btn-bar{display:none;}body{padding:3px 8px;}
+  th,.sec,.entity-block-title{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  tr.paid-r td,tr.due-r td{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+}
+</style>
+</head>
+<body>
+<div class="btn-bar">
+  <button class="btn bp" onclick="window.print()">&#128424; Print / Save PDF</button>
+  <button class="btn bc" onclick="window.close()">&#10005; Close</button>
+</div>
+
+<div class="rlogo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 891.92 219.75"><defs><style>.cls-1,.cls-2{font-family:CaviarDreams-Bold,'Caviar Dreams',Arial,sans-serif;font-size:170.33px;font-weight:700;letter-spacing:-.07em;}.cls-1,.cls-3{fill:#27aae1;}.cls-2,.cls-4{fill:#1c75bc;}.cls-5{fill:#fff;}</style></defs><g><path class="cls-4" d="M50.11,191.06c21.95-11.5,44.94-21.59,68.96-30.11,23.99-8.51,48.19-15.16,72.43-20.06-10.68-20.18-20.21-41.25-28.4-63.21-9.57-25.68-16.98-51.63-22.39-77.67-23.99,4.88-47.94,11.46-71.67,19.89C44.98,28.41,21.95,38.55,0,50.06c5.43,26.78,13.02,53.48,22.86,79.9,7.9,21.18,17.03,41.57,27.25,61.1"/><path class="cls-3" d="M50.07,191.06c16.31-7.77,33.36-14.5,51.11-20.04,17.74-5.54,35.55-9.73,53.37-12.62-7.22-15.01-13.6-30.63-18.96-46.88-6.27-18.98-10.95-38.12-14.17-57.29-17.63,2.91-35.29,7.05-52.83,12.54-17.77,5.57-34.84,12.31-51.17,20.09,3.22,19.68,8.02,39.36,14.47,58.89,5.17,15.67,11.25,30.79,18.18,45.31"/><path class="cls-4" d="M50.04,191.06c11.95-4.78,24.4-8.8,37.27-11.95,12.87-3.14,25.75-5.3,38.55-6.55-4.47-11-8.27-22.42-11.36-34.23-3.59-13.78-6.04-27.61-7.47-41.36-12.67,1.27-25.41,3.4-38.14,6.5-12.9,3.15-25.34,7.16-37.32,11.95,1.39,14.15,3.9,28.37,7.6,42.56,2.97,11.39,6.6,22.44,10.86,33.09"/><path class="cls-5" d="M50.14,191.06c8.27-2.55,16.81-4.54,25.6-5.94,8.77-1.4,17.5-2.15,26.15-2.28-2.39-7.62-4.32-15.47-5.72-23.54-1.66-9.43-2.56-18.8-2.74-28.08-8.55.15-17.19.88-25.88,2.26-8.81,1.39-17.34,3.4-25.62,5.96.17,9.55,1.06,19.21,2.75,28.92,1.37,7.77,3.21,15.35,5.48,22.7"/></g><text class="cls-2" transform="translate(204.31 191.06)"><tspan x="0" y="0">Opus</tspan></text><text class="cls-1" transform="translate(591.29 191.06)"><tspan x="0" y="0">One</tspan></text></svg></div>
+
+<div class="rtitle">ORCHESTRATE TAX SYSTEM</div>
+
+<div class="obar">
+  <div class="of"><b>Orchestrate Order #</b><div class="ofv"></div></div>
+  <div class="of"><b>Client Order #</b><div class="ofv"></div></div>
+  <div class="of" style="max-width:190px;"><b>Date:</b><div class="ofv">${now}</div></div>
+</div>
+
+<div class="sec">PROPERTY DESCRIPTION</div>
+<div class="pg">
+  ${_pRow('PARCEL #', parcel)}
+  ${_pRow('LEGAL DESCRIPTION', legalDesc)}
+  ${_pRow('OWNER NAME', ownerName)}
+  ${_pRow('BLOCK / LOT', blockLot)}
+  ${_pRow('MAILING ADDRESS', mailingAddr)}
+  ${_pRow('ACRES', acres)}
+  ${_pRow('LOCATION ADDRESS', locationAddr)}
+  ${_pRow('TAX RATE', '')}
+  ${_pRow('COUNTY NAME', county)}
+  ${_pRow('STATE', state)}
+</div>
+<div style="display:flex;align-items:baseline;gap:6px;border-bottom:1px solid #e0e0e0;padding:2px 0;margin-bottom:4px;">
+  <span style="font-weight:bold;font-size:7.5pt;color:#333;flex-shrink:0;min-width:115px;">STATE LEVEL NOTES:</span>
+  <span style="flex:1;font-size:8pt;min-height:14px;border-bottom:1px solid #ccc;">&nbsp;</span>
+</div>
+
+<div class="sec">ASSESSMENT INFORMATION</div>
+<table>
+  <thead><tr>
+    <th>TAX YEAR</th><th>LAND VALUE</th><th>BUILDING VALUE</th><th>TOTAL VALUE</th>
+    <th>ASSESSED LAND VALUE</th><th>ASSESSED BUILDING VALUE</th>
+    <th>TOTAL ASSESSED VALUE</th><th>TAXABLE ASSESSMENT</th><th>EXEMPTION</th>
+  </tr></thead>
+  <tbody>
+    <tr>
+      <td class="ct">${_re(taxYear)}</td>
+      <td class="amt">${_re(landVal)}</td>
+      <td class="amt">${_re(bldgVal)}</td>
+      <td class="amt">${_re(totalVal)}</td>
+      <td class="amt">${_re(landVal)}</td>
+      <td class="amt">${_re(bldgVal)}</td>
+      <td class="amt">${_re(totalVal)}</td>
+      <td class="amt"><span style="color:#bbb;">&#8212;</span></td>
+      <td><span style="color:#bbb;">&#8212;</span></td>
+    </tr>
+    ${valueHistoryRows}
+  </tbody>
+</table>
+
+${entityBlocksHtml}
+
+</body></html>`;
+  }
+
+  function clearAll() {
+    ['countyUrl', 'manualUrl', 'firstName', 'lastName', 'fullName', 'accountNumber'].forEach((id) => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('stateSelect').value = '';
+    const cSel = document.getElementById('countySelect');
+    cSel.innerHTML = '<option value="">— Select County —</option>';
+    cSel.disabled = true;
+    hide('urlRow');
+    hide('dualSearchBanner');
+    document.getElementById('urlStatusBadge').textContent = '';
+    document.getElementById('platformBadge').textContent  = '';
+    document.getElementById('urlHint').textContent        = '';
+    hide('statusBox');
+    hide('errorBox');
+    hide('captchaBox');
+    hide('resultsSection');
+    document.getElementById('progressLog').innerHTML      = '';
+    document.getElementById('resultTabsNav').style.display = 'none';
+    document.getElementById('multiTabsNav').style.display  = 'none';
+    document.getElementById('multiTabPanels').innerHTML    = '';
+    document.getElementById('reportBtn').style.display     = 'none';
+    _reportState = { appraisalData: null, taxData: null, state: '', county: '' };
+    document.getElementById('appraisalTabPanel').classList.add('active');
+    document.getElementById('taxTabPanel').classList.remove('active');
+    document.getElementById('tabBtnAppraisal').classList.add('active');
+    document.getElementById('tabBtnTax').classList.remove('active');
+    document.getElementById('appraisalTabBadge').textContent = '';
+    document.getElementById('taxTabBadge').textContent       = '';
+    document.getElementById('taxRecordsContainer').innerHTML = '';
+    document.getElementById('taxCountBadge').textContent     = '';
+    document.getElementById('taxSourceUrl').textContent      = '';
+    document.getElementById('taxSummaryText').textContent    = '';
+    document.getElementById('searchBtn').disabled = false;
+    document.getElementById('zipInput').value = '';
+    document.getElementById('zipHint').textContent = 'Auto-fills state & county';
+    document.getElementById('sourcesPanel').style.display = 'none';
+    document.getElementById('sourcesBody').innerHTML = '';
+  }
+
+  // Allow Enter key on inputs to trigger search
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && e.target.tagName === 'INPUT') startSearch();
+  });
+
+  // Initialise state dropdown on load
+  loadStates();
+</script>
+
+
+</body>
+</html>

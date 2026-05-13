@@ -1,6 +1,6 @@
 'use strict';
 
-const { detectCaptcha } = require('../captchaDetector');
+const { detectCaptcha } = require('../../shared/captchaDetector');
 
 /**
  * src/handlers/patriot.js

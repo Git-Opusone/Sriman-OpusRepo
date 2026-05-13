@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpusOne — Title Search</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; color: #1a2233; min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Shared header (matches home + tax pages) ── */
+    header {
+      background: #111827;
+      color: #fff;
+      padding: 10px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .header-logo { height: 32px; width: auto; flex-shrink: 0; }
+    .header-center {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex: 1;
+      justify-content: center;
+    }
+    .header-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: rgba(255,255,255,0.82);
+      text-decoration: none;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      white-space: nowrap;
+      transition: background 0.15s, color 0.15s;
+    }
+    .header-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+    header nav { flex-shrink: 0; }
+    header nav a {
+      color: rgba(255,255,255,0.7);
+      text-decoration: none;
+      margin-left: 22px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: color 0.15s;
+    }
+    header nav a:hover { color: #fff; }
+    header nav a.active { color: #4a9eff; border-bottom: 2px solid #4a9eff; padding-bottom: 2px; }
+
+    /* ── Page title bar ── */
+    .page-bar {
+      background: linear-gradient(135deg, #1e3a8a 0%, #1a56db 100%);
+      color: #fff;
+      padding: 16px 32px;
+      text-align: center;
+      font-size: 1.35rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      position: relative;
+    }
+    .page-bar-badge {
+      position: absolute;
+      top: 50%;
+      left: 22px;
+      transform: translateY(-50%);
+      display: inline-block;
+      background: rgba(255,255,255,0.13);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #ddeeff;
+      font-size: 0.86rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      padding: 6px 18px;
+      border-radius: 20px;
+    }
+
+    /* ── Content ── */
+    .container { max-width: 900px; margin: 40px auto; padding: 0 24px; flex: 1; }
+
+    .card {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      padding: 32px;
+      margin-bottom: 28px;
+    }
+    .card h2 { font-size: 1.1rem; color: #1a2233; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+    .card h2 .icon { font-size: 1.3rem; }
+
+    .roadmap { list-style: none; }
+    .roadmap li {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px solid #eef0f4;
+    }
+    .roadmap li:last-child { border-bottom: none; }
+    .roadmap .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      margin-top: 5px;
+      flex-shrink: 0;
+    }
+    .dot-done    { background: #2ecc71; }
+    .dot-active  { background: #4a9eff; }
+    .dot-pending { background: #c8d4e0; }
+
+    .roadmap .label  { font-weight: 600; font-size: 0.95rem; }
+    .roadmap .detail { font-size: 0.85rem; color: #6b7c93; margin-top: 2px; }
+
+    .endpoint-list { font-family: monospace; font-size: 0.85rem; list-style: none; }
+    .endpoint-list li { padding: 6px 0; color: #3a5070; border-bottom: 1px solid #f0f4f8; }
+    .endpoint-list li:last-child { border-bottom: none; }
+    .endpoint-list .method { color: #e8a020; font-weight: 700; margin-right: 8px; }
+    .endpoint-list .pending { color: #c8d4e0; }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #4a9eff;
+      text-decoration: none;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+    }
+    .back-link:hover { text-decoration: underline; }
+
+    /* ── Shared footer ── */
+    .site-footer {
+      background: #111827;
+      color: #4a5568;
+      text-align: center;
+      font-size: 0.82rem;
+      padding: 18px 20px;
+    }
+    .site-footer .author-credit {
+      color: #f5c842;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="/"><img src="/OpusOne-Svg.svg" alt="OpusOne" class="header-logo" /></a>
+  <div class="header-center">
+    <a class="header-btn"
+       href="https://opusone-ai.orchestrate.com/docs/staging-test-tracker.html"
+       target="_blank" rel="noopener">
+      &#128203; Staging Test Tracker
+    </a>
+    <a class="header-btn"
+       href="https://srimanopusoneai.grafana.net/public-dashboards/5599a7a5ae9b43afac030c60dee2e90f"
+       target="_blank" rel="noopener">
+      &#128202; Live Monitoring Dashboard
+    </a>
+  </div>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/tax/">Tax Search</a>
+    <a href="/title/" class="active">Title Search</a>
+  </nav>
+</header>
+
+<div class="page-bar">
+  <span class="page-bar-badge">AI-POWERED</span>
+  &#128220; Title Search
+</div>
+
+<div class="container">
+
+  <a class="back-link" href="/">&#8592; Back to Home</a>
+
+  <div class="card">
+    <h2><span class="icon">&#128506;</span> Implementation Roadmap</h2>
+    <ul class="roadmap">
+      <li>
+        <div class="dot dot-done"></div>
+        <div>
+          <div class="label">Namespace isolation</div>
+          <div class="detail">src/title/ directory, /api/title/* routes — completely separate from tax team code</div>
+        </div>
+      </li>
+      <li>
+        <div class="dot dot-active"></div>
+        <div>
+          <div class="label">Wilson County NC — Register of Deeds</div>
+          <div class="detail">County deed search automation — in progress</div>
+        </div>
+      </li>
+      <li>
+        <div class="dot dot-pending"></div>
+        <div>
+          <div class="label">NC eCourts party search</div>
+          <div class="detail">Court judgment &amp; lien search across NC superior/district courts</div>
+        </div>
+      </li>
+      <li>
+        <div class="dot dot-pending"></div>
+        <div>
+          <div class="label">PACER bankruptcy search</div>
+          <div class="detail">Federal bankruptcy court filings via federal court records API</div>
+        </div>
+      </li>
+      <li>
+        <div class="dot dot-pending"></div>
+        <div>
+          <div class="label">Title report generator</div>
+          <div class="detail">Formatted title commitment-style report — chain of title, encumbrances, flags</div>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">&#128268;</span> API Endpoints (Title Namespace)</h2>
+    <ul class="endpoint-list">
+      <li><span class="method">GET</span> /api/title/health <span style="color:#2ecc71">&#10003; active</span></li>
+      <li class="pending"><span class="method">GET</span> /api/title/search/stream &mdash; SSE title search (pending)</li>
+      <li class="pending"><span class="method">GET</span> /api/title/counties &mdash; supported counties list (pending)</li>
+      <li class="pending"><span class="method">GET</span> /api/title/order/:id &mdash; order status (pending)</li>
+    </ul>
+  </div>
+
+</div>
+
+
+</body>
+</html>
+
