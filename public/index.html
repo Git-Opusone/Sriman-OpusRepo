@@ -1815,21 +1815,33 @@
     return `<div class="dr"><div class="dl">${label}</div><div class="dv">${_re(value)}</div></div>`;
   }
 
-  // Build entity checkboxes from taxingUnits table or defaults
-  function _entityChkboxes(taxingUnits, county) {
+  // Build entity checkboxes from taxingUnits table (appraisal) or bill rows (tax)
+  function _entityChkboxes(taxingUnits, county, billRows) {
     const cL = (county || '').toLowerCase();
     let hasCounty = false, hasCity = false, hasSchool = false, hasUtil = false;
     const extras = [];
 
+    const classify = (n) => {
+      if (!n) return;
+      if (n.includes('county') || n.includes(cL))           hasCounty = true;
+      else if (n.includes('city') || n.includes('muni') || n.includes('municipal')) hasCity = true;
+      else if (n.includes('school') || n.includes('isd') || n.includes('college')) hasSchool = true;
+      else if (n.includes('util') || n.includes('water') || n.includes('district') ||
+               n.includes('fire') || n.includes('flood') || n.includes('conserv') ||
+               n.includes('fmfc') || n.includes('drainage') || n.includes('hosp'))  hasUtil = true;
+    };
+
     if (Array.isArray(taxingUnits)) {
       taxingUnits.slice(1).forEach(row => {
         const n = (row[0] || '').toLowerCase();
-        if (n.includes('county') || n.includes(cL))      hasCounty = true;
-        else if (n.includes('city') || n.includes('muni')) hasCity  = true;
-        else if (n.includes('school') || n.includes('isd')) hasSchool = true;
-        else if (n.includes('util') || n.includes('water') || n.includes('district')) hasUtil = true;
-        else if (row[0] && extras.length < 3) extras.push(row[0]);
+        classify(n);
+        if (!hasCounty && !hasCity && !hasSchool && !hasUtil && row[0] && extras.length < 3) extras.push(row[0]);
       });
+    }
+
+    // Fallback: scan bill rows when appraisal taxingUnits is empty
+    if (!hasCounty && !hasCity && !hasSchool && !hasUtil && Array.isArray(billRows)) {
+      billRows.forEach(r => classify((r.entity || '').toLowerCase()));
     }
 
     const cb = (checked, label) =>
@@ -1863,9 +1875,9 @@
       /^estimate\s+taxes/i, /^neighborhood\b/i,
       /^\d{4}\s+(general|owner|certified)/i,    // "2025 GENERAL INFORMATION"
       /^general\s+information/i, /^owner\s+information/i,
-      /^value\s+history/i, /^year\s*:/i,
+      /^value\s+history/i, /^year\b/i,          // "YEAR" header or "YEAR: 2024"
       /^percent\s+ownership/i, /^agent\b/i,
-      /^land\s+(homesite|non.homesite|timber)/i,
+      /^land\s+(homesite|non.homesite|timber|value|market)/i,
       /^agricultural\s+use/i, /^timber\s+use/i,
       /^special\s+exemptions/i, /^effective\s+acres/i,
       /^map\s+number/i, /^account\b/i,
@@ -1874,7 +1886,11 @@
       /^(cancel|payment\s+amount|ag\s+rollback|your\s+total|change\s+of\s+use)/i,
       /^property\s+status/i, /^property\s+type/i,
       /^mailing\b/i, /^situs\b/i, /^assessed\b/i,
-      /^taxing\s+entity\s*$/i,                  // the header label itself if it slipped through
+      /^legal\s+desc/i,                         // "Legal Description" (was missing!)
+      /^improvement\b/i, /^exemption\b/i,
+      /^\*.*total\s+due\s+shown/i,              // "*Total Due shown may not reflect..."
+      /^taxing\s+entity\s*$/i,
+      /^land\s+timber/i, /^timber\s+market/i,
     ];
 
     const seenKeys = new Set();
@@ -1923,6 +1939,8 @@
 
         let entity = (C.entity >= 0 ? g(C.entity) : '') || stripLbl(g(0));
         entity = entity.replace(/^TAXING\s+ENTITY:\s*/i, '').trim();
+        // Normalize: strip leading tax-unit code prefix "G01- ", "RD1- ", "S08- " etc.
+        entity = entity.replace(/^[A-Z]{1,4}\d{0,2}[-–]\s+/i, '').trim();
 
         if (!entity) return;
         if (/^\$[\d,]+\.\d{2}$/.test(entity)) return;      // "$0.00" as entity
@@ -2064,6 +2082,9 @@
     const totalVal = ap.netAppraisedValue || ap.totalValue || tx['Assessed Value']   || tx['Total Value']        || tx['Market Value'] || '';
 
     const propStatus   = tx['Property Status'] || taxRec.paymentStatus || '';
+    const currentDue   = tx['Current Due']    || '';
+    const pastDue      = tx['Past Years Due'] || '';
+    const totalTaxDue  = tx['Total Taxes Due']|| '';
 
     // ── Bill table rows ─────────────────────────────────────────────────────
     const billTables  = tx['Bill Tables']  || [];
@@ -2195,6 +2216,10 @@ tr.paid-r td{color:#14532d;background:#f0fdf4;} tr.due-r td{color:#991b1b;backgr
   ${_pRow('COUNTY NAME', county)}
   ${_pRow('STATE', state)}
 </div>
+<div style="display:flex;align-items:baseline;gap:6px;border-bottom:1px solid #e0e0e0;padding:2px 0;margin-bottom:4px;">
+  <span style="font-weight:bold;font-size:7.5pt;color:#333;flex-shrink:0;min-width:115px;">STATE LEVEL NOTES:</span>
+  <span style="flex:1;font-size:8pt;min-height:14px;border-bottom:1px solid #ccc;">&nbsp;</span>
+</div>
 
 <div class="sec">ASSESSMENT INFORMATION</div>
 <table>
@@ -2217,7 +2242,7 @@ tr.paid-r td{color:#14532d;background:#f0fdf4;} tr.due-r td{color:#991b1b;backgr
 </table>
 
 <div class="sec">Collecting Entities</div>
-<div class="ents">${_entityChkboxes(ap.taxingUnits, county)}</div>
+<div class="ents">${_entityChkboxes(ap.taxingUnits, county, taxRows)}</div>
 
 <div class="sec">TAX INFORMATION</div>
 ${_taxTableHtml(taxRows)}
@@ -2247,20 +2272,38 @@ ${_taxTableHtml(taxRows)}
 </div>
 
 <div class="sec">TAX DISBURSEMENT</div>
-<div class="disb">
-  ${_dRow('ENTITY NAME', county + ' Tax Office')}
-  ${_dRow('DUPLICATE BILL FEE', 'REQUEST / PMT')}
-  ${_dRow('CHECK PAYABLE TO', county + ' Tax Office')}
-  ${_dRow('TAX CERTIFICATE FEE $', '')}
-  ${_dRow('ADDRESS', '')}
-  ${_dRow('POSTMARK', 'YES / NO')}
-  ${_dRow('PHONE #', '')}
-  ${_dRow('FUNDS', 'MTG / CERT')}
-  ${_dRow('FAX #', '')}
-  ${_dRow('SOURCE', 'NETR Online / County Website')}
-  ${_dRow('EMAIL ID', '')}
-  ${_dRow('', '')}
-</div>
+${(() => {
+  // Known collecting-entity contact info per county (expand as needed)
+  const KNOWN = {
+    'anderson|tx': {
+      entityName:  'Anderson County Tax Office',
+      payableTo:   'Anderson County Tax Assessor-Collector',
+      address:     '500 N Church St, Palestine, TX 75801',
+      phone:       '(903) 723-7423',
+      fax:         '(903) 723-7801',
+      email:       'taxoffice@co.anderson.tx.us',
+    },
+  };
+  const key = (county + '|' + state).toLowerCase().replace(/\s+/g, '');
+  const info = KNOWN[key] || {};
+  const disburseRows = [
+    ['ENTITY NAME',          info.entityName  || county + ' Tax Office'],
+    ['DUPLICATE BILL FEE',   'REQUEST / PMT'],
+    ['CHECK PAYABLE TO',     info.payableTo   || county + ' Tax Office'],
+    ['TAX CERTIFICATE FEE $',''],
+    ['ADDRESS',              info.address     || ''],
+    ['POSTMARK',             'YES / NO'],
+    ['PHONE #',              info.phone       || ''],
+    ['FUNDS',                'MTG / CERT'],
+    ['FAX #',                info.fax         || ''],
+    ['SOURCE',               'NETR Online / County Website'],
+    ['EMAIL ID',             info.email       || ''],
+    ['CURRENT AMOUNT DUE',   currentDue || totalTaxDue || ''],
+    ['PAST YEARS DUE',       pastDue || (totalPastDue > 0 ? '$' + totalPastDue.toFixed(2) : '')],
+    ['TOTAL DUE',            totalTaxDue || (totalPastDue > 0 ? '$' + totalPastDue.toFixed(2) : '')],
+  ];
+  return '<div class="disb">' + disburseRows.map(r => _dRow(r[0], r[1])).join('') + '</div>';
+})()}
 
 </body></html>`;
   }
