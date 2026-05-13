@@ -2,18 +2,27 @@
 
 require('dotenv').config();
 
-// Prevent unhandled rejections / exceptions from crashing the server process
-process.on('uncaughtException',  (err)    => console.error('[uncaughtException]', err));
+// Crash on fatal startup errors; log-and-continue for runtime errors
+process.on('uncaughtException', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n❌  Port ${err.port || process.env.PORT || 3000} is already in use.\n`);
+    console.error('    Fix: open Task Manager → kill all node.exe processes, then re-run npm start\n');
+    console.error('    Or run in a new terminal:  npx kill-port 3000\n');
+    process.exit(1);
+  }
+  console.error('[uncaughtException]', err);
+});
 process.on('unhandledRejection', (reason) => console.error('[unhandledRejection]', reason));
 
 const express = require('express');
 const cors    = require('cors');
 const path    = require('path');
 const fs      = require('fs');
+const axios   = require('axios');
 
 const { runBrowserAgent }               = require('./browserAgent');
 const { getAllStates, getCountiesForState, getCountyUrl } = require('./src/countyDirectory');
-const { resolveCountyUrl }              = require('./src/urlHealthCheck');
+const { resolveCountyUrl, getAllNetronlineSources } = require('./src/urlHealthCheck');
 const { detectFromUrl, platformLabel }  = require('./src/platformDetector');
 const metrics = require('./src/metrics');
 
@@ -158,6 +167,65 @@ app.get('/api/county-url', async (req, res) => {
     status:        resolved.status,   // 'alive' | 'refreshed' | 'dead'
     message:       resolved.message,
   });
+});
+
+// ─── ZIP code → state + county lookup ────────────────────────────────────────
+
+// GET /api/zip-lookup?zip=75751
+// Returns { state: "TX", county: "Henderson", city: "Athens" }
+// Two-step: zippopotam.us → state + coordinates, then FCC Census Block API → county
+app.get('/api/zip-lookup', async (req, res) => {
+  const zip = (req.query.zip || '').trim();
+  if (!/^\d{5}$/.test(zip)) {
+    return res.status(400).json({ error: 'Valid 5-digit ZIP code required' });
+  }
+
+  try {
+    // Step 1: ZIP → state abbreviation + centroid coordinates
+    const zipRes = await axios.get(`https://api.zippopotam.us/us/${zip}`, { timeout: 8000 });
+    const place  = zipRes.data?.places?.[0];
+    if (!place) {
+      return res.status(404).json({ error: `No location found for ZIP ${zip}` });
+    }
+    const stateCode = place['state abbreviation'];
+    if (!stateCode) {
+      return res.status(404).json({ error: `Could not determine state for ZIP ${zip}` });
+    }
+    const lat  = parseFloat(place.latitude);
+    const lon  = parseFloat(place.longitude);
+    const city = place['place name'] || '';
+
+    // Step 2: centroid → county via FCC Census Block finder
+    const fccRes = await axios.get(
+      `https://geo.fcc.gov/api/census/block/find?latitude=${lat}&longitude=${lon}&format=json`,
+      { timeout: 8000 }
+    );
+    const countyRaw  = fccRes.data?.County?.name || '';
+    const countyName = countyRaw.replace(/\s+County$/i, '').trim();
+    if (!countyName) {
+      return res.status(404).json({ error: `Could not determine county for ZIP ${zip}` });
+    }
+
+    return res.json({ state: stateCode, county: countyName, city });
+  } catch (err) {
+    console.error('[zip-lookup]', err.message);
+    return res.status(500).json({ error: 'ZIP lookup failed — please select state and county manually.' });
+  }
+});
+
+// GET /api/county-sources?state=TX&county=Anderson
+// Returns all data-source rows scraped from publicrecords.netronline.com for the county.
+app.get('/api/county-sources', async (req, res) => {
+  const { state, county } = req.query;
+  if (!state || !county) return res.status(400).json({ error: 'state and county required' });
+
+  try {
+    const sources = await getAllNetronlineSources(state, county);
+    return res.json({ sources });
+  } catch (err) {
+    console.error('[county-sources]', err.message);
+    return res.status(500).json({ sources: [] });
+  }
 });
 
 // ─── Health check ─────────────────────────────────────────────────────────────
@@ -501,4 +569,14 @@ app.listen(PORT, () => {
   console.log(`   Concurrency: max ${MAX_CONCURRENT} simultaneous searches`);
   console.log(`   Timeout:     ${Math.round(SEARCH_TIMEOUT_MS / 60000)} min per search`);
   console.log(`   Counties DB: ${require('fs').existsSync('./data/counties.json') ? '✅ loaded' : '⚠️  not built yet — run: node scripts/buildCountyDirectory.js'}\n`);
+}).on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n❌  Port ${PORT} is already in use by another process.\n`);
+    console.error('    Run this in a new PowerShell window to free it:\n');
+    console.error(`        Stop-Process -Id (Get-NetTCPConnection -LocalPort ${PORT}).OwningProcess -Force\n`);
+    console.error('    Then run npm start again.\n');
+  } else {
+    console.error('Server listen error:', err);
+  }
+  process.exit(1);
 });

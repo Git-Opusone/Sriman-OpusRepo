@@ -543,6 +543,79 @@
       color: var(--gray-400);
       padding-top: 24px;
     }
+
+    /* ── ZIP code lookup row ── */
+    .zip-lookup-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .zip-lookup-row input[type="text"] {
+      width: 160px;
+      font-size: .88rem;
+    }
+    .btn-zip {
+      padding: 9px 20px;
+      background: #f5c842;
+      color: #222;
+      border: none;
+      border-radius: 6px;
+      font-size: .88rem;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background .15s;
+    }
+    .btn-zip:hover { background: #e0b320; }
+    .btn-zip:disabled { opacity: .5; cursor: default; }
+    .zip-hint { font-size: .75rem; color: var(--gray-400); }
+
+    /* ── NETR sources — URL card list ── */
+    #sourcesPanel {
+      margin-bottom: 12px;
+    }
+    #sourcesPanel .sources-title {
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--gray-500);
+      margin-bottom: 10px;
+    }
+    .source-url-item {
+      margin-bottom: 14px;
+    }
+    .source-url-item label {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      color: var(--gray-700);
+      margin-bottom: 5px;
+    }
+    .source-url-item .source-badge {
+      margin-left: 8px;
+      font-size: .75rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .source-url-item input[type="url"],
+    .source-url-item input[type="text"] {
+      background: var(--gray-50);
+      color: var(--gray-600);
+      font-size: .82rem;
+    }
+    .source-url-item .hint { margin-top: 3px; }
+    #sourcesPanel .sources-loading {
+      font-size: .8rem;
+      color: var(--gray-400);
+      padding: 4px 0;
+    }
   </style>
 </head>
 <body>
@@ -573,6 +646,14 @@
   <div class="card">
     <div class="card-title">
       <span class="icon">🔍</span> Search Parameters
+    </div>
+
+    <!-- ZIP code auto-fill -->
+    <div class="zip-lookup-row">
+      <input type="text" id="zipInput" maxlength="5" placeholder="Enter ZIP code"
+        onkeydown="if(event.key==='Enter') lookupByZip()" />
+      <button class="btn-zip" id="zipBtn" onclick="lookupByZip()">Find!</button>
+      <span class="zip-hint" id="zipHint">Auto-fills state &amp; county</span>
     </div>
 
     <!-- State + County selectors -->
@@ -615,6 +696,15 @@
         <p class="hint">Overrides the auto-looked-up URL above</p>
       </div>
     </details>
+
+    <!-- NETR online data sources — shown after county selection -->
+    <div id="sourcesPanel" style="display:none;">
+      <div class="divider" style="margin-bottom:14px;">
+        Additional County Data Sources
+        <span style="font-size:.7rem;font-weight:400;color:var(--gray-400);margin-left:6px;">via publicrecords.netronline.com</span>
+      </div>
+      <div id="sourcesBody"></div>
+    </div>
 
     <div class="divider">Owner / Taxpayer Name</div>
 
@@ -1059,6 +1149,106 @@
       </div>`;
   }
 
+  // ── ZIP code auto-fill ───────────────────────────────────────────────────
+
+  async function lookupByZip() {
+    const zip = (document.getElementById('zipInput').value || '').trim();
+    if (!/^\d{5}$/.test(zip)) {
+      document.getElementById('zipHint').textContent = 'Enter a valid 5-digit ZIP code.';
+      return;
+    }
+    const btn  = document.getElementById('zipBtn');
+    const hint = document.getElementById('zipHint');
+    btn.disabled = true;
+    hint.textContent = 'Looking up…';
+
+    try {
+      const data = await fetch(`/api/zip-lookup?zip=${encodeURIComponent(zip)}`).then(r => r.json());
+      if (data.error) {
+        hint.textContent = data.error;
+        btn.disabled = false;
+        return;
+      }
+
+      // Select the state in the dropdown
+      const stateSel = document.getElementById('stateSelect');
+      stateSel.value = data.state;
+      await onStateChange();   // populates county dropdown
+
+      // Wait a tick for the county options to render, then select
+      await new Promise(r => setTimeout(r, 50));
+      const countySel = document.getElementById('countySelect');
+      // Try exact match first, then case-insensitive
+      let matched = [...countySel.options].find(o => o.value === data.county);
+      if (!matched) matched = [...countySel.options].find(o => o.value.toLowerCase() === data.county.toLowerCase());
+      if (matched) {
+        countySel.value = matched.value;
+        await onCountyChange();
+        hint.textContent = `Found: ${matched.value}, ${data.state}`;
+      } else {
+        hint.textContent = `State set to ${data.state} — select county manually.`;
+      }
+    } catch (_) {
+      hint.textContent = 'Lookup failed — please select state and county manually.';
+    }
+    btn.disabled = false;
+  }
+
+  // ── NETR county data sources ─────────────────────────────────────────────
+
+  async function loadCountySources(state, county) {
+    const panel = document.getElementById('sourcesPanel');
+    const body  = document.getElementById('sourcesBody');
+    panel.style.display = 'block';
+    body.innerHTML = '<div class="sources-loading">Loading data sources…</div>';
+
+    try {
+      const data = await fetch(`/api/county-sources?state=${encodeURIComponent(state)}&county=${encodeURIComponent(county)}`).then(r => r.json());
+      const sources = data.sources || [];
+
+      if (sources.length === 0) {
+        body.innerHTML = '<div class="sources-loading">No additional data sources found on publicrecords.netronline.com for this county.</div>';
+        return;
+      }
+
+      // Render each source as a URL card — same visual style as the main "County Search URL" row
+      let html = '';
+      sources.forEach(s => {
+        const haUrl = !!s.onlineUrl;
+        const badge = haUrl
+          ? `<span class="source-badge url-alive">✓ Active</span>`
+          : `<span class="source-badge url-dead">No URL</span>`;
+
+        const hint = s.phone
+          ? `URL verified active. &nbsp;·&nbsp; <strong>${escHtml(s.phone)}</strong>`
+          : (haUrl ? 'URL verified active.' : 'No online URL available for this source.');
+
+        const urlField = haUrl
+          ? `<input type="url" readonly value="${escHtml(s.onlineUrl)}" />`
+          : `<input type="text" readonly value="—" style="color:var(--gray-400);" />`;
+
+        const openLink = haUrl
+          ? `<a href="${escHtml(s.onlineUrl)}" target="_blank" rel="noopener"
+               style="white-space:nowrap;font-size:.75rem;color:var(--blue);text-decoration:none;margin-left:6px;">
+               ↗ Open</a>`
+          : '';
+
+        html += `
+          <div class="form-group source-url-item">
+            <label>${escHtml(s.name)}${badge}</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              ${urlField}${openLink}
+            </div>
+            <p class="hint">${hint}</p>
+          </div>`;
+      });
+
+      body.innerHTML = html;
+    } catch (_) {
+      body.innerHTML = '<div class="sources-loading">Could not load county data sources.</div>';
+    }
+  }
+
   // ── State / County directory ─────────────────────────────────────────────
 
   async function loadStates() {
@@ -1080,6 +1270,7 @@
     cSel.disabled  = true;
     hide('urlRow');
     hide('dualSearchBanner');
+    document.getElementById('sourcesPanel').style.display = 'none';
     if (!state) return;
 
     try {
@@ -1100,7 +1291,12 @@
   async function onCountyChange() {
     const state  = val('stateSelect');
     const county = val('countySelect');
-    if (!state || !county) { hide('urlRow'); hide('dualSearchBanner'); return; }
+    if (!state || !county) {
+      hide('urlRow');
+      hide('dualSearchBanner');
+      document.getElementById('sourcesPanel').style.display = 'none';
+      return;
+    }
 
     // Show dual-search banner for Anderson, TX
     if (isAndersonTX()) {
@@ -1140,6 +1336,9 @@
       badge.textContent = 'Error'; badge.className = 'url-dead';
       hint.textContent  = 'Could not resolve county URL.';
     }
+
+    // Load all NETR data sources for this county (runs in parallel with the URL check)
+    loadCountySources(state, county);
   }
 
   // ── Main search ──────────────────────────────────────────────────────────

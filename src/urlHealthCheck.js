@@ -252,4 +252,72 @@ async function resolveCountyUrl(storedUrl, stateCode, countyName) {
   };
 }
 
-module.exports = { checkUrlHealth, findLiveUrl, resolveCountyUrl };
+/**
+ * Scrape netronline for ALL data sources listed for a county (appraisal, tax,
+ * clerk, GIS, aerials, etc.).  Returns an array of:
+ *   { name, phone, onlineUrl, onlineText }
+ *
+ * The NETR page renders its table as <div class="div-table-row"> blocks with
+ * col-name attributes — NOT as <tr><td>.  We split on that class name.
+ */
+async function getAllNetronlineSources(stateCode, countyName) {
+  const countySlug = countyName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  const netronlineUrl = `${NETRONLINE_BASE}/state/${stateCode.toUpperCase()}/county/${countySlug}`;
+
+  console.log(`[urlHealthCheck] Fetching all sources from: ${netronlineUrl}`);
+  try {
+    const res  = await axios.get(netronlineUrl, { headers: HEADERS, timeout: TIMEOUT_SCRAPE });
+    const html = res.data;
+
+    const sources = [];
+
+    // NETR renders its "table" as <div class="div-table-row …"> blocks.
+    // Split on that class marker so each chunk is one logical row.
+    const rowChunks = html.split('div-table-row');
+
+    for (const chunk of rowChunks) {
+      // Data rows have col-name="Name"; header / product-store rows don't
+      if (!chunk.includes('col-name="Name"')) continue;
+
+      // ── Name ──────────────────────────────────────────────────────────────
+      const nameMatch = /col-name="Name"[^>]*>([\s\S]*?)<\/div>/i.exec(chunk);
+      const name = nameMatch
+        ? nameMatch[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+        : '';
+      if (!name) continue;
+
+      // ── Phone ─────────────────────────────────────────────────────────────
+      const phoneMatch = /col-name="Phone"[^>]*>([\s\S]*?)<\/div>/i.exec(chunk);
+      const phone = phoneMatch
+        ? phoneMatch[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() || null
+        : null;
+
+      // ── Online URL ────────────────────────────────────────────────────────
+      let onlineUrl = null, onlineText = null;
+      const onlineDivMatch = /col-name="Online"[^>]*>([\s\S]*?)<\/div>/i.exec(chunk);
+      if (onlineDivMatch) {
+        const onlineContent = onlineDivMatch[1];
+        const hrefMatch = /href="([^"]+)"/i.exec(onlineContent);
+        if (hrefMatch) {
+          let url = hrefMatch[1].trim();
+          if (url.startsWith('//'))     url = 'https:' + url;
+          else if (url.startsWith('/')) url = NETRONLINE_BASE + url;
+          onlineUrl  = url;
+          onlineText = onlineContent.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() || null;
+        }
+      }
+
+      if (phone || onlineUrl) {
+        sources.push({ name, phone, onlineUrl, onlineText });
+      }
+    }
+
+    console.log(`[urlHealthCheck] Found ${sources.length} sources for ${stateCode}/${countyName}`);
+    return sources;
+  } catch (err) {
+    console.error(`[urlHealthCheck] getAllNetronlineSources failed: ${err.message}`);
+    return [];
+  }
+}
+
+module.exports = { checkUrlHealth, findLiveUrl, resolveCountyUrl, getAllNetronlineSources };
