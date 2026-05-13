@@ -193,19 +193,42 @@ async function extractDetailData(page, propId) {
 
     // ── Legal description ─────────────────────────────────────────────────────
     let legalDescription = '';
-    const legalM = text.match(/Legal\s*Description\s*([A-Z0-9][^\n\r]{5,100})/i);
-    if (legalM) legalDescription = legalM[1].trim();
+    // Allow optional colon after "Description" and handle multiline-collapsed text
+    const legalM = text.match(/Legal\s*Description\s*:?\s*([A-Z0-9][^\n\r]{5,120}?)(?=\s+(?:Property\s+Status|Property\s+Type|Neighborhood|Account|Map\s*Number|Effective\s*Acres|\d{4}\s+(?:GENERAL|OWNER|CERTIFIED)))/i)
+                || text.match(/Legal\s*Description\s*:?\s*([A-Z0-9][^\n\r]{5,120})/i);
+    if (legalM) legalDescription = legalM[1].replace(/\s+/g, ' ').trim();
+
+    // ── Effective acres ───────────────────────────────────────────────────────
+    let acres = '';
+    const acresM = text.match(/Effective\s*Acres\s*:?\s*([\d.]+)/i);
+    if (acresM) acres = acresM[1];
+    // Fallback: parse from legal description
+    if (!acres && legalDescription) {
+      const am = legalDescription.match(/([\d.]+)\s*ACRES?/i);
+      if (am) acres = am[1];
+    }
+
+    // ── Land and improvement values ───────────────────────────────────────────
+    let landValue = '', improvementValue = '';
+    const lv1 = text.match(/Land\s+Homesite\s+Value\s*:?\s*\$?([\d,]+)/i);
+    const lv2 = text.match(/Land\s+Non.Homesite\s+Value\s*:?\s*\$?([\d,]+)/i);
+    const lv3 = text.match(/Land\s+(?:Market\s+)?Value\s*:?\s*\$?([\d,]+)/i);
+    const rawLand = lv1 ? lv1[1] : lv2 ? lv2[1] : lv3 ? lv3[1] : '';
+    if (rawLand) landValue = `$${rawLand.replace(/[^0-9,]/g, '')}`;
+
+    const iv1 = text.match(/Improvement\s+(?:Homesite\s+)?(?:Market\s+)?Value\s*:?\s*\$?([\d,]+)/i);
+    if (iv1) improvementValue = `$${iv1[1].replace(/[^0-9,]/g, '')}`;
 
     // ── Property info ─────────────────────────────────────────────────────────
     let propertyStatus = '';
-    const statusM = text.match(/Property\s*Status\s*(Active|Inactive|[A-Za-z]+)/i);
+    const statusM = text.match(/Property\s*Status\s*:?\s*(Active|Inactive|[A-Za-z]+)/i);
     if (statusM) propertyStatus = statusM[1].trim();
 
     let propertyType = '';
-    const typeM = text.match(/Property\s*Type\s*(Real|Personal|[A-Za-z]+)/i);
+    const typeM = text.match(/Property\s*Type\s*:?\s*(Real|Personal|[A-Za-z]+)/i);
     if (typeM) propertyType = typeM[1].trim();
 
-    return { ownerName, situsAddress, assessedValue, accountNumber, legalDescription, propertyStatus, propertyType };
+    return { ownerName, situsAddress, assessedValue, accountNumber, legalDescription, acres, landValue, improvementValue, propertyStatus, propertyType };
   }, propId).catch(() => ({ ownerName: '', situsAddress: '', assessedValue: '', accountNumber: '', legalDescription: '', propertyStatus: '', propertyType: '' }));
 }
 
@@ -459,19 +482,22 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
         county:          'Anderson',
         state:           'TX',
         additionalDetails: JSON.stringify({
-          'Property ID':       propId,
-          'Account':           acctNum,
-          'Assessed Value':    assessed,
-          'Total Taxes Due':   totalDue,
-          'Current Due':       currentDue,
-          'Past Years Due':    pastDue,
-          'Legal Description': detail.legalDescription || '',
-          'Property Status':   detail.propertyStatus   || '',
-          'Property Type':     detail.propertyType     || '',
-          'Source':            'Anderson County Tax Office',
-          'Detail URL':        bill.detailUrl || page.url(),
-          'Bill Tables':       bill.billTables  || [],
-          'Year Headers':      bill.yearHeaders || [],
+          'Property ID':        propId,
+          'Account':            acctNum,
+          'Assessed Value':     assessed,
+          'Total Taxes Due':    totalDue,
+          'Current Due':        currentDue,
+          'Past Years Due':     pastDue,
+          'Legal Description':  detail.legalDescription  || '',
+          'Effective Acres':    detail.acres             || '',
+          'Land Value':         detail.landValue         || '',
+          'Improvement Value':  detail.improvementValue  || '',
+          'Property Status':    detail.propertyStatus    || '',
+          'Property Type':      detail.propertyType      || '',
+          'Source':             'Anderson County Tax Office',
+          'Detail URL':         bill.detailUrl || page.url(),
+          'Bill Tables':        bill.billTables  || [],
+          'Year Headers':       bill.yearHeaders || [],
         }),
       }],
       totalFound: 1,

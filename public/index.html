@@ -1850,25 +1850,42 @@
     const rows = [];
     if (!Array.isArray(billTables)) return rows;
 
-    // Boilerplate / non-entity patterns to skip
-    const JUNK_PAT = [
-      /^account\s*[#:]/i, /^property\s+(address|type)/i, /^owner/i,
-      /^legal\s*desc/i, /^mailing/i, /^situs/i, /^assessed/i,
-      /^market\s*value/i, /^exemption/i, /^improvement/i,
-      /^land\s*value/i, /^click\s+here/i, /^page\s+\d/i,
-      /^show\s+/i, /^hide\s+/i, /^view\s+/i, /^\d{1,3}\s+results?\s*$/i,
-      /^total\s*(taxes?\s*)?due\s*$/i, /^balance\s*$/i,
+    // Strip responsive-label prefix that Kendo grids embed in cell text
+    // e.g. "TOTAL TAXES DUE: $39.82" → "$39.82"
+    const stripLbl = (s) => (s || '').replace(/^[A-Z][A-Z\s\/&]+:\s*/i, '').trim();
+
+    const isDollar = (s) => /\$?[\d,]+\.\d{2}/.test(s || '');
+
+    // Patterns that positively identify junk (non-entity) rows
+    const JUNK_ENTITY = [
+      /^property\b/i, /^r\d{4,}/i,             // "Property", "R60110"
+      /^certified\b/i, /^details?\b/i,
+      /^estimate\s+taxes/i, /^neighborhood\b/i,
+      /^\d{4}\s+(general|owner|certified)/i,    // "2025 GENERAL INFORMATION"
+      /^general\s+information/i, /^owner\s+information/i,
+      /^value\s+history/i, /^year\s*:/i,
+      /^percent\s+ownership/i, /^agent\b/i,
+      /^land\s+(homesite|non.homesite|timber)/i,
+      /^agricultural\s+use/i, /^timber\s+use/i,
+      /^special\s+exemptions/i, /^effective\s+acres/i,
+      /^map\s+number/i, /^account\b/i,
+      /^(current|past\s+years?)\s+(amount\s+)?due/i,
+      /^enter\s+a\s+custom/i, /^custom\s+(amount|values)/i,
+      /^(cancel|payment\s+amount|ag\s+rollback|your\s+total|change\s+of\s+use)/i,
+      /^property\s+status/i, /^property\s+type/i,
+      /^mailing\b/i, /^situs\b/i, /^assessed\b/i,
+      /^taxing\s+entity\s*$/i,                  // the header label itself if it slipped through
     ];
-    const isDollar  = (s) => /\$?[\d,]+\.\d{2}/.test(s || '');
-    const seenKeys  = new Set();
+
+    const seenKeys = new Set();
 
     billTables.forEach((tableRows, ti) => {
       if (!Array.isArray(tableRows) || tableRows.length === 0) return;
       const year = String((yearHeaders || [])[ti] || '').replace(/\D/g, '').slice(0, 4) || '';
 
-      // Find header row: first row containing "TAXING ENTITY" or at least "ENTITY"
+      // Scan ALL rows (no limit) to find the header row with "TAXING ENTITY"
       let hdrIdx = -1;
-      for (let i = 0; i < Math.min(tableRows.length, 10); i++) {
+      for (let i = 0; i < tableRows.length; i++) {
         const r = tableRows[i];
         if (!Array.isArray(r)) continue;
         const flat = r.join(' ').toUpperCase();
@@ -1880,7 +1897,7 @@
       if (hdrIdx < 0) hdrIdx = 0;
 
       const hdr = (Array.isArray(tableRows[hdrIdx]) ? tableRows[hdrIdx] : [])
-        .map(h => (h || '').toLowerCase().trim());
+        .map(h => stripLbl(h).toLowerCase().trim());
       const ci = (kws) => {
         const i = hdr.findIndex(h => kws.some(k => h.includes(k)));
         return i >= 0 ? i : -1;
@@ -1900,37 +1917,46 @@
       const dataRows = tableRows.slice(hdrIdx + 1);
       dataRows.forEach(row => {
         if (!Array.isArray(row) || row.length === 0) return;
-        const g = (i) => (i >= 0 && i < row.length) ? (row[i] || '').toString().trim() : '';
+        const g = (i) => (i >= 0 && i < row.length)
+          ? stripLbl((row[i] || '').toString().trim())
+          : '';
 
-        let entity = (C.entity >= 0 ? g(C.entity) : '') || g(0);
-        // Strip "TAXING ENTITY: " prefix used in Anderson County format
+        let entity = (C.entity >= 0 ? g(C.entity) : '') || stripLbl(g(0));
         entity = entity.replace(/^TAXING\s+ENTITY:\s*/i, '').trim();
 
         if (!entity) return;
-        if (entity.length > 70) return;                                   // boilerplate long strings
-        if (JUNK_PAT.some(p => p.test(entity))) return;                   // known non-entity patterns
-        if (/^(Levy|P&I|Att\.?\s*Fee|Credits|Discount|Attorney)\b/i.test(entity)) return; // sub-rows
-        if (/^TOTAL[S]?\b/i.test(entity)) return;                         // totals rows
+        if (/^\$[\d,]+\.\d{2}$/.test(entity)) return;      // "$0.00" as entity
+        if (/^\d{4}$/.test(entity)) return;                 // bare year number
+        if (entity.length > 70) return;
+        if (JUNK_ENTITY.some(p => p.test(entity))) return;
+        if (/^(Levy|P&I|Att\.?\s*Fee|Credits|Discount|Attorney)\b/i.test(entity)) return;
+        if (/^TOTAL[S]?\b/i.test(entity)) return;
 
-        const rowStr  = row.join(' ');
-        // If entity is suspiciously long or has no dollar data at all, skip
-        if (!isDollar(rowStr) && entity.length > 25) return;
-
+        // Extract and strip label prefixes from value cells
         const totalDue = g(C.totalDue);
         const paid     = g(C.paid);
         const balance  = g(C.balance);
         const paidDate = g(C.paidDate);
 
-        // Derive status when not explicitly present
+        // Skip rows with NO meaningful data at all
+        if (!totalDue && !paid && !balance && !g(C.status) && !isDollar(row.join(' '))) return;
+
+        // Derive + OVERRIDE status from actual balance (authoritative)
         let status = g(C.status);
-        if (!status) {
-          const bal = parseFloat((balance || totalDue || '').replace(/[$,]/g, ''));
-          if (!isNaN(bal)) {
-            status = bal === 0 ? 'Paid' : 'Delinquent';
-          } else if (paid || paidDate) {
-            status = 'Paid';
-          }
+        const balNum  = parseFloat((balance  || '').replace(/[$,]/g, '')) || 0;
+        const paidNum = parseFloat((paid     || '').replace(/[$,]/g, '')) || 0;
+        const tdNum   = parseFloat((totalDue || '').replace(/[$,]/g, '')) || 0;
+        if (balance && balNum > 0.005) {
+          status = 'Delinquent';
+        } else if (balance && balNum <= 0.005) {
+          status = paidDate && paidDate !== '-' ? 'Paid' : (paidNum > 0 ? 'Paid' : (status || 'Paid'));
+        } else if (!status) {
+          if (paid || paidDate) status = 'Paid';
+          else if (tdNum > 0)   status = 'Delinquent';
         }
+
+        // Format zero-balance date placeholder as empty
+        const cleanPaidDate = (paidDate === '-' || paidDate === '—') ? '' : paidDate;
 
         // Deduplicate by entity+year
         const key = `${entity.toLowerCase()}|${year}`;
@@ -1940,12 +1966,13 @@
         rows.push({
           entity, taxYear: year, status,
           base: g(C.base), pi: g(C.pi),
-          totalDue, paid, dueDate: g(C.dueDate), paidDate, balance,
+          totalDue, paid,
+          dueDate: g(C.dueDate), paidDate: cleanPaidDate, balance,
         });
       });
     });
 
-    // Sort by year DESC
+    // Sort year DESC
     rows.sort((a, b) => (parseInt(b.taxYear) || 0) - (parseInt(a.taxYear) || 0));
     return rows;
   }
@@ -2007,17 +2034,18 @@
                       || tx['Account']     || tx['Account Number']    || '';
     const ownerName    = aprRec.ownerName  || taxRec.ownerName        || '';
 
-    // Legal description: try all common key variants
+    // Legal description: try all common key variants (handler stores as 'Legal Description')
     const legalDesc    = aprRec.legalDescription || ap.legalDescription
                       || tx['Legal Description'] || tx['legalDescription']
-                      || taxRec.legalDescription || '';
+                      || taxRec.legalDescription || taxRec.legalDesc || '';
 
     const locationAddr = aprRec.propertyAddress || taxRec.propertyAddress
                       || tx['Property Address'] || tx['Situs Address'] || '';
     const mailingAddr  = ap.mailingAddress || locationAddr;
 
-    // Acres: try field then parse from legal description
-    let acres = ap.legalAcreage || ap.acres || tx['Acres'] || tx['acres'] || '';
+    // Acres: try all known field variants then parse from legal description
+    let acres = ap.legalAcreage || ap.acres
+             || tx['Effective Acres'] || tx['Acres'] || tx['acres'] || '';
     if (!acres && legalDesc) {
       const m = legalDesc.match(/(\d+\.?\d*)\s*ACRES?/i);
       if (m) acres = m[1] + ' ac';
@@ -2030,10 +2058,10 @@
                       || (yearHeaders2.length ? Math.max(...yearHeaders2.map(y => parseInt(y)||0)).toString() : '')
                       || new Date().getFullYear().toString();
 
-    // Assessment values: try all common key variants
-    const landVal  = ap.landMarketValue  || ap.landValue   || tx['Land Value']        || tx['Land Market Value']  || '';
-    const bldgVal  = ap.improvementValue || ap.bldgValue   || tx['Improvement Value'] || tx['Building Value']     || '';
-    const totalVal = ap.netAppraisedValue || ap.totalValue || tx['Assessed Value']    || tx['Total Value']        || tx['Market Value'] || '';
+    // Assessment values: check all known key variants (handler + public portal)
+    const landVal  = ap.landMarketValue  || ap.landValue   || tx['Land Value']       || tx['Land Market Value']  || '';
+    const bldgVal  = ap.improvementValue || ap.bldgValue   || tx['Improvement Value']|| tx['Building Value']     || '';
+    const totalVal = ap.netAppraisedValue || ap.totalValue || tx['Assessed Value']   || tx['Total Value']        || tx['Market Value'] || '';
 
     const propStatus   = tx['Property Status'] || taxRec.paymentStatus || '';
 
