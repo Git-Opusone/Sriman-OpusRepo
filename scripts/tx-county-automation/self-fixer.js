@@ -24,8 +24,15 @@ const COUNTIES_JSON = path.resolve(__dirname, '../../data/counties.json');
 const PLATFORM_FINGERPRINTS = [
   {
     platform: 'bis',
-    test: (url) => /esearch\.[a-z]+cad\.(org|com|net)/i.test(url),
-    label: 'BIS Consultants (esearch.*.cad)',
+    // Classic: esearch.{county}cad.org  |  SPA: *.cadcentral.com or *.bisconsultants.com
+    // Also detect navigated search result URLs: /search/result?keywords=
+    test: (url) => (
+      /esearch\.[a-z]+cad\.(org|com|net)/i.test(url) ||
+      /\.cadcentral\.com/i.test(url) ||
+      /\.bisconsultants\.com/i.test(url) ||
+      /\/search\/result\?keywords=/i.test(url)
+    ),
+    label: 'BIS Consultants',
   },
   {
     platform: 'publicportal',
@@ -168,7 +175,10 @@ async function runSelfFixer(allTestResults, serverUrl = 'http://localhost:3000',
     if (!countyEntry) continue;
 
     // ── Fix 1: Re-identify platform from URL ──────────────────────────────────
-    const detected = detectPlatformFromUrl(url);
+    // Also check the URL the handler actually navigated to (nameSearch.searchedUrl)
+    // since BIS SPAs redirect to /Property/Search after form submission.
+    const navigatedUrl = result.nameSearch?.searchedUrl || result.idSearch?.searchedUrl;
+    const detected = detectPlatformFromUrl(url) || detectPlatformFromUrl(navigatedUrl);
     if (detected && (!platform || platform === 'generic') && detected.platform !== platform) {
       const fix = {
         county,

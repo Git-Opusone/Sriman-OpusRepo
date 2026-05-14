@@ -161,7 +161,7 @@ async function ensureSearchPage(page) {
   } catch (_) {
     // Try navigating to explicit search path variants
     const base = new URL(page.url()).origin;
-    for (const path of ['/Search', '/search', '/#/search', '/Property/Search']) {
+    for (const path of ['/Search', '/search', '/search/', '/#/search', '/Property/Search', '/Property/Search/']) {
       try {
         await page.goto(`${base}${path}`, { waitUntil: 'networkidle', timeout: 20000 });
         const has = await page.evaluate(() =>
