@@ -90,6 +90,9 @@ function detectFromHtml(html) {
       h.includes('search/fulltext'))                                      return 'publicportal';
   if (h.includes('public portal') && (h.includes('cad') || h.includes('appraisal district')))
                                                                           return 'publicportal';
+  // Aumentum React SPA public portals: title is exactly "Public Portal" but no CAD name in static HTML
+  if (h.includes('<title>public portal</title>') && h.includes('/static/js/'))
+                                                                          return 'publicportal';
   // PTaxPro / whoownsit.com county aggregator template
   if (h.includes('name-addr-acctno') || h.includes('whoownsit.com'))     return 'ptaxpro';
 
