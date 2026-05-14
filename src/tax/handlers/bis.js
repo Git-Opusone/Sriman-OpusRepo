@@ -445,6 +445,14 @@ function buildDetailUrl(originUrl, basePath, href, propId) {
   return null;
 }
 
+function cleanMoney(v) {
+  if (!v) return '';
+  // Strip BIS pivot-table suffixes like "(=)", "(+)", "(-)" and whitespace
+  const cleaned = String(v).replace(/\s*\([+\-=)]\)\s*$/, '').trim();
+  // Only return if it looks like a money value (has $ or digits)
+  return /[$\d,]/.test(cleaned) ? cleaned : '';
+}
+
 // ─── Main export ─────────────────────────────────────────────────────────────
 
 /**
@@ -597,8 +605,9 @@ async function search(page, {
         ownerName:        fields['Owner Name']     || fields['Owner']       || item.ownerName || '',
         propertyAddress:  fields['Situs Address']  || fields['Property Address'] || item.address || '',
         legalDescription: fields['Legal Description'] || fields['Legal Desc'] || item.legalDescription || '',
-        taxAmountDue:     fields['Appraised Value'] || fields['Market Value'] || fields['Total Value'] || '',
-        taxYear: '', paymentStatus: '', county: '', state: '',
+        taxAmountDue:     cleanMoney(fields['Assessed Value'] || fields['Appraised Value'] || fields['Market Value'] || fields['Total Value']) || '',
+        taxYear:          fields['Tax Year'] || '',
+        paymentStatus: '', county: '', state: '',
         additionalDetails: JSON.stringify({ ...item, ...fields }),
       });
     }
@@ -719,7 +728,8 @@ async function search(page, {
       ownerName:        detailFields['Owner Name']        || detailFields['Owner']            || summaryRecord.ownerName,
       propertyAddress:  detailFields['Situs Address']     || detailFields['Property Address'] || detailFields['Address']  || summaryRecord.propertyAddress,
       legalDescription: detailFields['Legal Description'] || detailFields['Legal Desc']       || detailFields['Legal']    || summaryRecord.legalDescription,
-      taxAmountDue:     detailFields['Appraised Value']   || detailFields['Market Value']     || detailFields['Total Value'] || summaryRecord.taxAmountDue,
+      taxAmountDue:     cleanMoney(detailFields['Assessed Value'] || detailFields['Appraised Value'] || detailFields['Market Value'] || detailFields['Total Value']) || summaryRecord.taxAmountDue,
+      taxYear:          detailFields['Tax Year'] || summaryRecord.taxYear,
       additionalDetails: JSON.stringify({ ...obj, ...detailFields }),
     });
 
