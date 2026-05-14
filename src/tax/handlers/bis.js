@@ -165,7 +165,7 @@ async function ensureSearchPage(page) {
       try {
         await page.goto(`${base}${path}`, { waitUntil: 'networkidle', timeout: 20000 });
         const has = await page.evaluate(() =>
-          document.querySelectorAll('input[type="text"]').length > 0
+          document.querySelectorAll('input[type="text"], input[type="search"]').length > 0
         );
         if (has) return true;
       } catch (_) {}

@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-05-14",
+  "lastUpdated": "2026-05-15",
   "states": {
     "AL": {
       "Autauga": {
@@ -21955,9 +21955,9 @@
         "netronlinePath": "/state/TX/county/bailey"
       },
       "Bandera": {
-        "url": "http://www.bancad.org/",
+        "url": "https://esearch.banderacounty.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/bandera"
       },
       "Bastrop": {
@@ -22945,9 +22945,9 @@
         "netronlinePath": "/state/TX/county/nacogdoches"
       },
       "Navarro": {
-        "url": null,
-        "platform": null,
-        "lastVerified": null,
+        "url": "http://navarrocad.com/",
+        "platform": "generic",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/navarro"
       },
       "Newton": {
@@ -23023,9 +23023,9 @@
         "netronlinePath": "/state/TX/county/polk"
       },
       "Potter": {
-        "url": null,
-        "platform": null,
-        "lastVerified": null,
+        "url": "https://www.pottercountytax.com/search",
+        "platform": "generic",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/potter"
       },
       "Presidio": {
@@ -23041,9 +23041,9 @@
         "netronlinePath": "/state/TX/county/rains"
       },
       "Randall": {
-        "url": null,
-        "platform": null,
-        "lastVerified": null,
+        "url": "https://taxpayer.randallcounty.com/taxweb/",
+        "platform": "generic",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/randall"
       },
       "Reagan": {
@@ -23089,9 +23089,9 @@
         "netronlinePath": "/state/TX/county/robertson"
       },
       "Rockwall": {
-        "url": null,
-        "platform": null,
-        "lastVerified": null,
+        "url": "https://www.rockwallcad.com/",
+        "platform": "generic",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/rockwall"
       },
       "Runnels": {
@@ -23353,9 +23353,9 @@
         "netronlinePath": "/state/TX/county/wheeler"
       },
       "Wichita": {
-        "url": null,
-        "platform": null,
-        "lastVerified": null,
+        "url": "https://esearch.wadtx.com",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/wichita"
       },
       "Wilbarger": {
@@ -23389,9 +23389,9 @@
         "netronlinePath": "/state/TX/county/winkler"
       },
       "Wise": {
-        "url": null,
-        "platform": null,
-        "lastVerified": null,
+        "url": "https://esearch.wise-cad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/wise"
       },
       "Wood": {
