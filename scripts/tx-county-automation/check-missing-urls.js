@@ -1,0 +1,10 @@
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const updateScript = fs.readFileSync(path.resolve(__dirname, 'update-county-urls.js'), 'utf8');
+const d = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../data/counties.json'), 'utf8'));
+const tx = d.states.TX;
+const allTX = Object.keys(tx).filter(n => n !== '_done').sort();
+const notInScript = allTX.filter(c => !updateScript.includes(JSON.stringify(c)));
+console.log(`Counties NOT in update script (${notInScript.length}):`);
+notInScript.forEach(c => console.log(`  ${c}: ${tx[c].url} / ${tx[c].platform}`));
