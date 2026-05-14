@@ -21937,15 +21937,15 @@
         "netronlinePath": "/state/TX/county/armstrong"
       },
       "Atascosa": {
-        "url": "https://www.atascosacad.com/",
+        "url": "https://esearch.atascosacad.com/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/atascosa"
       },
       "Austin": {
-        "url": "https://www.austincad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.austincad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/austin"
       },
       "Bailey": {
@@ -21961,9 +21961,9 @@
         "netronlinePath": "/state/TX/county/bandera"
       },
       "Bastrop": {
-        "url": "http://www.bastropcad.org/",
+        "url": "https://esearch.bastropcad.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/bastrop"
       },
       "Baylor": {
@@ -21973,45 +21973,45 @@
         "netronlinePath": "/state/TX/county/baylor"
       },
       "Bee": {
-        "url": "http://www.beecad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.beecad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/bee"
       },
       "Bell": {
-        "url": "https://bellcad.org/",
+        "url": "https://esearch.bellcad.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/bell"
       },
       "Bexar": {
-        "url": "https://bcad.org/",
+        "url": "https://bexar.acttax.com/act_webdev/bexar/index.jsp",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/bexar"
       },
       "Blanco": {
         "url": "https://esearch.blancocad.com/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/blanco"
       },
       "Borden": {
-        "url": "http://bordencad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.bordencad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/borden"
       },
       "Bosque": {
-        "url": "https://www.bosquecountytaxoffice.com/search",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.bosquecad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/bosque"
       },
       "Bowie": {
-        "url": "http://www.bowieappraisal.com/#/Home",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.bowiecad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/bowie"
       },
       "Brazoria": {
@@ -22021,9 +22021,9 @@
         "netronlinePath": "/state/TX/county/brazoria"
       },
       "Brazos": {
-        "url": "http://www.brazoscad.org",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.brazoscad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/brazos"
       },
       "Brewster": {
@@ -22039,9 +22039,9 @@
         "netronlinePath": "/state/TX/county/briscoe"
       },
       "Brooks": {
-        "url": "http://brookscad.org/",
+        "url": "https://esearch.brookscad.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/brooks"
       },
       "Brown": {
@@ -22065,31 +22065,31 @@
       "Caldwell": {
         "url": "https://esearch.caldwellcad.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/caldwell"
       },
       "Calhoun": {
         "url": "https://esearch.calhouncad.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/calhoun"
       },
       "Callahan": {
-        "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=callahancad&time=201601191609003",
-        "platform": "isw",
-        "lastVerified": null,
+        "url": "https://esearch.callahancad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/callahan"
       },
       "Cameron": {
-        "url": "https://cameron.prodigycad.com/property-search",
-        "platform": "prodigycad",
-        "lastVerified": null,
+        "url": "https://esearch.cameroncad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/cameron"
       },
       "Camp": {
-        "url": "http://esearch.campcad.org/",
+        "url": "https://esearch.campcad.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/camp"
       },
       "Carson": {
@@ -22101,13 +22101,13 @@
       "Cass": {
         "url": "https://esearch.casscad.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/cass"
       },
       "Castro": {
-        "url": "https://castrocad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.castrocad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/castro"
       },
       "Chambers": {
@@ -22117,9 +22117,9 @@
         "netronlinePath": "/state/TX/county/chambers"
       },
       "Cherokee": {
-        "url": "https://cherokeecad.com/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.cherokeecad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/cherokee"
       },
       "Childress": {
@@ -22135,9 +22135,9 @@
         "netronlinePath": "/state/TX/county/clay"
       },
       "Cochran": {
-        "url": "http://www.co.cochran.tx.us/default.aspx?Cochran_County/County.Clerk",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.cochrancad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/cochran"
       },
       "Coke": {
@@ -22153,9 +22153,9 @@
         "netronlinePath": "/state/TX/county/coleman"
       },
       "Collin": {
-        "url": "http://www.collincad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.collincad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/collin"
       },
       "Collingsworth": {
@@ -22165,9 +22165,9 @@
         "netronlinePath": "/state/TX/county/collingsworth"
       },
       "Colorado": {
-        "url": "http://www.coloradocad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.coloradocad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/colorado"
       },
       "Comal": {
@@ -22177,15 +22177,15 @@
         "netronlinePath": "/state/TX/county/comal"
       },
       "Comanche": {
-        "url": "http://www.comanchecad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.comanchecad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/comanche"
       },
       "Concho": {
-        "url": "https://www.conchocad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.conchocad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/concho"
       },
       "Cooke": {
@@ -22195,9 +22195,9 @@
         "netronlinePath": "/state/TX/county/cooke"
       },
       "Coryell": {
-        "url": "http://www.coryellcad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.coryellcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/coryell"
       },
       "Cottle": {
@@ -22249,9 +22249,9 @@
         "netronlinePath": "/state/TX/county/dawson"
       },
       "Deaf Smith": {
-        "url": "http://www.deafsmithcad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.deafsmithcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/deaf_smith"
       },
       "Delta": {
@@ -22291,9 +22291,9 @@
         "netronlinePath": "/state/TX/county/donley"
       },
       "Duval": {
-        "url": "http://www.duvalcad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.duvalcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/duval"
       },
       "Eastland": {
@@ -22311,7 +22311,7 @@
       "Edwards": {
         "url": "https://esearch.edwardscad.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/edwards"
       },
       "Ellis": {
@@ -22321,9 +22321,9 @@
         "netronlinePath": "/state/TX/county/ellis"
       },
       "El Paso": {
-        "url": "https://www.epcounty.com/taxoffice/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.epcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/el_paso"
       },
       "Erath": {
@@ -22333,9 +22333,9 @@
         "netronlinePath": "/state/TX/county/erath"
       },
       "Falls": {
-        "url": "https://esearch.fallscad.net/",
+        "url": "https://esearch.fallscad.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/falls"
       },
       "Fannin": {
@@ -22345,9 +22345,9 @@
         "netronlinePath": "/state/TX/county/fannin"
       },
       "Fayette": {
-        "url": "http://www.fayettecad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.fayettecad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/fayette"
       },
       "Fisher": {
@@ -22369,9 +22369,9 @@
         "netronlinePath": "/state/TX/county/foard"
       },
       "Fort Bend": {
-        "url": "https://www.fortbendcountytx.gov/government/departments/tax-assessor-collector/property-taxes",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.fortbendcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/fort_bend"
       },
       "Franklin": {
@@ -22393,27 +22393,27 @@
         "netronlinePath": "/state/TX/county/frio"
       },
       "Gaines": {
-        "url": "http://www.gainescad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.gainescad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/gaines"
       },
       "Galveston": {
-        "url": "https://galvestoncad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.galvestoncad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/galveston"
       },
       "Garza": {
-        "url": "http://garzacad.org/#/Home",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.garzacad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/garza"
       },
       "Gillespie": {
         "url": "https://esearch.gillespiecad.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/gillespie"
       },
       "Glasscock": {
@@ -22435,9 +22435,9 @@
         "netronlinePath": "/state/TX/county/gonzales"
       },
       "Gray": {
-        "url": "http://www.graycad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.graycad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/gray"
       },
       "Grayson": {
@@ -22465,9 +22465,9 @@
         "netronlinePath": "/state/TX/county/guadalupe"
       },
       "Hale": {
-        "url": "https://www.halecad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.halecad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/hale"
       },
       "Hall": {
@@ -22513,9 +22513,9 @@
         "netronlinePath": "/state/TX/county/harrison"
       },
       "Hartley": {
-        "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=hartleycad&time=201601191610049",
-        "platform": "isw",
-        "lastVerified": null,
+        "url": "https://esearch.hartleycad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/hartley"
       },
       "Haskell": {
@@ -22525,9 +22525,9 @@
         "netronlinePath": "/state/TX/county/haskell"
       },
       "Hays": {
-        "url": "http://hayscad.com/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.hayscad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/hays"
       },
       "Hemphill": {
@@ -22549,9 +22549,9 @@
         "netronlinePath": "/state/TX/county/hidalgo"
       },
       "Hill": {
-        "url": "https://hillcad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.hillcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/hill"
       },
       "Hockley": {
@@ -22579,21 +22579,21 @@
         "netronlinePath": "/state/TX/county/houston"
       },
       "Howard": {
-        "url": "http://gis.bisconsultants.com/howardcad/",
+        "url": "https://esearch.howardcad.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/howard"
       },
       "Hudspeth": {
-        "url": "http://www.hudspethcad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.hudspethcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/hudspeth"
       },
       "Hunt": {
-        "url": "http://www.hunt-cad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.huntcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/hunt"
       },
       "Hutchinson": {
@@ -22621,9 +22621,9 @@
         "netronlinePath": "/state/TX/county/jackson"
       },
       "Jasper": {
-        "url": "http://jaspercad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.jaspercad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/jasper"
       },
       "Jeff Davis": {
@@ -22651,9 +22651,9 @@
         "netronlinePath": "/state/TX/county/jim_wells"
       },
       "Johnson": {
-        "url": "https://www.johnsoncountytaxoffice.org/search",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.johnsoncad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/johnson"
       },
       "Jones": {
@@ -22681,9 +22681,9 @@
         "netronlinePath": "/state/TX/county/kendall"
       },
       "Kenedy": {
-        "url": "http://www.kenedycad.org",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.kenedycad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/kenedy"
       },
       "Kent": {
@@ -22693,15 +22693,15 @@
         "netronlinePath": "/state/TX/county/kent"
       },
       "Kerr": {
-        "url": "http://www.kerrcad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.kerrcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/kerr"
       },
       "Kimble": {
-        "url": "http://www.kimblecad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.kimblecad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/kimble"
       },
       "King": {
@@ -22711,9 +22711,9 @@
         "netronlinePath": "/state/TX/county/king"
       },
       "Kinney": {
-        "url": "http://kinneycad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.kinneycad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/kinney"
       },
       "Kleberg": {
@@ -22729,21 +22729,21 @@
         "netronlinePath": "/state/TX/county/knox"
       },
       "Lamar": {
-        "url": "http://www.lamarcad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.lamarcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/lamar"
       },
       "Lamb": {
-        "url": "http://www.lambcad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.lambcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/lamb"
       },
       "Lampasas": {
-        "url": "http://www.co.lampasas.tx.us/page/lampasas.County.Assessor.Collector",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.lampasascad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/lampasas"
       },
       "La Salle": {
@@ -22753,9 +22753,9 @@
         "netronlinePath": "/state/TX/county/la_salle"
       },
       "Lavaca": {
-        "url": "http://lavacacad.com/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.lavacacad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/lavaca"
       },
       "Lee": {
@@ -22771,9 +22771,9 @@
         "netronlinePath": "/state/TX/county/leon"
       },
       "Liberty": {
-        "url": "https://propaccess.trueautomation.com/ClientDB/PropertySearch.aspx?cid=8",
-        "platform": "trueautomation",
-        "lastVerified": null,
+        "url": "https://esearch.libertycad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/liberty"
       },
       "Limestone": {
@@ -22795,9 +22795,9 @@
         "netronlinePath": "/state/TX/county/live_oak"
       },
       "Llano": {
-        "url": "https://www.co.llano.tx.us/page/llano.County.Assessor.Collector",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.llanocad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/llano"
       },
       "Loving": {
@@ -22819,9 +22819,9 @@
         "netronlinePath": "/state/TX/county/lynn"
       },
       "Madison": {
-        "url": "http://www.madisoncad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.madisoncad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/madison"
       },
       "Marion": {
@@ -22837,9 +22837,9 @@
         "netronlinePath": "/state/TX/county/martin"
       },
       "Mason": {
-        "url": "http://www.masoncad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.masoncad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/mason"
       },
       "Matagorda": {
@@ -22867,15 +22867,15 @@
         "netronlinePath": "/state/TX/county/mclennan"
       },
       "McMullen": {
-        "url": "http://www.mcmullencad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.mcmullencad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/mcmullen"
       },
       "Medina": {
-        "url": "http://www.medinacad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.medinacad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/medina"
       },
       "Menard": {
@@ -22897,15 +22897,15 @@
         "netronlinePath": "/state/TX/county/milam"
       },
       "Mills": {
-        "url": "http://www.millscad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.millscad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/mills"
       },
       "Mitchell": {
-        "url": "http://www.mitchellcad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.mitchellcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/mitchell"
       },
       "Montague": {
@@ -22921,9 +22921,9 @@
         "netronlinePath": "/state/TX/county/montgomery"
       },
       "Moore": {
-        "url": "http://www.moorecad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.moorecad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/moore"
       },
       "Morris": {
@@ -22951,9 +22951,9 @@
         "netronlinePath": "/state/TX/county/navarro"
       },
       "Newton": {
-        "url": "http://www.newtoncad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.newtoncad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/newton"
       },
       "Nolan": {
@@ -22963,9 +22963,9 @@
         "netronlinePath": "/state/TX/county/nolan"
       },
       "Nueces": {
-        "url": "http://www.ncadistrict.com/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.nuecescad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/nueces"
       },
       "Ochiltree": {
@@ -22975,9 +22975,9 @@
         "netronlinePath": "/state/TX/county/ochiltree"
       },
       "Oldham": {
-        "url": "http://www.oldhamcad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.oldhamcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/oldham"
       },
       "Orange": {
@@ -23005,9 +23005,9 @@
         "netronlinePath": "/state/TX/county/parker"
       },
       "Parmer": {
-        "url": "http://esearch.parmercad.org/",
+        "url": "https://esearch.parmercad.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/parmer"
       },
       "Pecos": {
@@ -23017,9 +23017,9 @@
         "netronlinePath": "/state/TX/county/pecos"
       },
       "Polk": {
-        "url": "https://polkcad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.polkcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/polk"
       },
       "Potter": {
@@ -23029,15 +23029,15 @@
         "netronlinePath": "/state/TX/county/potter"
       },
       "Presidio": {
-        "url": "https://presidiocad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.presidiocad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/presidio"
       },
       "Rains": {
-        "url": "http://www.rainscad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.rainscad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/rains"
       },
       "Randall": {
@@ -23053,9 +23053,9 @@
         "netronlinePath": "/state/TX/county/reagan"
       },
       "Real": {
-        "url": "https://realcad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.realcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/real"
       },
       "Red River": {
@@ -23083,9 +23083,9 @@
         "netronlinePath": "/state/TX/county/roberts"
       },
       "Robertson": {
-        "url": "http://www.co.robertson.tx.us/default.aspx?Robertson_County/County.Treasurer",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.robertsoncad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/robertson"
       },
       "Rockwall": {
@@ -23139,7 +23139,7 @@
       "Schleicher": {
         "url": "https://esearch.schleichercad.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/schleicher"
       },
       "Scurry": {
@@ -23149,15 +23149,15 @@
         "netronlinePath": "/state/TX/county/scurry"
       },
       "Shackelford": {
-        "url": "http://www.shackelfordcad.com/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.shackelfordcad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/shackelford"
       },
       "Shelby": {
-        "url": "https://www.co.shelby.tx.us/page/shelby.County.Assessor.Collector",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.shelbycad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/shelby"
       },
       "Sherman": {
@@ -23179,9 +23179,9 @@
         "netronlinePath": "/state/TX/county/somervell"
       },
       "Starr": {
-        "url": "http://www.starrcad.org",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.starrcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/starr"
       },
       "Stephens": {
@@ -23203,9 +23203,9 @@
         "netronlinePath": "/state/TX/county/stonewall"
       },
       "Sutton": {
-        "url": "http://www.suttoncad.com/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.suttoncad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/sutton"
       },
       "Swisher": {
@@ -23215,9 +23215,9 @@
         "netronlinePath": "/state/TX/county/swisher"
       },
       "Tarrant": {
-        "url": "https://www.tad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.tarrantcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/tarrant"
       },
       "Taylor": {
@@ -23227,9 +23227,9 @@
         "netronlinePath": "/state/TX/county/taylor"
       },
       "Terrell": {
-        "url": "http://www.terrellcad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.terrellcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/terrell"
       },
       "Terry": {
@@ -23239,9 +23239,9 @@
         "netronlinePath": "/state/TX/county/terry"
       },
       "Throckmorton": {
-        "url": "https://www.throckmortoncad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.throckmortoncad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/throckmorton"
       },
       "Titus": {
@@ -23287,9 +23287,9 @@
         "netronlinePath": "/state/TX/county/upton"
       },
       "Uvalde": {
-        "url": "http://www.uvaldecad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.uvaldecad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/uvalde"
       },
       "Val Verde": {
@@ -23305,21 +23305,21 @@
         "netronlinePath": "/state/TX/county/van_zandt"
       },
       "Victoria": {
-        "url": "http://www.victoriacad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.victoriacad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/victoria"
       },
       "Walker": {
-        "url": "http://www.walkercountyappraisal.com",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.walkercad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/walker"
       },
       "Waller": {
-        "url": "https://waller-cad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.wallercad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/waller"
       },
       "Ward": {
@@ -23329,9 +23329,9 @@
         "netronlinePath": "/state/TX/county/ward"
       },
       "Washington": {
-        "url": "http://washingtoncad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.washingtoncad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/washington"
       },
       "Webb": {
@@ -23367,13 +23367,13 @@
       "Willacy": {
         "url": "https://esearch.willacycad.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/willacy"
       },
       "Williamson": {
-        "url": "http://www.wcad.org/",
-        "platform": "generic",
-        "lastVerified": "2026-05-14",
+        "url": "https://esearch.williamsoncad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/williamson"
       },
       "Wilson": {
@@ -23403,25 +23403,25 @@
       "Yoakum": {
         "url": "https://esearch.yoakumcad.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/yoakum"
       },
       "Young": {
-        "url": "http://www.youngcad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.youngcad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/young"
       },
       "Zapata": {
-        "url": "https://zapata.tx.publicsearch.us/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.zapatacad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/zapata"
       },
       "Zavala": {
-        "url": "http://zavalacad.com/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.zavalacad.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/zavala"
       },
       "_done": true
