@@ -117,12 +117,22 @@ async function fetchAlternativeUrls(serverUrl, state, county) {
     if (res.status !== 200) return [];
     const data = JSON.parse(res.body);
     const sources = data.sources || data || [];
-    return Array.isArray(sources)
-      ? sources
-          .filter(s => s.type === 'appraisal' || s.type === 'search')
-          .map(s => s.url || s.link)
-          .filter(Boolean)
-      : [];
+    if (!Array.isArray(sources)) return [];
+    // Filter: prefer CAD/appraisal sources; exclude Clerks, mapping, aerial, subscription-only
+    return sources
+      .filter(s => {
+        const nameL = (s.name || '').toLowerCase();
+        const textL = (s.onlineText || '').toLowerCase();
+        // Exclude clerk offices, historic aerials, mapping, subscription services
+        if (nameL.includes('clerk')) return false;
+        if (nameL.includes('aerial') || nameL.includes('mapping') || nameL.includes('gis')) return false;
+        if (textL.includes('subscription only')) return false;
+        // Include appraisal districts and tax offices
+        return nameL.includes('appraisal') || nameL.includes('cad') || nameL.includes('tax office')
+          || s.type === 'appraisal' || s.type === 'search';
+      })
+      .map(s => s.onlineUrl || s.url || s.link)
+      .filter(Boolean);
   } catch (_) {
     return [];
   }

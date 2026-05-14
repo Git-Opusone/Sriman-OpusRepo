@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-05-13",
+  "lastUpdated": "2026-05-14",
   "states": {
     "AL": {
       "Autauga": {
@@ -21915,12 +21915,12 @@
       "Angelina": {
         "url": "http://www.angelinacad.org/Appraisal/PublicAccess/",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-05-14",
         "netronlinePath": "/state/TX/county/angelina"
       },
       "Aransas": {
         "url": "http://www.aransascad.org/",
-        "platform": "generic",
+        "platform": "bis",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/aransas"
       },
@@ -21938,7 +21938,7 @@
       },
       "Atascosa": {
         "url": "https://www.atascosacad.com/",
-        "platform": "generic",
+        "platform": "bis",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/atascosa"
       },
@@ -21950,26 +21950,26 @@
       },
       "Bailey": {
         "url": "https://bailey-cad.org/",
-        "platform": "generic",
+        "platform": "bis",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/bailey"
       },
       "Bandera": {
         "url": "http://www.bancad.org/",
-        "platform": "generic",
+        "platform": "bis",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/bandera"
       },
       "Bastrop": {
         "url": "http://www.bastropcad.org/",
-        "platform": "generic",
+        "platform": "bis",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/bastrop"
       },
       "Baylor": {
         "url": "http://www.baylorcad.org",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-05-14",
         "netronlinePath": "/state/TX/county/baylor"
       },
       "Bee": {
@@ -21980,7 +21980,7 @@
       },
       "Bell": {
         "url": "https://bellcad.org/",
-        "platform": "generic",
+        "platform": "bis",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/bell"
       },
@@ -22028,7 +22028,7 @@
       },
       "Brewster": {
         "url": "https://countyfusion6.kofiletech.us/countyweb/login.do?countyname=BrewsterTX",
-        "platform": "generic",
+        "platform": "countyfusion",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/brewster"
       },
@@ -22040,7 +22040,7 @@
       },
       "Brooks": {
         "url": "http://brookscad.org/",
-        "platform": "generic",
+        "platform": "bis",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/brooks"
       },
@@ -22076,13 +22076,13 @@
       },
       "Callahan": {
         "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=callahancad&time=201601191609003",
-        "platform": "generic",
+        "platform": "isw",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/callahan"
       },
       "Cameron": {
         "url": "https://cameron.prodigycad.com/property-search",
-        "platform": "generic",
+        "platform": "prodigycad",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/cameron"
       },
@@ -22358,7 +22358,7 @@
       },
       "Floyd": {
         "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=floydcad&time=201601191610017",
-        "platform": "generic",
+        "platform": "isw",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/floyd"
       },
@@ -22514,7 +22514,7 @@
       },
       "Hartley": {
         "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=hartleycad&time=201601191610049",
-        "platform": "generic",
+        "platform": "isw",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/hartley"
       },
@@ -22724,7 +22724,7 @@
       },
       "Knox": {
         "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=knoxcad&time=201601191613039",
-        "platform": "generic",
+        "platform": "isw",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/knox"
       },
@@ -22772,7 +22772,7 @@
       },
       "Liberty": {
         "url": "https://propaccess.trueautomation.com/ClientDB/PropertySearch.aspx?cid=8",
-        "platform": "generic",
+        "platform": "trueautomation",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/liberty"
       },
@@ -22784,7 +22784,7 @@
       },
       "Lipscomb": {
         "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=lipscombcad&time=201601191614019",
-        "platform": "generic",
+        "platform": "isw",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/lipscomb"
       },
@@ -23108,7 +23108,7 @@
       },
       "Sabine": {
         "url": "http://iswdataclient.azurewebsites.net/webIndex.aspx?dbkey=sabinecad&time=201711141513000",
-        "platform": "generic",
+        "platform": "isw",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/sabine"
       },
@@ -23186,7 +23186,7 @@
       },
       "Stephens": {
         "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=stephenscad&time=201702161541000",
-        "platform": "generic",
+        "platform": "isw",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/stephens"
       },
@@ -23373,7 +23373,7 @@
       "Williamson": {
         "url": "http://www.wcad.org/",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-05-14",
         "netronlinePath": "/state/TX/county/williamson"
       },
       "Wilson": {
@@ -23385,7 +23385,7 @@
       "Winkler": {
         "url": "https://winklercad.org/",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-05-14",
         "netronlinePath": "/state/TX/county/winkler"
       },
       "Wise": {
