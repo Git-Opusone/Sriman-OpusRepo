@@ -14,6 +14,7 @@
  *   patriot      – Patriot Props            (NE: MA, NH, CT, ME)              ✅ handler built
  *   vision       – Vision Gov               (NE states)                       ✅ handler built
  *   publicportal – Public Portal (Aumentum) (TX: {county}cad.net)             ✅ handler built
+ *   ptaxpro      – PTaxPro / whoownsit.com  (TX: {county}cad.com / .org)    ✅ handler built
  *   generic      – everything else          (AI fallback)
  */
 
@@ -89,6 +90,8 @@ function detectFromHtml(html) {
       h.includes('search/fulltext'))                                      return 'publicportal';
   if (h.includes('public portal') && (h.includes('cad') || h.includes('appraisal district')))
                                                                           return 'publicportal';
+  // PTaxPro / whoownsit.com county aggregator template
+  if (h.includes('name-addr-acctno') || h.includes('whoownsit.com'))     return 'ptaxpro';
 
   return 'generic';
 }
@@ -109,6 +112,7 @@ function detectPlatform(url, html) {
 function platformLabel(platform) {
   const labels = {
     andersontax:  'Anderson County Tax Office',
+    ptaxpro:      'PTaxPro / whoownsit.com',
     bis:          'BIS Consultants',
     qpublic:      'qPublic',
     tyler:        'Tyler iasWorld',

@@ -23,6 +23,7 @@ const visionHandler           = require('../tax/handlers/vision');
 const bisHandler              = require('../tax/handlers/bis');
 const publicPortalHandler     = require('../tax/handlers/publicportal');
 const andersonTaxHandler      = require('../tax/handlers/andersontax');
+const ptaxproHandler          = require('../tax/handlers/ptaxpro');
 const { detectCaptcha }       = require('./captchaDetector');
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -525,6 +526,20 @@ async function runBrowserAgent({
       } catch (handlerErr) {
         console.log(`[agent] Anderson Tax handler error: ${handlerErr.message} — continuing with AI`);
         onProgress('Anderson Tax handler error — falling back to AI agent...');
+      }
+    }
+
+    if (platform === 'ptaxpro') {
+      onProgress('Detected PTaxPro/whoownsit.com template — using dedicated handler...');
+      try {
+        const handlerResult = await ptaxproHandler.search(page, {
+          accountNumber, firstName, lastName, fullName, onProgress,
+        });
+        if (handlerResult) return handlerResult;
+        onProgress('PTaxPro handler fell back — continuing with AI agent...');
+      } catch (handlerErr) {
+        console.log(`[agent] PTaxPro handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('PTaxPro handler error — falling back to AI agent...');
       }
     }
 
