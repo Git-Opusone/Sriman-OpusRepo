@@ -187,7 +187,8 @@ async function main() {
   console.log(`Total ${STATE} counties: ${countyNames.length}\n`);
 
   // ── Load checkpoint ────────────────────────────────────────────────────────
-  const checkpoint = (RESUME || FIX_ONLY || REPORT_ONLY) ? loadCheckpoint() : {};
+  // Always load existing checkpoint when --county is used (single-county update should merge, not replace)
+  const checkpoint = (RESUME || FIX_ONLY || REPORT_ONLY || SINGLE_COUNTY) ? loadCheckpoint() : {};
   const doneSet    = new Set(Object.keys(checkpoint));
 
   const remaining  = (FIX_ONLY || REPORT_ONLY)

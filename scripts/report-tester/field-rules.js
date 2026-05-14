@@ -88,7 +88,16 @@ const FIELD_RULES = [
     tier:        TIER.CRITICAL,
     source:      'BOTH',
     description: 'Year the assessment / tax applies to',
-    extract:     (r, ad) => r.taxYear || ad?.year || ad?.taxYear,
+    extract:     (r, ad) => {
+      const direct = r.taxYear || ad?.year || ad?.taxYear || ad?.['Tax Year'] || ad?.['Year'];
+      if (direct && /^20[12]\d$/.test(String(direct).trim())) return direct;
+      // BIS-specific: pick the newest 20XX key from additionalDetails
+      if (ad) {
+        const years = Object.keys(ad).filter(k => /^20[2-3]\d$/.test(k)).sort((a, b) => Number(b) - Number(a));
+        if (years.length > 0) return years[0];
+      }
+      return null;
+    },
     validate:    isYear,
     failMsg:     'Tax year missing or out of range (expected 2020–2026)',
   },
@@ -112,7 +121,7 @@ const FIELD_RULES = [
     tier:        TIER.CRITICAL,
     source:      'CAD',
     description: 'Appraised land value from appraisal district',
-    extract:     (r, ad) => ad?.['Land Value'] || ad?.landMarketValue || ad?.landValue || ad?.land_value,
+    extract:     (r, ad) => ad?.['Land Value'] || ad?.['Land Market'] || ad?.landMarketValue || ad?.landValue || ad?.land_value,
     validate:    notEmpty,
     failMsg:     'Land value missing — CAD extraction incomplete (BIS/PublicPortal may need handler fix)',
   },
@@ -123,7 +132,7 @@ const FIELD_RULES = [
     tier:        TIER.IMPORTANT,
     source:      'CAD',
     description: 'Appraised building/improvement value',
-    extract:     (r, ad) => ad?.['Improvement Value'] || ad?.improvementValue || ad?.improvement_value,
+    extract:     (r, ad) => ad?.['Improvement Value'] || ad?.['Improvements'] || ad?.improvementValue || ad?.improvement_value,
     validate:    notEmpty,
     failMsg:     'Improvement value missing (may be $0 for bare land — acceptable if explicit)',
   },
@@ -180,6 +189,11 @@ const FIELD_RULES = [
       const bills = ad?.['Bill Tables'] || ad?.billTables || ad?.taxHistory;
       if (Array.isArray(bills) && bills.length > 0) return bills;
       if (ad?.valueHistory && Object.keys(ad.valueHistory||{}).length > 0) return ad.valueHistory;
+      // BIS-specific: year-keyed dollar-amount entries (per-year tax bill history)
+      if (ad) {
+        const yearEntries = Object.entries(ad).filter(([k, v]) => /^20[12]\d$/.test(k) && /^\$/.test(String(v)));
+        if (yearEntries.length > 0) return Object.fromEntries(yearEntries);
+      }
       return null;
     },
     validate:    v => v != null,
@@ -192,7 +206,29 @@ const FIELD_RULES = [
     tier:        TIER.IMPORTANT,
     source:      'TAX_OFFICE',
     description: 'List of taxing entities (county, school district, city, etc.)',
-    extract:     (r, ad) => ad?.taxingUnits || ad?.collectingEntities || ad?.entities,
+    extract:     (r, ad) => {
+      if (ad?.taxingUnits || ad?.collectingEntities || ad?.entities) {
+        return ad.taxingUnits || ad.collectingEntities || ad.entities;
+      }
+      // BIS-specific: entity names appear as object keys with rate/amount values
+      // Pattern: ALL-CAPS multi-word strings containing COUNTY, SCHOOL, DIST, CITY, etc.
+      if (ad) {
+        const entities = {};
+        Object.entries(ad).forEach(([k, v]) => {
+          if (
+            /^[A-Z][A-Z\s\.\-]+$/.test(k) && k.length > 4 &&
+            (k.includes('COUNTY') || k.includes('SCHOOL') || k.includes('DIST') ||
+             k.includes('CITY') || k.includes('COLLEGE') || k.includes('HOSPITAL') ||
+             k.includes('FIRE') || k.includes('WATER') || k.includes('MUD') ||
+             k.includes('FMFC') || k.includes('MPC') || k.includes('WCID'))
+          ) {
+            entities[k] = v;
+          }
+        });
+        if (Object.keys(entities).length > 0) return entities;
+      }
+      return null;
+    },
     validate:    v => v != null && (Array.isArray(v) ? v.length > 0 : Object.keys(v).length > 0),
     failMsg:     'Taxing entities missing — tax office not queried',
   },

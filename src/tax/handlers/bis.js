@@ -266,14 +266,76 @@ async function extractDetailFields(page) {
   return page.evaluate(() => {
     const data = {};
 
-    // Pattern A: table label/value rows
-    document.querySelectorAll('table tr').forEach(row => {
-      const cells = Array.from(row.querySelectorAll('td, th'));
-      for (let i = 0; i < cells.length - 1; i++) {
-        const label = cells[i].innerText.trim().replace(/:$/, '');
-        const value = cells[i + 1]?.innerText.trim() || '';
-        if (label && value && label.length < 80 && !label.match(/^\d+$/)) {
-          data[label] = value;
+    // Helpers
+    const isDollarAmt   = s => /^\$?[\d,]+(\.\d{0,2})?$/.test(s.trim());
+    const isYearKey     = s => /^20[12]\d$/.test(s.trim());
+    const isDecimalRate = s => /^\d+\.\d{4,6}$/.test(s.trim());
+
+    // BIS assessment column headers — these appear as a multi-column header row
+    const BIS_ASSESS_COLS = new Set([
+      'improvements','land market','ag valuation','ag use','hs cap loss','assessed',
+      'market value','taxable value','appraised value','assessed value',
+      'productivity value','minerals','personal property',
+    ]);
+    const isBisAssessCol = s => BIS_ASSESS_COLS.has(s.toLowerCase().trim());
+
+    // Pattern A: tables — with BIS multi-column pivot table detection
+    document.querySelectorAll('table').forEach(tbl => {
+      const rows = Array.from(tbl.querySelectorAll('tr'));
+      const skipRows = new Set();
+
+      for (let ri = 0; ri < rows.length; ri++) {
+        if (skipRows.has(ri)) continue;
+        const cells = Array.from(rows[ri].querySelectorAll('td, th')).map(c => c.innerText.trim());
+        if (cells.length === 0) continue;
+
+        // BIS assessment pivot table: header row has multiple BIS column keywords
+        // followed by data rows with year + dollar amounts
+        const assessHeaderCount = cells.filter(c => isBisAssessCol(c)).length;
+        const firstCellIsYear   = cells[0]?.toLowerCase().trim() === 'year';
+
+        if (assessHeaderCount >= 2 || (firstCellIsYear && assessHeaderCount >= 1)) {
+          const yearValues = {};
+          for (let di = ri + 1; di < rows.length; di++) {
+            const dc = Array.from(rows[di].querySelectorAll('td, th')).map(c => c.innerText.trim());
+            if (dc.length === 0 || dc.length !== cells.length) break;
+            if (!isYearKey(dc[0]) && !isDollarAmt(dc[0]) && dc[0] !== '') break;
+
+            if (isYearKey(dc[0])) {
+              const row = {};
+              for (let ci = 1; ci < cells.length; ci++) {
+                if (cells[ci]) row[cells[ci]] = dc[ci];
+              }
+              yearValues[dc[0]] = row;
+            } else {
+              for (let ci = 1; ci < cells.length; ci++) {
+                if (cells[ci]) data[cells[ci]] = dc[ci];
+              }
+            }
+            skipRows.add(di);
+          }
+
+          // Store the most recent year's assessment values as direct named keys
+          const sortedYrs = Object.keys(yearValues).sort((a, b) => Number(b) - Number(a));
+          if (sortedYrs.length > 0) {
+            const latestYr = sortedYrs[0];
+            data['Tax Year'] = latestYr;
+            Object.assign(data, yearValues[latestYr]);
+          }
+          continue;
+        }
+
+        // Standard adjacent-cell extraction — skip cells that are dollar amounts or
+        // year numbers as labels (these are value-cell carryovers from mis-aligned rows)
+        for (let i = 0; i < cells.length - 1; i++) {
+          const label = cells[i].replace(/:$/, '').trim();
+          const value = (cells[i + 1] || '').trim();
+          if (
+            label && value && label.length < 80 &&
+            !isDollarAmt(label) && !isYearKey(label) && !isDecimalRate(label)
+          ) {
+            data[label] = value;
+          }
         }
       }
     });
@@ -287,8 +349,7 @@ async function extractDetailFields(page) {
       }
     });
 
-    // Pattern C: React/Angular label+value div pairs
-    // BIS SPA detail pages often use <div class="field-label">...</div><div class="field-value">...</div>
+    // Pattern C: React/Angular field-label/field-value div pairs (BIS SPA)
     document.querySelectorAll('[class*="field-label" i], [class*="detail-label" i], [class*="property-label" i]').forEach(labelEl => {
       const valueEl = labelEl.nextElementSibling;
       if (valueEl) {
