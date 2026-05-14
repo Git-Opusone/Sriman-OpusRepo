@@ -6,7 +6,15 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "setup": "npm install && npx playwright install chromium"
+    "setup": "npm install && npx playwright install chromium",
+    "test:tx": "node scripts/tx-county-automation",
+    "test:tx:resume": "node scripts/tx-county-automation --resume",
+    "test:tx:single": "node scripts/tx-county-automation --county",
+    "test:tx:dry": "node scripts/tx-county-automation --dry-run",
+    "test:report": "node scripts/tx-county-automation --report-only",
+    "report:test": "node scripts/report-tester",
+    "report:test:county": "node scripts/report-tester --county",
+    "report:test:summary": "node scripts/report-tester --summary"
   },
   "dependencies": {
     "axios": "^1.15.2",
