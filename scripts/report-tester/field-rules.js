@@ -121,7 +121,17 @@ const FIELD_RULES = [
     tier:        TIER.CRITICAL,
     source:      'CAD',
     description: 'Appraised land value from appraisal district',
-    extract:     (r, ad) => ad?.['Land Value'] || ad?.['Land Market'] || ad?.landMarketValue || ad?.landValue || ad?.land_value,
+    extract:     (r, ad) => {
+      const explicit = ad?.['Land Value'] || ad?.['Land Market'] || ad?.landMarketValue || ad?.landValue || ad?.land_value;
+      if (explicit) return explicit;
+      // PublicPortal land-only: if no improvement value, the market value IS the land value
+      const noImprov = !ad?.improvementValue && !ad?.['Improvement Value'] && !ad?.['Improvements'];
+      if (noImprov && (ad?.marketValue || ad?.appraisedValue)) {
+        const v = ad.marketValue || ad.appraisedValue;
+        return typeof v === 'number' ? '$' + v.toLocaleString() : String(v);
+      }
+      return null;
+    },
     validate:    notEmpty,
     failMsg:     'Land value missing — CAD extraction incomplete (BIS/PublicPortal may need handler fix)',
   },
