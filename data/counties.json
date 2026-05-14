@@ -22357,9 +22357,9 @@
         "netronlinePath": "/state/TX/county/fisher"
       },
       "Floyd": {
-        "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=floydcad&time=201601191610017",
-        "platform": "isw",
-        "lastVerified": null,
+        "url": null,
+        "platform": "generic",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/floyd"
       },
       "Foard": {
@@ -22603,9 +22603,9 @@
         "netronlinePath": "/state/TX/county/hutchinson"
       },
       "Irion": {
-        "url": "http://www.taxnetusa.com/texas/irion/",
+        "url": "https://www.irioncad.org/",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/irion"
       },
       "Jack": {
@@ -22783,9 +22783,9 @@
         "netronlinePath": "/state/TX/county/limestone"
       },
       "Lipscomb": {
-        "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=lipscombcad&time=201601191614019",
-        "platform": "isw",
-        "lastVerified": null,
+        "url": null,
+        "platform": "generic",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/lipscomb"
       },
       "Live Oak": {
@@ -22988,8 +22988,8 @@
       },
       "Palo Pinto": {
         "url": null,
-        "platform": null,
-        "lastVerified": null,
+        "platform": "generic",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/palo_pinto"
       },
       "Panola": {
@@ -23185,9 +23185,9 @@
         "netronlinePath": "/state/TX/county/starr"
       },
       "Stephens": {
-        "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=stephenscad&time=201702161541000",
-        "platform": "isw",
-        "lastVerified": null,
+        "url": "https://stephenscad.southwestdatasolutions.com/",
+        "platform": "generic",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/stephens"
       },
       "Sterling": {
