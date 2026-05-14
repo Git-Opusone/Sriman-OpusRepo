@@ -209,12 +209,23 @@ async function runSelfFixer(allTestResults, serverUrl = 'http://localhost:3000',
     }
 
     // ── Fix 2: Try to find a live URL for no_url / error / no_results counties
-    if ((result.status === 'no_url' || result.status === 'error' || result.status === 'no_results') && serverUrl) {
+    // Skip if the existing URL is already a BIS esearch portal — a no_results result
+    // there may just mean no matching records, not a bad URL.
+    const isBisEsearchUrl = /esearch\.[a-z0-9-]+\.(org|com|net)/i.test(url || '');
+    if (!isBisEsearchUrl && (result.status === 'no_url' || result.status === 'error' || result.status === 'no_results') && serverUrl) {
       const alts = await fetchAlternativeUrls(serverUrl, state, county);
       for (const altUrl of alts) {
         const alive = await isUrlAlive(altUrl);
         if (alive) {
           const detectedAlt = detectPlatformFromUrl(altUrl);
+          // Only accept the replacement if it looks like a real search portal,
+          // not just a CAD homepage with no property-search functionality.
+          const hasSearchPath = /\/(search|property|account|propertysearch|tax|webindex|clientdb|portal)/i.test(altUrl);
+          const isKnownPlatform = !!detectedAlt;
+          if (!hasSearchPath && !isKnownPlatform) {
+            if (verbose) console.log(`  [skip] ${county}: alt URL ${altUrl} looks like homepage, not a search portal`);
+            continue;
+          }
           const fix = {
             county,
             state,

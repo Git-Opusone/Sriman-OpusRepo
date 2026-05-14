@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-05-15",
+  "lastUpdated": "2026-05-14",
   "states": {
     "AL": {
       "Autauga": {
@@ -21985,7 +21985,7 @@
         "netronlinePath": "/state/TX/county/bell"
       },
       "Bexar": {
-        "url": "https://bexar.acttax.com/act_webdev/bexar/index.jsp",
+        "url": "https://bcad.org/propertysearch/",
         "platform": "generic",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/bexar"
@@ -22003,14 +22003,14 @@
         "netronlinePath": "/state/TX/county/borden"
       },
       "Bosque": {
-        "url": "https://esearch.bosquecad.com/",
-        "platform": "bis",
+        "url": "https://www.bosquecountytaxoffice.com/search",
+        "platform": "generic",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/bosque"
       },
       "Bowie": {
-        "url": "https://esearch.bowiecad.org/",
-        "platform": "bis",
+        "url": "https://www.bowieappraisal.com/property-search",
+        "platform": "generic",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/bowie"
       },
@@ -22051,9 +22051,9 @@
         "netronlinePath": "/state/TX/county/brown"
       },
       "Burleson": {
-        "url": "http://www.burlesonappraisal.com/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.burlesonappraisal.com/",
+        "platform": "bis",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/burleson"
       },
       "Burnet": {
@@ -22075,14 +22075,14 @@
         "netronlinePath": "/state/TX/county/calhoun"
       },
       "Callahan": {
-        "url": "https://esearch.callahancad.org/",
-        "platform": "bis",
+        "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=callahancad&time=201601191609003",
+        "platform": "isw",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/callahan"
       },
       "Cameron": {
-        "url": "https://esearch.cameroncad.com/",
-        "platform": "bis",
+        "url": "https://cameron.prodigycad.com/property-search",
+        "platform": "prodigycad",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/cameron"
       },
@@ -22333,7 +22333,7 @@
         "netronlinePath": "/state/TX/county/erath"
       },
       "Falls": {
-        "url": "https://esearch.fallscad.org/",
+        "url": "https://esearch.fallscad.net/",
         "platform": "bis",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/falls"
@@ -22513,8 +22513,8 @@
         "netronlinePath": "/state/TX/county/harrison"
       },
       "Hartley": {
-        "url": "https://esearch.hartleycad.org/",
-        "platform": "bis",
+        "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=hartleycad&time=201601191610049",
+        "platform": "isw",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/hartley"
       },
@@ -22579,7 +22579,7 @@
         "netronlinePath": "/state/TX/county/houston"
       },
       "Howard": {
-        "url": "https://esearch.howardcad.org/",
+        "url": "http://gis.bisconsultants.com/howardcad/",
         "platform": "bis",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/howard"
@@ -22771,8 +22771,8 @@
         "netronlinePath": "/state/TX/county/leon"
       },
       "Liberty": {
-        "url": "https://esearch.libertycad.com/",
-        "platform": "bis",
+        "url": "https://propaccess.trueautomation.com/ClientDB/PropertySearch.aspx?cid=8",
+        "platform": "trueautomation",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/liberty"
       },
@@ -23413,8 +23413,8 @@
         "netronlinePath": "/state/TX/county/young"
       },
       "Zapata": {
-        "url": "https://esearch.zapatacad.com/",
-        "platform": "bis",
+        "url": "https://zapata.tx.publicsearch.us/",
+        "platform": "publicportal",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/zapata"
       },

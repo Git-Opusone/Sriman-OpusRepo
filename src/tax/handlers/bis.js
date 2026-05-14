@@ -126,11 +126,23 @@ async function tryFill(page, selectors, value, timeout = 5000) {
   return null;
 }
 
+function isBisDomain(url) {
+  return /esearch\.[a-z0-9-]+\.(org|com|net|gov)|cadcentral\.com|bisconsultants\.com/i.test(url);
+}
+
 /**
  * Wait for the page to be a usable search form.
  * SPAs may take a moment to mount; also handles ASP.NET disclaimer pages.
  */
 async function ensureSearchPage(page) {
+  // Bail out immediately if we've been redirected to a non-BIS domain
+  // (e.g., esearch.austincad.org → austincad.org WordPress site)
+  const currentUrl = page.url();
+  if (!isBisDomain(currentUrl)) {
+    console.log(`[bis] ensureSearchPage: non-BIS domain after redirect: ${currentUrl}`);
+    return false;
+  }
+
   // Accept any disclaimer first
   const disSelectors = [
     'input[type="submit"][value*="Accept" i]',
