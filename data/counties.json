@@ -22574,8 +22574,8 @@
       },
       "Houston": {
         "url": "http://www.houstoncad.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "platform": "bis",
+        "lastVerified": "2026-05-16",
         "netronlinePath": "/state/TX/county/houston"
       },
       "Howard": {

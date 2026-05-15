@@ -118,7 +118,7 @@ const ALL_UPDATES = {
   'Hemphill':     { url: 'https://esearch.hemphillcad.org/', platform: 'bis' },
   'Hill':         { url: 'https://esearch.hillcad.org/', platform: 'bis' },
   'Hockley':      { url: 'https://esearch.hockleycad.org/', platform: 'bis' },
-  'Houston':      { url: 'https://esearch.houstoncad.org/', platform: 'bis' },
+  'Houston':      { url: 'http://www.houstoncad.org/', platform: 'bis' },
   // Howard: BIS portal via bisconsultants.com domain (Netronline confirmed)
   'Howard':       { url: 'http://gis.bisconsultants.com/howardcad/', platform: 'bis' },
   'Hudspeth':     { url: 'https://esearch.hudspethcad.org/', platform: 'bis' },
