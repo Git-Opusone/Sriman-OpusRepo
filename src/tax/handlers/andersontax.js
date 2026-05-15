@@ -2,11 +2,14 @@
 
 const { detectCaptcha } = require('../../shared/captchaDetector');
 
-const TAX_BASE = 'http://tax.co.anderson.tx.us';
-
 function normalizePropId(id) {
   const s = (id || '').trim();
   return /^r/i.test(s) ? s.toUpperCase() : `R${s}`;
+}
+
+function countyFromUrl(url) {
+  const m = url.match(/tax\.co\.([a-z]+)\.tx\.us/i);
+  return m ? m[1].charAt(0).toUpperCase() + m[1].slice(1) : 'TX';
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -427,9 +430,10 @@ async function extractBillData(page) {
 async function search(page, { accountNumber = '', onProgress = () => {} }) {
   if (!accountNumber) return null;
 
+  const taxBase  = new URL(page.url()).origin;
   const propId   = normalizePropId(accountNumber);
   const stripped = propId.replace(/^r/i, '').toUpperCase();
-  onProgress(`Anderson County Tax Office: searching ${propId}...`);
+  onProgress(`TX County Tax Office: searching ${propId}...`);
   console.log(`[andersontax] propId=${propId}`);
 
   try {
@@ -437,7 +441,7 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
     if (cap.detected) return { ...cap, searchedUrl: page.url() };
 
     // ── 1. Navigate directly to search URL (no home-page pre-visit) ───────────
-    const searchUrl = `${TAX_BASE}/Property-Search-Result/searchtext/${encodeURIComponent(propId)}`;
+    const searchUrl = `${taxBase}/Property-Search-Result/searchtext/${encodeURIComponent(propId)}`;
     onProgress('Loading Tax Office search...');
     await safeGoto(page, searchUrl, 25000);
     await page.waitForTimeout(2000);
@@ -462,9 +466,9 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
     // ── 3. Navigate to property detail ────────────────────────────────────────
     // Strategy A: try direct URL patterns with SHORT timeouts (10s each)
     const directUrlCandidates = [
-      `${TAX_BASE}/Property-Detail/${encodeURIComponent(propId)}`,
-      `${TAX_BASE}/Property-Detail/${encodeURIComponent(stripped)}`,
-      `${TAX_BASE}/Property/View/${encodeURIComponent(propId)}`,
+      `${taxBase}/Property-Detail/${encodeURIComponent(propId)}`,
+      `${taxBase}/Property-Detail/${encodeURIComponent(stripped)}`,
+      `${taxBase}/Property/View/${encodeURIComponent(propId)}`,
     ];
 
     let reachedDetail = false;
@@ -588,7 +592,7 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
         taxAmountDue:    totalDue || assessed,
         taxYear:         '2025',
         paymentStatus,
-        county:          'Anderson',
+        county:          countyFromUrl(taxBase),
         state:           'TX',
         additionalDetails: JSON.stringify({
           'Property ID':        propId,
@@ -603,7 +607,7 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
           'Improvement Value':  detail.improvementValue  || '',
           'Property Status':    detail.propertyStatus    || '',
           'Property Type':      detail.propertyType      || '',
-          'Source':             'Anderson County Tax Office',
+          'Source':             `${countyFromUrl(taxBase)} County Tax Office`,
           'Detail URL':         bill.detailUrl || page.url(),
           'Bill Tables':        bill.billTables  || [],
           'Year Headers':       bill.yearHeaders || [],
@@ -624,11 +628,11 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
         taxAmountDue:    '',
         taxYear:         '2025',
         paymentStatus:   '',
-        county:          'Anderson',
+        county:          countyFromUrl(taxBase),
         state:           'TX',
         additionalDetails: JSON.stringify({
           'Property ID': propId,
-          'Source':      'Anderson County Tax Office',
+          'Source':      `${countyFromUrl(taxBase)} County Tax Office`,
           'Error':       err.message,
         }),
       }],

@@ -20,8 +20,8 @@
 
 const PLATFORM_RULES = [
   // ── URL hostname patterns ──────────────────────────────────────────────────
-  // Anderson County Tax Office — must be checked before any generic rules
-  { platform: 'andersontax',  test: u => /tax\.co\.anderson\.tx\.us/i.test(u)           },
+  // TX county tax offices (tax.co.{county}.tx.us) — must be checked before any generic rules
+  { platform: 'txcountytax',  test: u => /tax\.co\.[a-z]+\.tx\.us/i.test(u)             },
   // qpublic MUST come before beacon — qpublic.schneidercorp.com is qPublic, not Beacon
   { platform: 'qpublic',      test: u => /qpublic\.net/i.test(u)                        },
   { platform: 'qpublic',      test: u => /qpublic\.schneidercorp\.com/i.test(u)         },
@@ -37,6 +37,10 @@ const PLATFORM_RULES = [
   { platform: 'bis',          test: u => /esearch\.[a-z]+cad\.(org|net)/i.test(u)       },
   { platform: 'bis',          test: u => /bisconsultants\.com/i.test(u)                 },
   { platform: 'bis',          test: u => /cadcentral\.com/i.test(u)                     },
+  // ACTweb — TX county tax portal (actweb.acttax.com/act_webdev/{county}/index.jsp)
+  { platform: 'actweb',       test: u => /actweb\.acttax\.com/i.test(u)                },
+  // Houston County Tax Office uses BIS platform under a non-standard domain
+  { platform: 'bis',          test: u => /houstoncountytaxoffice\.com/i.test(u)        },
   // Public Portal (Aumentum Technologies) — {county}cad.net / {county}cad.org domains
   // Specific known domains first; broad *cad.net pattern last (after BIS rules)
   { platform: 'publicportal', test: u => /andersoncad\.net/i.test(u)                    },
@@ -114,7 +118,8 @@ function detectPlatform(url, html) {
  */
 function platformLabel(platform) {
   const labels = {
-    andersontax:  'Anderson County Tax Office',
+    txcountytax:  'TX County Tax Office (Kendo)',
+    actweb:       'ACTweb Tax Portal',
     ptaxpro:      'PTaxPro / whoownsit.com',
     bis:          'BIS Consultants',
     qpublic:      'qPublic',

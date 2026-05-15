@@ -21904,7 +21904,9 @@
         "url": "http://www.andersoncad.net/",
         "platform": "publicportal",
         "lastVerified": null,
-        "netronlinePath": "/state/TX/county/anderson"
+        "netronlinePath": "/state/TX/county/anderson",
+        "taxUrl": "http://tax.co.anderson.tx.us",
+        "taxPlatform": "txcountytax"
       },
       "Andrews": {
         "url": "https://esearch.andrewscad.org/",
@@ -22018,7 +22020,9 @@
         "url": "https://esearch.brazoriacad.org/",
         "platform": "bis",
         "lastVerified": null,
-        "netronlinePath": "/state/TX/county/brazoria"
+        "netronlinePath": "/state/TX/county/brazoria",
+        "taxUrl": "https://tax.brazoriacountytx.gov/search",
+        "taxPlatform": "generic"
       },
       "Brazos": {
         "url": "https://esearch.brazoscad.org/",
@@ -22156,7 +22160,9 @@
         "url": "http://www.collincad.org/",
         "platform": "bis",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/collin"
+        "netronlinePath": "/state/TX/county/collin",
+        "taxUrl": "https://taxpublic.collincountytx.gov/search",
+        "taxPlatform": "generic"
       },
       "Collingsworth": {
         "url": "http://www.collingsworthcad.org/",
@@ -22324,7 +22330,9 @@
         "url": "https://esearch.epcad.org/",
         "platform": "bis",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/el_paso"
+        "netronlinePath": "/state/TX/county/el_paso",
+        "taxUrl": "https://actweb.acttax.com/act_webdev/elpaso/index.jsp",
+        "taxPlatform": "actweb"
       },
       "Erath": {
         "url": "http://esearch.erath-cad.com/",
@@ -22372,7 +22380,9 @@
         "url": "https://esearch.fortbendcad.org/",
         "platform": "bis",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/fort_bend"
+        "netronlinePath": "/state/TX/county/fort_bend",
+        "taxUrl": "https://actweb.acttax.com/act_webdev/fbc/index.jsp",
+        "taxPlatform": "actweb"
       },
       "Franklin": {
         "url": "https://franklin-cad.org/",
@@ -22402,7 +22412,9 @@
         "url": "https://esearch.galvestoncad.org/",
         "platform": "bis",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/galveston"
+        "netronlinePath": "/state/TX/county/galveston",
+        "taxUrl": "https://actweb.acttax.com/act_webdev/galveston/index.jsp",
+        "taxPlatform": "actweb"
       },
       "Garza": {
         "url": "https://esearch.garzacad.org/",
@@ -22450,7 +22462,9 @@
         "url": "https://esearch.gcad.org/",
         "platform": "bis",
         "lastVerified": null,
-        "netronlinePath": "/state/TX/county/gregg"
+        "netronlinePath": "/state/TX/county/gregg",
+        "taxUrl": "https://actweb.acttax.com/act_webdev/gregg/index.jsp",
+        "taxPlatform": "actweb"
       },
       "Grimes": {
         "url": "https://grimescad.org/",
@@ -22528,7 +22542,9 @@
         "url": "https://esearch.hayscad.com/",
         "platform": "bis",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/hays"
+        "netronlinePath": "/state/TX/county/hays",
+        "taxUrl": "https://tax.co.hays.tx.us/",
+        "taxPlatform": "txcountytax"
       },
       "Hemphill": {
         "url": "http://www.hemphillcad.org/",
@@ -22576,7 +22592,9 @@
         "url": "http://www.houstoncad.org/",
         "platform": "bis",
         "lastVerified": "2026-05-16",
-        "netronlinePath": "/state/TX/county/houston"
+        "netronlinePath": "/state/TX/county/houston",
+        "taxUrl": "https://esearch.houstoncountytaxoffice.com/",
+        "taxPlatform": "bis"
       },
       "Howard": {
         "url": "https://esearch.howardcad.org/",
@@ -22888,7 +22906,9 @@
         "url": "https://midcad.org/",
         "platform": "generic",
         "lastVerified": null,
-        "netronlinePath": "/state/TX/county/midland"
+        "netronlinePath": "/state/TX/county/midland",
+        "taxUrl": "https://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=MIDLANDTAX",
+        "taxPlatform": "generic"
       },
       "Milam": {
         "url": "https://milam.propertytaxpayments.net/SEARCH",

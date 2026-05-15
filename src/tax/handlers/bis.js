@@ -277,13 +277,18 @@ async function extractResultsTable(page) {
 async function extractDetailFields(page) {
   return page.evaluate(() => {
     const data = {};
+    let valueHistoryData = null;
+    let taxingUnitsData  = null;
+    let landMarketValue  = '';
+    let improvementValue = '';
+    let assessedValue    = '';
 
     // Helpers
     const isDollarAmt   = s => /^\$?[\d,]+(\.\d{0,2})?$/.test(s.trim());
     const isYearKey     = s => /^20[12]\d$/.test(s.trim());
     const isDecimalRate = s => /^\d+\.\d{4,6}$/.test(s.trim());
 
-    // BIS assessment column headers — these appear as a multi-column header row
+    // BIS assessment column headers — appear in value-history pivot table header
     const BIS_ASSESS_COLS = new Set([
       'improvements','land market','ag valuation','ag use','hs cap loss','assessed',
       'market value','taxable value','appraised value','assessed value',
@@ -291,7 +296,13 @@ async function extractDetailFields(page) {
     ]);
     const isBisAssessCol = s => BIS_ASSESS_COLS.has(s.toLowerCase().trim());
 
-    // Pattern A: tables — with BIS multi-column pivot table detection
+    // Entity/taxing-unit table column headers
+    const ENTITY_COLS = new Set([
+      'entity','tax rate','levy amount','amount due','taxes due','amount paid','balance',
+    ]);
+    const isEntityCol = s => ENTITY_COLS.has(s.toLowerCase().trim());
+
+    // Pattern A: tables — structured detection first, adjacent-cell extraction last
     document.querySelectorAll('table').forEach(tbl => {
       const rows = Array.from(tbl.querySelectorAll('tr'));
       const skipRows = new Set();
@@ -301,50 +312,86 @@ async function extractDetailFields(page) {
         const cells = Array.from(rows[ri].querySelectorAll('td, th')).map(c => c.innerText.trim());
         if (cells.length === 0) continue;
 
-        // BIS assessment pivot table: header row has multiple BIS column keywords
-        // followed by data rows with year + dollar amounts
         const assessHeaderCount = cells.filter(c => isBisAssessCol(c)).length;
         const firstCellIsYear   = cells[0]?.toLowerCase().trim() === 'year';
+        const entityHeaderCount = cells.filter(c => isEntityCol(c)).length;
+        const hasEntityCol      = cells.some(c => /^entity$/i.test(c.trim()));
 
+        // ── 1. Entity / taxing-unit table ─────────────────────────────────────
+        // Must have an "Entity" column AND at least one entity-specific keyword.
+        // Check this BEFORE assessment pivot so entity tables with "Market Value"
+        // or "Taxable Value" columns don't accidentally trigger pivot detection.
+        if (hasEntityCol && (entityHeaderCount >= 1 || assessHeaderCount >= 1)) {
+          const entityRows = [];
+          for (let di = ri + 1; di < rows.length; di++) {
+            const dc = Array.from(rows[di].querySelectorAll('td, th')).map(c => c.innerText.trim());
+            if (dc.length === 0 || dc.every(c => c === '')) break;
+            // Stop if we hit another structured table header (assessment pivot)
+            if (dc.filter(c => isBisAssessCol(c)).length >= 2 && dc.some(c => /year|improvements/i.test(c))) break;
+            entityRows.push(dc.slice(0, cells.length));
+            skipRows.add(di);
+          }
+          if (entityRows.length > 0 && !taxingUnitsData) {
+            taxingUnitsData = [cells, ...entityRows];
+          }
+          continue;
+        }
+
+        // ── 2. BIS assessment pivot table ─────────────────────────────────────
+        // Header row has ≥2 BIS assessment column keywords, followed by year rows.
         if (assessHeaderCount >= 2 || (firstCellIsYear && assessHeaderCount >= 1)) {
           const yearValues = {};
+          const assessCols = cells.slice(1);
           for (let di = ri + 1; di < rows.length; di++) {
             const dc = Array.from(rows[di].querySelectorAll('td, th')).map(c => c.innerText.trim());
             if (dc.length === 0 || dc.length !== cells.length) break;
             if (!isYearKey(dc[0]) && !isDollarAmt(dc[0]) && dc[0] !== '') break;
-
             if (isYearKey(dc[0])) {
               const row = {};
               for (let ci = 1; ci < cells.length; ci++) {
                 if (cells[ci]) row[cells[ci]] = dc[ci];
               }
               yearValues[dc[0]] = row;
-            } else {
-              for (let ci = 1; ci < cells.length; ci++) {
-                if (cells[ci]) data[cells[ci]] = dc[ci];
-              }
             }
+            // Non-year summary rows are intentionally skipped (not added to yearValues)
             skipRows.add(di);
           }
 
-          // Store the most recent year's assessment values as direct named keys
-          const sortedYrs = Object.keys(yearValues).sort((a, b) => Number(b) - Number(a));
-          if (sortedYrs.length > 0) {
-            const latestYr = sortedYrs[0];
+          const sortedDesc = Object.keys(yearValues).sort((a, b) => Number(b) - Number(a));
+          if (sortedDesc.length > 0) {
+            const latestYr = sortedDesc[0];
             data['Tax Year'] = latestYr;
-            Object.assign(data, yearValues[latestYr]);
+
+            // Named scalar fields from the most recent year
+            const lmKeys  = ['Land Market', 'Land Value', 'Land Non-Homesite', 'Land Homesite'];
+            const imKeys  = ['Improvements', 'Improvement Value', 'Improvement Market'];
+            const assKeys = ['Assessed', 'Assessed Value', 'Total Assessed'];
+            for (const k of lmKeys)  { if (yearValues[latestYr][k]) { landMarketValue  = yearValues[latestYr][k]; break; } }
+            for (const k of imKeys)  { if (yearValues[latestYr][k]) { improvementValue = yearValues[latestYr][k]; break; } }
+            for (const k of assKeys) { if (yearValues[latestYr][k]) { assessedValue    = yearValues[latestYr][k]; break; } }
+
+            // Build valueHistory table (oldest-first for chronological display)
+            if (!valueHistoryData) {
+              const sortedAsc = [...sortedDesc].sort((a, b) => Number(a) - Number(b));
+              valueHistoryData = [
+                ['Year', ...assessCols],
+                ...sortedAsc.map(yr => [yr, ...assessCols.map(col => yearValues[yr][col] || '')]),
+              ];
+            }
           }
           continue;
         }
 
-        // Standard adjacent-cell extraction — skip cells that are dollar amounts or
-        // year numbers as labels (these are value-cell carryovers from mis-aligned rows)
+        // ── 3. Standard adjacent-cell extraction ───────────────────────────────
+        // Skip cells that look like structured table headers or raw values to
+        // avoid creating garbage key-value pairs (e.g. "Year":"Improvements").
         for (let i = 0; i < cells.length - 1; i++) {
           const label = cells[i].replace(/:$/, '').trim();
           const value = (cells[i + 1] || '').trim();
           if (
             label && value && label.length < 80 &&
-            !isDollarAmt(label) && !isYearKey(label) && !isDecimalRate(label)
+            !isDollarAmt(label) && !isYearKey(label) && !isDecimalRate(label) &&
+            !isBisAssessCol(label) && !isEntityCol(label)
           ) {
             data[label] = value;
           }
@@ -376,6 +423,13 @@ async function extractDetailFields(page) {
       const value = el.innerText.trim();
       if (label && value && label.length < 80) data[label] = value;
     });
+
+    // Attach structured data as special keys (caller strips these out)
+    data.__valueHistory  = valueHistoryData;
+    data.__taxingUnits   = taxingUnitsData;
+    data.__landMarket    = landMarketValue;
+    data.__improvement   = improvementValue;
+    data.__assessed      = assessedValue;
 
     return data;
   });
@@ -451,6 +505,33 @@ function cleanMoney(v) {
   const cleaned = String(v).replace(/\s*\([+\-=)]\)\s*$/, '').trim();
   // Only return if it looks like a money value (has $ or digits)
   return /[$\d,]/.test(cleaned) ? cleaned : '';
+}
+
+/**
+ * Build structured additionalDetails from extractDetailFields() output.
+ * Strips the __ sentinel keys and promotes them to named fields matching
+ * the publicportal format that field-rules.js expects.
+ */
+function buildAdditionalDetails(fields, extraFlat = {}) {
+  const valueHistory  = fields.__valueHistory  || null;
+  const taxingUnits   = fields.__taxingUnits   || null;
+  const landMarket    = fields.__landMarket    || '';
+  const improvement   = fields.__improvement   || '';
+  const assessed      = fields.__assessed      || '';
+
+  // Build clean flat copy (no __ keys)
+  const flat = {};
+  for (const [k, v] of Object.entries(fields)) {
+    if (!k.startsWith('__')) flat[k] = v;
+  }
+
+  const ad = { ...extraFlat, ...flat };
+  if (valueHistory)  ad.valueHistory      = valueHistory;
+  if (taxingUnits)   ad.taxingUnits       = taxingUnits;
+  if (landMarket)    ad.landMarketValue   = landMarket;
+  if (improvement)   ad.improvementValue  = improvement;
+  if (assessed)      ad.netAppraisedValue = assessed;
+  return ad;
 }
 
 // ─── Main export ─────────────────────────────────────────────────────────────
@@ -605,10 +686,10 @@ async function search(page, {
         ownerName:        fields['Owner Name']     || fields['Owner']       || item.ownerName || '',
         propertyAddress:  fields['Situs Address']  || fields['Property Address'] || item.address || '',
         legalDescription: fields['Legal Description'] || fields['Legal Desc'] || item.legalDescription || '',
-        taxAmountDue:     cleanMoney(fields['Assessed Value'] || fields['Appraised Value'] || fields['Market Value'] || fields['Total Value']) || '',
+        taxAmountDue:     cleanMoney(fields['__assessed'] || fields['Assessed Value'] || fields['Appraised Value'] || fields['Market Value'] || fields['Total Value']) || '',
         taxYear:          fields['Tax Year'] || '',
         paymentStatus: '', county: '', state: '',
-        additionalDetails: JSON.stringify({ ...item, ...fields }),
+        additionalDetails: JSON.stringify(buildAdditionalDetails(fields, item)),
       });
     }
 
@@ -661,9 +742,10 @@ async function search(page, {
           ownerName:        fields['Owner Name']     || fields['Owner']       || '',
           propertyAddress:  fields['Situs Address']  || fields['Property Address'] || fields['Address'] || '',
           legalDescription: fields['Legal Description'] || fields['Legal Desc'] || fields['Legal'] || '',
-          taxAmountDue:     fields['Appraised Value'] || fields['Market Value'] || fields['Total Value'] || '',
-          taxYear: '', paymentStatus: '', county: '', state: '',
-          additionalDetails: JSON.stringify(fields),
+          taxAmountDue:     cleanMoney(fields['__assessed'] || fields['Appraised Value'] || fields['Market Value'] || fields['Total Value']) || '',
+          taxYear:          fields['Tax Year'] || '',
+          paymentStatus: '', county: '', state: '',
+          additionalDetails: JSON.stringify(buildAdditionalDetails(fields)),
         }],
         totalFound: 1,
         summary: 'Found 1 record (BIS Consultants).',
@@ -727,9 +809,9 @@ async function search(page, {
       ownerName:        detailFields['Owner Name']        || detailFields['Owner']            || summaryRecord.ownerName,
       propertyAddress:  detailFields['Situs Address']     || detailFields['Property Address'] || detailFields['Address']  || summaryRecord.propertyAddress,
       legalDescription: detailFields['Legal Description'] || detailFields['Legal Desc']       || detailFields['Legal']    || summaryRecord.legalDescription,
-      taxAmountDue:     cleanMoney(detailFields['Assessed Value'] || detailFields['Appraised Value'] || detailFields['Market Value'] || detailFields['Total Value']) || summaryRecord.taxAmountDue,
+      taxAmountDue:     cleanMoney(detailFields['__assessed'] || detailFields['Assessed Value'] || detailFields['Appraised Value'] || detailFields['Market Value'] || detailFields['Total Value']) || summaryRecord.taxAmountDue,
       taxYear:          detailFields['Tax Year'] || summaryRecord.taxYear,
-      additionalDetails: JSON.stringify({ ...obj, ...detailFields }),
+      additionalDetails: JSON.stringify(buildAdditionalDetails(detailFields, obj)),
     });
 
     if (i < cappedRows.length - 1) {

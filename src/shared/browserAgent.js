@@ -518,17 +518,22 @@ async function runBrowserAgent({
       }
     }
 
-    if (platform === 'andersontax') {
-      onProgress('Detected Anderson County Tax Office — using dedicated handler...');
+    if (platform === 'actweb') {
+      onProgress('Detected ACTweb tax portal — AI agent handling...');
+      // No dedicated handler yet; falls through to AI agent below
+    }
+
+    if (platform === 'txcountytax') {
+      onProgress('Detected TX County Tax Office (Kendo) — using dedicated handler...');
       try {
         const handlerResult = await andersonTaxHandler.search(page, {
           accountNumber, firstName, lastName, fullName, onProgress,
         });
         if (handlerResult) return handlerResult;
-        onProgress('Anderson Tax handler fell back — continuing with AI agent...');
+        onProgress('TX County Tax handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
-        console.log(`[agent] Anderson Tax handler error: ${handlerErr.message} — continuing with AI`);
-        onProgress('Anderson Tax handler error — falling back to AI agent...');
+        console.log(`[agent] TX County Tax handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('TX County Tax handler error — falling back to AI agent...');
       }
     }
 

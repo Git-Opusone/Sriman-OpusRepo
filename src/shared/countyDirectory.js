@@ -97,7 +97,13 @@ function getCountyUrl(stateCode, countyName) {
   if (!found || !found.entry.url) {
     return { url: null, platform: 'unknown', source: 'not_found' };
   }
-  return { url: found.entry.url, platform: found.entry.platform || 'generic', source: 'offline' };
+  return {
+    url: found.entry.url,
+    platform: found.entry.platform || 'generic',
+    taxUrl: found.entry.taxUrl || null,
+    taxPlatform: found.entry.taxPlatform || 'generic',
+    source: 'offline'
+  };
 }
 
 /**

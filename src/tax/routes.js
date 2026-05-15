@@ -336,6 +336,15 @@ router.get('/search/multi/stream', async (req, res) => {
                         url: countyUrlInfo.url, linkOnly: false });
     }
 
+    if (countyUrlInfo.taxUrl) {
+      const key = countyUrlInfo.taxUrl.replace(/\/$/, '').toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        allSources.push({ id: 'tax_office_dir', name: 'Tax Assessor-Collector Office', type: 'tax',
+                          url: countyUrlInfo.taxUrl, linkOnly: false });
+      }
+    }
+
     for (const src of netronlineSources) {
       if (!src.onlineUrl) continue;
       const type = classifyNetronlineSource(src.name, src.onlineUrl);
@@ -351,7 +360,7 @@ router.get('/search/multi/stream', async (req, res) => {
 
     const isNameSearch = !accountNumber;
     const searchable = isNameSearch
-      ? allSources.filter(s => !s.linkOnly && s.type === 'appraisal')
+      ? allSources.filter(s => !s.linkOnly && (s.type === 'appraisal' || s.type === 'tax'))
       : allSources.filter(s => !s.linkOnly);
     const linkSources = allSources.filter(s => s.linkOnly);
 
