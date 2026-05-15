@@ -200,7 +200,9 @@ async function main() {
   }
 
   // ── Run tests ──────────────────────────────────────────────────────────────
-  let completed = doneSet.size;
+  // When a county filter is active, progress tracks only the filtered set
+  const isFiltered = !!(SINGLE_COUNTY || FROM_COUNTY || TO_COUNTY);
+  let completed = isFiltered ? 0 : doneSet.size;
   const total   = countyNames.length;
 
   if (remaining.length > 0 && !REPORT_ONLY) {

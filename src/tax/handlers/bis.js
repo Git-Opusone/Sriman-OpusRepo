@@ -156,7 +156,7 @@ async function ensureSearchPage(page) {
       const el = page.locator(sel).first();
       if (await el.count() > 0) {
         await el.click({ timeout: 5000 });
-        await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
+        await page.waitForLoadState('load', { timeout: 8000 }).catch(() => {});
         console.log(`[bis] Accepted disclaimer via: ${sel}`);
         break;
       }
@@ -175,7 +175,7 @@ async function ensureSearchPage(page) {
     const base = new URL(page.url()).origin;
     for (const path of ['/Search', '/search', '/search/', '/#/search', '/Property/Search', '/Property/Search/']) {
       try {
-        await page.goto(`${base}${path}`, { waitUntil: 'networkidle', timeout: 20000 });
+        await page.goto(`${base}${path}`, { waitUntil: 'domcontentloaded', timeout: 10000 });
         const has = await page.evaluate(() =>
           document.querySelectorAll('input[type="text"], input[type="search"]').length > 0
         );
@@ -539,7 +539,7 @@ async function search(page, {
   const btnSel = await tryClick(page, SEARCH_BTN_SELECTORS);
   if (!btnSel) {
     await page.keyboard.press('Enter');
-    await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
+    await page.waitForLoadState('load', { timeout: 15000 }).catch(() => {});
   }
   console.log(`[bis] After submit URL: ${page.url()}`);
 
@@ -580,7 +580,7 @@ async function search(page, {
       };
     }
 
-    const MAX_API = searchMode === 'account' ? items.length : Math.min(items.length, 20);
+    const MAX_API = Math.min(items.length, searchMode === 'account' ? 3 : 5);
     const capped  = items.slice(0, MAX_API);
     onProgress(`Found ${items.length} result(s) via API. Loading property cards for first ${capped.length}...`);
 
@@ -592,9 +592,9 @@ async function search(page, {
       try {
         onProgress(`Loading property card ${i + 1}/${capped.length}...`);
         console.log(`[bis] Detail URL: ${detailUrl}`);
-        await page.goto(detailUrl, { waitUntil: 'networkidle', timeout: 30000 });
+        await page.goto(detailUrl, { waitUntil: 'load', timeout: 15000 });
         await page.waitForTimeout(600);
-        await page.waitForSelector('table tr, [class*="detail" i], h1, h2', { timeout: 10000 }).catch(() => {});
+        await page.waitForSelector('table tr, [class*="detail" i], h1, h2', { timeout: 8000 }).catch(() => {});
         fields = await extractDetailFields(page);
         console.log(`[bis] Detail fields (${Object.keys(fields).length})`);
       } catch (err) {
@@ -680,7 +680,7 @@ async function search(page, {
   }
 
   const { headers, rows } = tableData;
-  const MAX_DETAILS = searchMode === 'account' ? rows.length : Math.min(rows.length, 20);
+  const MAX_DETAILS = Math.min(rows.length, searchMode === 'account' ? 3 : 5);
   const cappedRows  = rows.slice(0, MAX_DETAILS);
   onProgress(`Found ${rows.length} result(s). Loading details for first ${cappedRows.length}...`);
 
@@ -711,10 +711,9 @@ async function search(page, {
       if (detailUrl) {
         onProgress(`Loading detail for ${parcelId || 'record ' + (i + 1)}...`);
         console.log(`[bis] Detail URL: ${detailUrl}`);
-        await page.goto(detailUrl, { waitUntil: 'networkidle', timeout: 30000 });
-        // SPA may need extra time after networkidle
+        await page.goto(detailUrl, { waitUntil: 'load', timeout: 15000 });
         await page.waitForTimeout(600);
-        await page.waitForSelector('table tr, [class*="detail" i], h1, h2', { timeout: 10000 }).catch(() => {});
+        await page.waitForSelector('table tr, [class*="detail" i], h1, h2', { timeout: 8000 }).catch(() => {});
         detailFields = await extractDetailFields(page);
         console.log(`[bis] Detail fields (${Object.keys(detailFields).length}):`, JSON.stringify(detailFields).substring(0, 400));
         onProgress(`Extracted ${Object.keys(detailFields).length} fields.`);
@@ -735,7 +734,7 @@ async function search(page, {
 
     if (i < cappedRows.length - 1) {
       try {
-        await page.goto(searchResultsUrl, { waitUntil: 'networkidle', timeout: 30000 });
+        await page.goto(searchResultsUrl, { waitUntil: 'load', timeout: 15000 });
         await waitForResults(page);
       } catch (_) {}
     }

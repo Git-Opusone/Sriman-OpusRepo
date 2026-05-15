@@ -21969,7 +21969,7 @@
       "Baylor": {
         "url": "http://www.baylorcad.org",
         "platform": "generic",
-        "lastVerified": "2026-05-14",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/baylor"
       },
       "Bee": {
@@ -22155,7 +22155,7 @@
       "Collin": {
         "url": "http://www.collincad.org/",
         "platform": "generic",
-        "lastVerified": "2026-05-14",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/collin"
       },
       "Collingsworth": {
@@ -22233,7 +22233,7 @@
       "Dallam": {
         "url": "http://esearch.dallamcad.org/",
         "platform": "bis",
-        "lastVerified": "2026-05-14",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/dallam"
       },
       "Dallas": {
@@ -22447,15 +22447,15 @@
         "netronlinePath": "/state/TX/county/grayson"
       },
       "Gregg": {
-        "url": "http://www.gcad.org/",
-        "platform": "generic",
+        "url": "https://esearch.gcad.org/",
+        "platform": "bis",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/gregg"
       },
       "Grimes": {
         "url": "https://grimescad.org/",
         "platform": "generic",
-        "lastVerified": "2026-05-14",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/grimes"
       },
       "Guadalupe": {
@@ -22479,7 +22479,7 @@
       "Hamilton": {
         "url": "http://www.hamiltoncad.org/",
         "platform": "generic",
-        "lastVerified": "2026-05-14",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/hamilton"
       },
       "Hansford": {
@@ -22639,8 +22639,8 @@
         "netronlinePath": "/state/TX/county/jefferson"
       },
       "Jim Hogg": {
-        "url": "http://esearch.jimhogg-cad.org/",
-        "platform": "bis",
+        "url": "http://jimhogg-cad.org/",
+        "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/jim_hogg"
       },
@@ -22747,8 +22747,8 @@
         "netronlinePath": "/state/TX/county/lampasas"
       },
       "La Salle": {
-        "url": "http://esearch.lasallecad.com/",
-        "platform": "bis",
+        "url": "https://www.lasallecad.com/property-search",
+        "platform": "publicportal",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/la_salle"
       },
@@ -22789,7 +22789,7 @@
         "netronlinePath": "/state/TX/county/lipscomb"
       },
       "Live Oak": {
-        "url": "http://propertysearch.liveoakcad.org/property-search",
+        "url": "http://liveoakappraisal.com/",
         "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/live_oak"
@@ -23079,7 +23079,7 @@
       "Roberts": {
         "url": "http://esearch.robertscad.org/",
         "platform": "bis",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/roberts"
       },
       "Robertson": {
@@ -23371,8 +23371,8 @@
         "netronlinePath": "/state/TX/county/willacy"
       },
       "Williamson": {
-        "url": "https://esearch.williamsoncad.org/",
-        "platform": "bis",
+        "url": "https://search.wcad.org/",
+        "platform": "generic",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/williamson"
       },

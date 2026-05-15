@@ -208,11 +208,11 @@ async function runSelfFixer(allTestResults, serverUrl = 'http://localhost:3000',
       }
     }
 
-    // ── Fix 2: Try to find a live URL for no_url / error / no_results counties
-    // Skip if the existing URL is already a BIS esearch portal — a no_results result
-    // there may just mean no matching records, not a bad URL.
+    // ── Fix 2: Try to find a live URL for no_url counties only
+    // Disabled for error/no_results — Netronline alternatives too often regress known-good URLs.
+    // URL corrections are applied manually via update-county-urls.js.
     const isBisEsearchUrl = /esearch\.[a-z0-9-]+\.(org|com|net)/i.test(url || '');
-    if (!isBisEsearchUrl && (result.status === 'no_url' || result.status === 'error' || result.status === 'no_results') && serverUrl) {
+    if (!isBisEsearchUrl && result.status === 'no_url' && serverUrl) {
       const alts = await fetchAlternativeUrls(serverUrl, state, county);
       for (const altUrl of alts) {
         const alive = await isUrlAlive(altUrl);

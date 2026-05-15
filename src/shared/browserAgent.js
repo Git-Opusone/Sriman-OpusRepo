@@ -380,7 +380,10 @@ async function runBrowserAgent({
 
   try {
     onProgress('Launching browser and navigating to county website...');
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 90000 });
+    // Use 'domcontentloaded' — BIS SPAs with continuous polling never reach networkidle,
+    // and 'load' can also stall waiting for large JS bundles. The handler waits for the
+    // search form itself, which is a more reliable signal than network state.
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
 
     // Build search criteria list
     const criteria = [];
