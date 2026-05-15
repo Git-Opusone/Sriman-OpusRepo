@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-05-15",
+  "lastUpdated": "2026-05-16",
   "states": {
     "AL": {
       "Autauga": {
@@ -22147,9 +22147,9 @@
         "netronlinePath": "/state/TX/county/coke"
       },
       "Coleman": {
-        "url": "http://www.co.coleman.tx.us/default.aspx?Coleman_County/County.Assessor.Collector",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://www.colemancad.org/",
+        "platform": "ptaxpro",
+        "lastVerified": "2026-05-16",
         "netronlinePath": "/state/TX/county/coleman"
       },
       "Collin": {
@@ -22219,9 +22219,9 @@
         "netronlinePath": "/state/TX/county/crockett"
       },
       "Crosby": {
-        "url": "http://www.co.crosby.tx.us/page/crosby.County.Assessor.Collector",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://www.crosbycad.com/",
+        "platform": "ptaxpro",
+        "lastVerified": "2026-05-16",
         "netronlinePath": "/state/TX/county/crosby"
       },
       "Culberson": {
@@ -23233,9 +23233,9 @@
         "netronlinePath": "/state/TX/county/terrell"
       },
       "Terry": {
-        "url": "https://www.co.terry.tx.us/page/terry.County.Assessor.Collector",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.terrycoad.org/",
+        "platform": "bis",
+        "lastVerified": "2026-05-16",
         "netronlinePath": "/state/TX/county/terry"
       },
       "Throckmorton": {
@@ -23263,9 +23263,9 @@
         "netronlinePath": "/state/TX/county/travis"
       },
       "Trinity": {
-        "url": "http://www.co.trinity.tx.us/page/trinity.County.Assessor.Collector",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.trinitycad.net/",
+        "platform": "bis",
+        "lastVerified": "2026-05-16",
         "netronlinePath": "/state/TX/county/trinity"
       },
       "Tyler": {
