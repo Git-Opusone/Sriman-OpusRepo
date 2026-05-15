@@ -21913,9 +21913,9 @@
         "netronlinePath": "/state/TX/county/andrews"
       },
       "Angelina": {
-        "url": "http://www.angelinacad.org/Appraisal/PublicAccess/",
+        "url": "http://www.angelinacounty.net/departments/tax",
         "platform": "generic",
-        "lastVerified": "2026-05-14",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/angelina"
       },
       "Aransas": {
@@ -22142,7 +22142,7 @@
       },
       "Coke": {
         "url": "http://www.cokecad.org",
-        "platform": "generic",
+        "platform": "bis",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/coke"
       },
@@ -22171,9 +22171,9 @@
         "netronlinePath": "/state/TX/county/colorado"
       },
       "Comal": {
-        "url": "http://www.comalad.org/",
+        "url": "https://www.co.comal.tx.us/tax/",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/comal"
       },
       "Comanche": {
@@ -22267,9 +22267,9 @@
         "netronlinePath": "/state/TX/county/denton"
       },
       "DeWitt": {
-        "url": "http://www.dewittcad.org/",
+        "url": "https://dewitt.propertytaxpayments.net/search",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/dewitt"
       },
       "Dickens": {
@@ -22279,9 +22279,9 @@
         "netronlinePath": "/state/TX/county/dickens"
       },
       "Dimmit": {
-        "url": "http://www.dimmit-cad.org/",
+        "url": "https://www.dimmitcounty.org/government/departments/tax_assessor_collector.php",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/dimmit"
       },
       "Donley": {
@@ -22359,7 +22359,7 @@
       "Floyd": {
         "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=floydcad&time=201601191610017",
         "platform": "isw",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/floyd"
       },
       "Foard": {
@@ -22459,9 +22459,9 @@
         "netronlinePath": "/state/TX/county/grimes"
       },
       "Guadalupe": {
-        "url": "https://roam.guadalupetx.gov/",
+        "url": "https://property.guadalupetx.gov/",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/guadalupe"
       },
       "Hale": {
@@ -22503,7 +22503,7 @@
       "Harris": {
         "url": "https://hcad.org/property-search/property-search",
         "platform": "generic",
-        "lastVerified": "2026-05-14",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/harris"
       },
       "Harrison": {
@@ -22555,9 +22555,9 @@
         "netronlinePath": "/state/TX/county/hill"
       },
       "Hockley": {
-        "url": "http://www.hockleycad.org/",
+        "url": "https://hockley.propertytaxpayments.net/search",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/hockley"
       },
       "Hood": {
@@ -22579,7 +22579,7 @@
         "netronlinePath": "/state/TX/county/houston"
       },
       "Howard": {
-        "url": "http://gis.bisconsultants.com/howardcad/",
+        "url": "https://esearch.howardcad.org/",
         "platform": "bis",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/howard"
@@ -22717,15 +22717,15 @@
         "netronlinePath": "/state/TX/county/kinney"
       },
       "Kleberg": {
-        "url": "https://actweb.acttax.com/kleberg/kleberg/search.jsp",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://propaccess.trueautomation.com/clientdb/?cid=24",
+        "platform": "trueautomation",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/kleberg"
       },
       "Knox": {
         "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=knoxcad&time=201601191613039",
         "platform": "isw",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/knox"
       },
       "Lamar": {
@@ -22785,7 +22785,7 @@
       "Lipscomb": {
         "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=lipscombcad&time=201601191614019",
         "platform": "isw",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/lipscomb"
       },
       "Live Oak": {
@@ -22825,9 +22825,9 @@
         "netronlinePath": "/state/TX/county/madison"
       },
       "Marion": {
-        "url": "http://www.marioncad.org/",
+        "url": "https://www.marioncountytaxoffice.com/taxes#/",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/marion"
       },
       "Martin": {
@@ -22909,9 +22909,9 @@
         "netronlinePath": "/state/TX/county/mitchell"
       },
       "Montague": {
-        "url": "http://www.co.montague.tx.us/default.aspx?Montague_County/County.Assessor.Collector",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=montaguecad&time=201601191615055",
+        "platform": "isw",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/montague"
       },
       "Montgomery": {
@@ -22999,9 +22999,9 @@
         "netronlinePath": "/state/TX/county/panola"
       },
       "Parker": {
-        "url": "https://parkercountytx.com/154/Tax-Assessor-Collector",
+        "url": "https://www.southwestdatasolution.com/webindex.aspx?dbkey=PARKERCAD&time=202602101456013",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/parker"
       },
       "Parmer": {
@@ -23109,7 +23109,7 @@
       "Sabine": {
         "url": "http://iswdataclient.azurewebsites.net/webIndex.aspx?dbkey=sabinecad&time=201711141513000",
         "platform": "isw",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/sabine"
       },
       "San Augustine": {
@@ -23169,13 +23169,13 @@
       "Smith": {
         "url": "http://www.smithcad.org/",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/smith"
       },
       "Somervell": {
         "url": "http://www.somervellcad.net/",
         "platform": "publicportal",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/somervell"
       },
       "Starr": {
@@ -23187,7 +23187,7 @@
       "Stephens": {
         "url": "http://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=stephenscad&time=201702161541000",
         "platform": "isw",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/stephens"
       },
       "Sterling": {
@@ -23259,7 +23259,7 @@
       "Travis": {
         "url": "https://www.traviscad.org/propertysearch",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/travis"
       },
       "Trinity": {
@@ -23271,7 +23271,7 @@
       "Tyler": {
         "url": "http://www.tylercad.net/",
         "platform": "publicportal",
-        "lastVerified": null,
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/tyler"
       },
       "Upshur": {
@@ -23385,7 +23385,7 @@
       "Winkler": {
         "url": "https://winklercad.org/",
         "platform": "generic",
-        "lastVerified": "2026-05-14",
+        "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/winkler"
       },
       "Wise": {
@@ -23413,8 +23413,8 @@
         "netronlinePath": "/state/TX/county/young"
       },
       "Zapata": {
-        "url": "https://zapata.tx.publicsearch.us/",
-        "platform": "publicportal",
+        "url": "https://esearch.zapatacad.com",
+        "platform": "bis",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/zapata"
       },
