@@ -2,3 +2,10 @@ node_modules/
 .env
 *.log
 .DS_Store
+
+# Generated reports and run artifacts
+scripts/tx-county-automation/reports/
+scripts/report-tester/reports/
+
+# Claude scheduled tasks lock
+.claude/scheduled_tasks.lock
