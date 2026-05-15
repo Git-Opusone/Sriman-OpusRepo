@@ -37,8 +37,8 @@ const PLATFORM_RULES = [
   { platform: 'bis',          test: u => /esearch\.[a-z]+cad\.(org|net)/i.test(u)       },
   { platform: 'bis',          test: u => /bisconsultants\.com/i.test(u)                 },
   { platform: 'bis',          test: u => /cadcentral\.com/i.test(u)                     },
-  // ACTweb — TX county tax portal (actweb.acttax.com/act_webdev/{county}/index.jsp)
-  { platform: 'actweb',       test: u => /actweb\.acttax\.com/i.test(u)                },
+  // ACTweb — TX county tax portal (actweb.acttax.com or {county}.acttax.com subdomains)
+  { platform: 'actweb',       test: u => /acttax\.com/i.test(u)                        },
   // Houston County Tax Office uses BIS platform under a non-standard domain
   { platform: 'bis',          test: u => /houstoncountytaxoffice\.com/i.test(u)        },
   // Public Portal (Aumentum Technologies) — {county}cad.net / {county}cad.org domains

@@ -23,6 +23,7 @@ const visionHandler           = require('../tax/handlers/vision');
 const bisHandler              = require('../tax/handlers/bis');
 const publicPortalHandler     = require('../tax/handlers/publicportal');
 const andersonTaxHandler      = require('../tax/handlers/andersontax');
+const actwebHandler           = require('../tax/handlers/actweb');
 const ptaxproHandler          = require('../tax/handlers/ptaxpro');
 const { detectCaptcha }       = require('./captchaDetector');
 
@@ -519,8 +520,17 @@ async function runBrowserAgent({
     }
 
     if (platform === 'actweb') {
-      onProgress('Detected ACTweb tax portal — AI agent handling...');
-      // No dedicated handler yet; falls through to AI agent below
+      onProgress('Detected ACTweb tax portal — using dedicated handler...');
+      try {
+        const handlerResult = await actwebHandler.search(page, {
+          accountNumber, firstName, lastName, fullName, onProgress,
+        });
+        if (handlerResult) return handlerResult;
+        onProgress('ACTweb handler fell back — continuing with AI agent...');
+      } catch (handlerErr) {
+        console.log(`[agent] ACTweb handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('ACTweb handler error — falling back to AI agent...');
+      }
     }
 
     if (platform === 'txcountytax') {

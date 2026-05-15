@@ -21990,7 +21990,9 @@
         "url": "https://bcad.org/",
         "platform": "generic",
         "lastVerified": "2026-05-14",
-        "netronlinePath": "/state/TX/county/bexar"
+        "netronlinePath": "/state/TX/county/bexar",
+        "taxUrl": "https://bexar.acttax.com/act_webdev/bexar/index.jsp",
+        "taxPlatform": "actweb"
       },
       "Blanco": {
         "url": "https://esearch.blancocad.com/",
@@ -22088,7 +22090,9 @@
         "url": "https://cameron.prodigycad.com/property-search",
         "platform": "prodigycad",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/cameron"
+        "netronlinePath": "/state/TX/county/cameron",
+        "taxUrl": "https://actweb.acttax.com/act_webdev/cameron/index.jsp",
+        "taxPlatform": "actweb"
       },
       "Camp": {
         "url": "https://esearch.campcad.org/",
@@ -22270,7 +22274,9 @@
         "url": "https://www.dentoncad.com/",
         "platform": "generic",
         "lastVerified": null,
-        "netronlinePath": "/state/TX/county/denton"
+        "netronlinePath": "/state/TX/county/denton",
+        "taxUrl": "https://taxonline.dentoncounty.com/",
+        "taxPlatform": "generic"
       },
       "DeWitt": {
         "url": "https://dewitt.propertytaxpayments.net/search",
@@ -22518,7 +22524,9 @@
         "url": "https://hcad.org/property-search/property-search",
         "platform": "generic",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/harris"
+        "netronlinePath": "/state/TX/county/harris",
+        "taxUrl": "https://www.hctax.net/Property/Search",
+        "taxPlatform": "generic"
       },
       "Harrison": {
         "url": "https://harrisoncad.net/",
@@ -22562,7 +22570,9 @@
         "url": "https://hidalgoad.org/",
         "platform": "generic",
         "lastVerified": null,
-        "netronlinePath": "/state/TX/county/hidalgo"
+        "netronlinePath": "/state/TX/county/hidalgo",
+        "taxUrl": "https://actweb.acttax.com/act_webdev/hidalgo/index.jsp",
+        "taxPlatform": "actweb"
       },
       "Hill": {
         "url": "https://esearch.hillcad.org/",
@@ -22654,7 +22664,9 @@
         "url": "http://www.jcad.org/",
         "platform": "generic",
         "lastVerified": null,
-        "netronlinePath": "/state/TX/county/jefferson"
+        "netronlinePath": "/state/TX/county/jefferson",
+        "taxUrl": "https://actweb.acttax.com/act_webdev/jefferson/index.jsp",
+        "taxPlatform": "actweb"
       },
       "Jim Hogg": {
         "url": "http://jimhogg-cad.org/",
@@ -22882,7 +22894,9 @@
         "url": "http://www.mclennancad.org/",
         "platform": "generic",
         "lastVerified": null,
-        "netronlinePath": "/state/TX/county/mclennan"
+        "netronlinePath": "/state/TX/county/mclennan",
+        "taxUrl": "https://actweb.acttax.com/act_webdev/mclennan/index.jsp",
+        "taxPlatform": "actweb"
       },
       "McMullen": {
         "url": "https://esearch.mcmullencad.org/",
@@ -22938,7 +22952,9 @@
         "url": "https://mcad-tx.org/",
         "platform": "generic",
         "lastVerified": null,
-        "netronlinePath": "/state/TX/county/montgomery"
+        "netronlinePath": "/state/TX/county/montgomery",
+        "taxUrl": "https://actweb.acttax.com/act_webdev/montgomery/index.jsp",
+        "taxPlatform": "actweb"
       },
       "Moore": {
         "url": "https://esearch.moorecad.org/",
@@ -23190,7 +23206,9 @@
         "url": "http://www.smithcad.org/",
         "platform": "generic",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/smith"
+        "netronlinePath": "/state/TX/county/smith",
+        "taxUrl": "http://publictax.smith-county.com/",
+        "taxPlatform": "generic"
       },
       "Somervell": {
         "url": "http://www.somervellcad.net/",
@@ -23238,7 +23256,9 @@
         "url": "https://esearch.tarrantcad.org/",
         "platform": "bis",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/tarrant"
+        "netronlinePath": "/state/TX/county/tarrant",
+        "taxUrl": "https://taxonline.tarrantcounty.com/",
+        "taxPlatform": "generic"
       },
       "Taylor": {
         "url": "https://esearch.taylor-cad.org/",
@@ -23280,7 +23300,9 @@
         "url": "https://www.traviscad.org/propertysearch",
         "platform": "generic",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/travis"
+        "netronlinePath": "/state/TX/county/travis",
+        "taxUrl": "https://taxoffice.traviscountytx.gov/",
+        "taxPlatform": "generic"
       },
       "Trinity": {
         "url": "https://esearch.trinitycad.net/",
@@ -23340,7 +23362,9 @@
         "url": "https://esearch.wallercad.org/",
         "platform": "bis",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/waller"
+        "netronlinePath": "/state/TX/county/waller",
+        "taxUrl": "http://tax.co.waller.tx.us",
+        "taxPlatform": "txcountytax"
       },
       "Ward": {
         "url": "http://www.wardcad.org/",
@@ -23358,7 +23382,9 @@
         "url": "https://www.webbcad.org/property-search",
         "platform": "publicportal",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/webb"
+        "netronlinePath": "/state/TX/county/webb",
+        "taxUrl": "https://actweb.acttax.com/act_webdev/webb/index.jsp",
+        "taxPlatform": "actweb"
       },
       "Wharton": {
         "url": "https://esearch.whartoncad.net/",
@@ -23394,7 +23420,9 @@
         "url": "https://search.wcad.org/",
         "platform": "generic",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/williamson"
+        "netronlinePath": "/state/TX/county/williamson",
+        "taxUrl": "https://tax.co.williamson.tx.us/",
+        "taxPlatform": "txcountytax"
       },
       "Wilson": {
         "url": "https://esearch.wilson-cad.org/",
@@ -23406,7 +23434,9 @@
         "url": "https://winklercad.org/",
         "platform": "generic",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/winkler"
+        "netronlinePath": "/state/TX/county/winkler",
+        "taxUrl": "http://tax.co.winkler.tx.us",
+        "taxPlatform": "txcountytax"
       },
       "Wise": {
         "url": "https://esearch.wise-cad.com/",
