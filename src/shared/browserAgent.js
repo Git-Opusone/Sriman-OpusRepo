@@ -26,6 +26,7 @@ const andersonTaxHandler      = require('../tax/handlers/andersontax');
 const actwebHandler           = require('../tax/handlers/actweb');
 const go2govHandler           = require('../tax/handlers/go2gov');
 const ptaxproHandler          = require('../tax/handlers/ptaxpro');
+const ptpHandler              = require('../tax/handlers/propertytaxpayments');
 const { detectCaptcha }       = require('./captchaDetector');
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -573,6 +574,20 @@ async function runBrowserAgent({
       } catch (handlerErr) {
         console.log(`[agent] PTaxPro handler error: ${handlerErr.message} — continuing with AI`);
         onProgress('PTaxPro handler error — falling back to AI agent...');
+      }
+    }
+
+    if (platform === 'propertytaxpayments') {
+      onProgress('Detected PropertyTaxPayments.net — using dedicated handler...');
+      try {
+        const handlerResult = await ptpHandler.search(page, {
+          accountNumber, firstName, lastName, fullName, onProgress,
+        });
+        if (handlerResult) return handlerResult;
+        onProgress('PropertyTaxPayments handler fell back — continuing with AI agent...');
+      } catch (handlerErr) {
+        console.log(`[agent] PropertyTaxPayments handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('PropertyTaxPayments handler error — falling back to AI agent...');
       }
     }
 

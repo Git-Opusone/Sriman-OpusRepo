@@ -37,10 +37,18 @@ const PLATFORM_RULES = [
   { platform: 'bis',          test: u => /esearch\.[a-z]+cad\.(org|net)/i.test(u)       },
   { platform: 'bis',          test: u => /bisconsultants\.com/i.test(u)                 },
   { platform: 'bis',          test: u => /cadcentral\.com/i.test(u)                     },
+  // BIS installations under county govt domains (esearch.co.{county}.tx.us or esearch.{county}-tax.com)
+  { platform: 'bis',          test: u => /esearch\.co\.[a-z]+\.tx\.us/i.test(u)        },
+  { platform: 'bis',          test: u => /esearch\.[a-z]+-?tax\.com/i.test(u)          },
+  { platform: 'bis',          test: u => /esearch\.[a-z]+-tax\./i.test(u)              },
   // ACTweb — TX county tax portal (actweb.acttax.com or {county}.acttax.com subdomains)
   { platform: 'actweb',       test: u => /acttax\.com/i.test(u)                        },
   // Go2Gov — TX county tax portal (camerontax.go2gov.net, webb.go2gov.net, etc.)
   { platform: 'go2gov',       test: u => /go2gov\.net/i.test(u)                        },
+  // PropertyTaxPayments.net — TX county tax payment/search portal (~100 TX counties)
+  { platform: 'propertytaxpayments', test: u => /propertytaxpayments\.net/i.test(u)   },
+  // TaxWeb / taxpayer — Tyler-adjacent TX county tax portals (taxpayer.{county}county.com/taxweb/)
+  { platform: 'taxweb',       test: u => /taxpayer\.[a-z]+county\.com\/taxweb/i.test(u) },
   // Houston County Tax Office uses BIS platform under a non-standard domain
   { platform: 'bis',          test: u => /houstoncountytaxoffice\.com/i.test(u)        },
   // Public Portal (Aumentum Technologies) — {county}cad.net / {county}cad.org domains
@@ -120,9 +128,11 @@ function detectPlatform(url, html) {
  */
 function platformLabel(platform) {
   const labels = {
-    txcountytax:  'TX County Tax Office (Kendo)',
-    actweb:       'ACTweb Tax Portal',
-    go2gov:       'Go2Gov Tax Portal',
+    txcountytax:         'TX County Tax Office (Kendo)',
+    actweb:              'ACTweb Tax Portal',
+    go2gov:              'Go2Gov Tax Portal',
+    propertytaxpayments: 'PropertyTaxPayments.net (FIS/ACI)',
+    taxweb:              'TaxWeb County Portal',
     ptaxpro:      'PTaxPro / whoownsit.com',
     bis:          'BIS Consultants',
     qpublic:      'qPublic',
