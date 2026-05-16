@@ -537,6 +537,17 @@ router.get('/search/multi/stream', async (req, res) => {
   }
 });
 
+// ─── CapSolver balance check ──────────────────────────────────────────────────
+// GET /api/tax/capsolver/balance
+router.get('/capsolver/balance', async (req, res) => {
+  const { getBalance } = require('../shared/captchaSolver');
+  const balance = await getBalance();
+  if (balance === null) {
+    return res.status(503).json({ error: 'CAPSOLVER_API_KEY not configured or unreachable' });
+  }
+  res.json({ balance, currency: 'USD' });
+});
+
 // ─── REST fallback ────────────────────────────────────────────────────────────
 // POST /api/tax/search
 router.post('/search', async (req, res) => {

@@ -4,14 +4,16 @@
  * src/captchaDetector.js
  *
  * Shared CAPTCHA / bot-challenge detection for all Playwright handlers.
- * Returns { detected, type } without attempting to solve.
+ * When CAPSOLVER_API_KEY is set, auto-attempts to solve Cloudflare Turnstile.
  *
  * Covered patterns:
  *   - reCAPTCHA v2 / v3 (Google)
  *   - hCaptcha
- *   - Cloudflare Turnstile / 5-second JS challenge
+ *   - Cloudflare Turnstile / 5-second JS challenge (auto-solve via CapSolver)
  *   - Generic "verify you are human" interstitials
  */
+
+const { solveTurnstile } = require('./captchaSolver');
 
 const CAPTCHA_RESULT = (type) => ({
   detected: true,
@@ -82,6 +84,29 @@ async function detectCaptcha(page) {
 
     if (result.detected) {
       console.log(`[captcha] Detected: ${result.type} on ${page.url()}`);
+
+      // Auto-solve Cloudflare Turnstile via CapSolver when API key is configured
+      if (
+        process.env.CAPSOLVER_API_KEY &&
+        (result.type === 'Cloudflare Turnstile' || result.type === 'Cloudflare challenge')
+      ) {
+        console.log('[captcha] Attempting auto-solve via CapSolver...');
+        const solved = await solveTurnstile(page);
+        if (solved) {
+          // Give the page a moment to process the solved token
+          await page.waitForTimeout(2000);
+          const stillBlocked = await page.evaluate(() => {
+            const t = (document.title || '').toLowerCase();
+            return t.includes('just a moment') || document.querySelector('.cf-turnstile') !== null;
+          }).catch(() => false);
+          if (!stillBlocked) {
+            console.log('[captcha] Turnstile solved successfully — continuing');
+            return { detected: false, type: null };  // proceed as if no captcha
+          }
+          console.log('[captcha] Turnstile solve attempted but page still shows challenge');
+        }
+      }
+
       return { ...result, ...CAPTCHA_RESULT(result.type), searchedUrl: page.url() };
     }
     return { detected: false, type: null };
