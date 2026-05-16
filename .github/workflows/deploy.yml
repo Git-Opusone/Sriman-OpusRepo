@@ -104,6 +104,7 @@ jobs:
               -e SEARCH_TIMEOUT_MS="180000" \
               -e CACHE_TTL_HOURS="4" \
               -e CACHE_MAX_SIZE="1000" \
+              -e CAPSOLVER_API_KEY="${{ secrets.CAPSOLVER_API_KEY }}" \
               ${{ secrets.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
 
             # ── Deploy / refresh monitoring stack (Alloy + node-exporter) ──────────
