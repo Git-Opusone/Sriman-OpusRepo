@@ -254,8 +254,25 @@ async function search(page, { accountNumber = '', firstName = '', lastName = '',
     if (cap2.detected) return { ...cap2, searchedUrl: page.url() };
 
     onProgress('Reading search results...');
-    const resultsList = await extractResults(page);
+    let resultsList = await extractResults(page);
     console.log(`[go2gov] found ${resultsList.length} results`);
+
+    // If account number search returned nothing, retry with owner name as fallback
+    if (resultsList.length === 0 && hasAcct) {
+      const nameFallback = (lastName || fullName || firstName || '').trim().toUpperCase();
+      if (nameFallback) {
+        console.log(`[go2gov] account search empty — retrying with name: "${nameFallback}"`);
+        onProgress(`Go2Gov: retrying with owner name "${nameFallback}"...`);
+        const submitted2 = await submitSearch(page, searchUrl, nameFallback);
+        if (submitted2) {
+          const bodyText2 = await page.evaluate(() => document.body.innerText || '').catch(() => '');
+          if (!/no\s+(?:records?|results?)\s+found|0\s+record/i.test(bodyText2)) {
+            resultsList = await extractResults(page);
+            console.log(`[go2gov] name fallback found ${resultsList.length} results`);
+          }
+        }
+      }
+    }
 
     if (!resultsList.length) return null;
 

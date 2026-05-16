@@ -260,14 +260,25 @@ async function search(page, { accountNumber = '', firstName = '', lastName = '',
     if (cap.detected) return { ...cap, searchedUrl: page.url() };
 
     // Submit search form
-    const submitted = await submitSearch(page, actBase, searchValue, searchBy);
+    let submitted = await submitSearch(page, actBase, searchValue, searchBy);
     if (!submitted) {
       console.log('[actweb] form submit failed');
       return null;
     }
 
-    // Check for no results
-    const pageText = await page.evaluate(() => document.body.innerText || '').catch(() => '');
+    // Check for no results — if account search found nothing, try owner name fallback
+    let pageText = await page.evaluate(() => document.body.innerText || '').catch(() => '');
+    if (/no\s+records?\s+found|no\s+results|0\s+record/i.test(pageText) && hasAcct) {
+      const nameFallback = (lastName || fullName || firstName || '').trim().toUpperCase();
+      if (nameFallback) {
+        console.log(`[actweb] account search empty — retrying with name: "${nameFallback}"`);
+        onProgress(`ACTweb: retrying with owner name "${nameFallback}"...`);
+        submitted = await submitSearch(page, actBase, nameFallback, '3');
+        if (submitted) {
+          pageText = await page.evaluate(() => document.body.innerText || '').catch(() => '');
+        }
+      }
+    }
     if (/no\s+records?\s+found|no\s+results|0\s+record/i.test(pageText)) {
       return { records: [], totalFound: 0, summary: `No records found for "${searchValue}" in ${county} County.`, searchedUrl: page.url() };
     }

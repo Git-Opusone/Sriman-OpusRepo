@@ -82,18 +82,17 @@ function extractTaxAccountId(cadResult, originalId) {
     if (!cadResult || !cadResult.records || !cadResult.records.length) return originalId;
     const rec = cadResult.records[0];
 
-    // Direct parcelId on the record
-    if (rec.parcelId && rec.parcelId.trim() && !/motor\s*vehicle|renewal/i.test(rec.parcelId)) {
-      return rec.parcelId.trim();
-    }
-
-    // Parse additionalDetails for account number fields
+    // Parse additionalDetails first — taxOfficeRef is the highest-fidelity cross-reference
+    // for Tax Office lookup (publicportal/prodigycad stores it separately from parcelId)
     if (rec.additionalDetails) {
       let details = rec.additionalDetails;
       if (typeof details === 'string') {
         try { details = JSON.parse(details); } catch (_) { details = {}; }
       }
       const ACCT_KEYS = [
+        // publicportal.js / prodigycad — Tax Office cross-reference (highest priority)
+        'taxOfficeRef', 'refId', 'geoId', 'propId',
+        // Common label variants
         'Account Number', 'Account No', 'Account', 'Account #', 'Acct',
         'Property ID', 'Parcel ID', 'Parcel Number', 'Tax Account', 'CAD ID',
         'account number', 'account no', 'property id', 'parcel id',
@@ -104,6 +103,11 @@ function extractTaxAccountId(cadResult, originalId) {
           return val.trim();
         }
       }
+    }
+
+    // Fall back to parcelId if it exists and isn't a motor vehicle reference
+    if (rec.parcelId && rec.parcelId.trim() && !/motor\s*vehicle|renewal/i.test(rec.parcelId)) {
+      return rec.parcelId.trim();
     }
   } catch (_) {}
   return originalId;
@@ -442,7 +446,8 @@ router.get('/search/multi/stream', async (req, res) => {
     const taxSrc   = toSearch.find(s => s.type === 'tax');
     const otherSrc = toSearch.filter(s => s.type !== 'appraisal' && s.type !== 'tax');
 
-    let cadAccountNumber = accountNumber || '';  // best account ID discovered from CAD
+    let cadAccountNumber  = accountNumber || '';  // best account ID discovered from CAD
+    let cadOwnerLastName  = lastName      || '';  // owner last name from CAD result (name-search fallback)
 
     // Run CAD source first (if present)
     if (cadSrc) {
@@ -461,6 +466,16 @@ router.get('/search/multi/stream', async (req, res) => {
           console.log(`[tax] CAD account ID resolved: "${accountNumber}" → "${cadAccountNumber}"`);
           sendEvent('status', { message: `Using account ID "${cadAccountNumber}" for Tax Office search...` });
         }
+
+        // Extract owner last name from CAD result as a name-search fallback for Tax Office
+        // (TX CAD owner names are typically "LASTNAME FIRSTNAME" or "LASTNAME, FIRSTNAME")
+        if (!cadOwnerLastName && cadResult.records && cadResult.records.length) {
+          const cadOwnerName = (cadResult.records[0].ownerName || '').trim();
+          if (cadOwnerName) {
+            cadOwnerLastName = cadOwnerName.split(/[\s,]+/)[0] || '';
+            console.log(`[tax] CAD owner last name for fallback: "${cadOwnerLastName}"`);
+          }
+        }
       } catch (err) {
         sendEvent('source_error', { id: cadSrc.id, name: cadSrc.name, message: err.message });
         metrics.searchesTotal.inc({ endpoint: 'multi', status: 'error' });
@@ -469,7 +484,10 @@ router.get('/search/multi/stream', async (req, res) => {
 
     // Run Tax Office source with the resolved account number
     if (taxSrc) {
-      const taxParams = { ...baseParams, accountNumber: cadAccountNumber };
+      // If no name was supplied by the caller but we extracted one from CAD, use it as fallback
+      const taxNameFallback = (!lastName && !fullName && cadOwnerLastName)
+        ? { lastName: cadOwnerLastName } : {};
+      const taxParams = { ...baseParams, accountNumber: cadAccountNumber, ...taxNameFallback };
       sendEvent('source_progress', { id: taxSrc.id, message: `Starting search at ${taxSrc.name}...` });
       try {
         const taxResult = await runBrowserAgentWithTimeout({
