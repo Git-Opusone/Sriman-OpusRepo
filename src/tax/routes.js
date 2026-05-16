@@ -447,7 +447,7 @@ router.get('/search/multi/stream', async (req, res) => {
     const otherSrc = toSearch.filter(s => s.type !== 'appraisal' && s.type !== 'tax');
 
     let cadAccountNumber  = accountNumber || '';  // best account ID discovered from CAD
-    let cadOwnerLastName  = lastName      || '';  // owner last name from CAD result (name-search fallback)
+    let cadOwnerLastName  = lastName      || '';  // owner name from CAD result for Tax Office name-search fallback
 
     // Run CAD source first (if present)
     if (cadSrc) {
@@ -467,13 +467,15 @@ router.get('/search/multi/stream', async (req, res) => {
           sendEvent('status', { message: `Using account ID "${cadAccountNumber}" for Tax Office search...` });
         }
 
-        // Extract owner last name from CAD result as a name-search fallback for Tax Office
-        // (TX CAD owner names are typically "LASTNAME FIRSTNAME" or "LASTNAME, FIRSTNAME")
+        // Extract owner name from CAD result as a name-search fallback for Tax Office.
+        // TX CAD: individuals → "LASTNAME FIRSTNAME"; businesses → "COMPANY NAME INC"
+        // Pass up to 3 words so Go2Gov/ACTweb can match both individual and business names.
         if (!cadOwnerLastName && cadResult.records && cadResult.records.length) {
           const cadOwnerName = (cadResult.records[0].ownerName || '').trim();
           if (cadOwnerName) {
-            cadOwnerLastName = cadOwnerName.split(/[\s,]+/)[0] || '';
-            console.log(`[tax] CAD owner last name for fallback: "${cadOwnerLastName}"`);
+            const words = cadOwnerName.replace(/,/g, '').split(/\s+/).filter(Boolean);
+            cadOwnerLastName = words.slice(0, 3).join(' ');  // e.g. "MONTERREY LAKE INC" or "SMITH"
+            console.log(`[tax] CAD owner name for fallback: "${cadOwnerLastName}"`);
           }
         }
       } catch (err) {
