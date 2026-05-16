@@ -70,6 +70,45 @@ function runBrowserAgentWithTimeout(params) {
   ]);
 }
 
+/**
+ * Extracts the best account/parcel ID from a CAD search result to use when
+ * searching the Tax Office. The CAD result normalises the ID (e.g. adds/removes
+ * "R" prefix, zero-pads) so using it avoids format-mismatch failures.
+ *
+ * Priority: records[0].parcelId → additionalDetails account fields → original ID
+ */
+function extractTaxAccountId(cadResult, originalId) {
+  try {
+    if (!cadResult || !cadResult.records || !cadResult.records.length) return originalId;
+    const rec = cadResult.records[0];
+
+    // Direct parcelId on the record
+    if (rec.parcelId && rec.parcelId.trim() && !/motor\s*vehicle|renewal/i.test(rec.parcelId)) {
+      return rec.parcelId.trim();
+    }
+
+    // Parse additionalDetails for account number fields
+    if (rec.additionalDetails) {
+      let details = rec.additionalDetails;
+      if (typeof details === 'string') {
+        try { details = JSON.parse(details); } catch (_) { details = {}; }
+      }
+      const ACCT_KEYS = [
+        'Account Number', 'Account No', 'Account', 'Account #', 'Acct',
+        'Property ID', 'Parcel ID', 'Parcel Number', 'Tax Account', 'CAD ID',
+        'account number', 'account no', 'property id', 'parcel id',
+      ];
+      for (const key of ACCT_KEYS) {
+        const val = details[key];
+        if (val && typeof val === 'string' && val.trim() && !/motor\s*vehicle/i.test(val)) {
+          return val.trim();
+        }
+      }
+    }
+  } catch (_) {}
+  return originalId;
+}
+
 function classifyNetronlineSource(name, url) {
   const n = (name || '').toLowerCase();
   const u = (url  || '').toLowerCase();
@@ -388,16 +427,69 @@ router.get('/search/multi/stream', async (req, res) => {
     metrics.activeSearchesGauge.set(activeSearches);
     console.log(`[tax] multi search started (${startedCount} sources) — active: ${activeSearches}/${MAX_CONCURRENT}`);
 
-    const commonParams = {
+    const baseParams = {
       firstName: firstName || '', lastName: lastName || '',
       fullName: fullName || '', accountNumber: accountNumber || '',
     };
 
-    await Promise.allSettled(toSearch.map(async (src) => {
+    // ── Sequential CAD→TaxOffice strategy ────────────────────────────────────
+    // Run the appraisal (CAD) source first. Extract the real account number from
+    // its result (the CAD normalises IDs, e.g. strips "R" prefix, zero-pads).
+    // Pass that normalised ID to the Tax Office so it finds the same property
+    // even when the order's raw ID format differs from the tax office's format.
+
+    const cadSrc   = toSearch.find(s => s.type === 'appraisal');
+    const taxSrc   = toSearch.find(s => s.type === 'tax');
+    const otherSrc = toSearch.filter(s => s.type !== 'appraisal' && s.type !== 'tax');
+
+    let cadAccountNumber = accountNumber || '';  // best account ID discovered from CAD
+
+    // Run CAD source first (if present)
+    if (cadSrc) {
+      sendEvent('source_progress', { id: cadSrc.id, message: `Starting search at ${cadSrc.name}...` });
+      try {
+        const cadResult = await runBrowserAgentWithTimeout({
+          url: cadSrc.url, ...baseParams,
+          onProgress: (msg) => sendEvent('source_progress', { id: cadSrc.id, message: msg }),
+        });
+        sendEvent('source_result', { id: cadSrc.id, name: cadSrc.name, type: cadSrc.type, url: cadSrc.url, ...cadResult });
+        metrics.searchesTotal.inc({ endpoint: 'multi', status: cadResult.error ? 'error' : 'success' });
+
+        // Extract the best account number from the CAD result to use for the Tax Office search
+        cadAccountNumber = extractTaxAccountId(cadResult, accountNumber || '');
+        if (cadAccountNumber !== (accountNumber || '')) {
+          console.log(`[tax] CAD account ID resolved: "${accountNumber}" → "${cadAccountNumber}"`);
+          sendEvent('status', { message: `Using account ID "${cadAccountNumber}" for Tax Office search...` });
+        }
+      } catch (err) {
+        sendEvent('source_error', { id: cadSrc.id, name: cadSrc.name, message: err.message });
+        metrics.searchesTotal.inc({ endpoint: 'multi', status: 'error' });
+      }
+    }
+
+    // Run Tax Office source with the resolved account number
+    if (taxSrc) {
+      const taxParams = { ...baseParams, accountNumber: cadAccountNumber };
+      sendEvent('source_progress', { id: taxSrc.id, message: `Starting search at ${taxSrc.name}...` });
+      try {
+        const taxResult = await runBrowserAgentWithTimeout({
+          url: taxSrc.url, ...taxParams,
+          onProgress: (msg) => sendEvent('source_progress', { id: taxSrc.id, message: msg }),
+        });
+        sendEvent('source_result', { id: taxSrc.id, name: taxSrc.name, type: taxSrc.type, url: taxSrc.url, ...taxResult });
+        metrics.searchesTotal.inc({ endpoint: 'multi', status: taxResult.error ? 'error' : 'success' });
+      } catch (err) {
+        sendEvent('source_error', { id: taxSrc.id, name: taxSrc.name, message: err.message });
+        metrics.searchesTotal.inc({ endpoint: 'multi', status: 'error' });
+      }
+    }
+
+    // Run any remaining sources (netronline links, extra sources) in parallel
+    await Promise.allSettled(otherSrc.map(async (src) => {
       sendEvent('source_progress', { id: src.id, message: `Starting search at ${src.name}...` });
       try {
         const result = await runBrowserAgentWithTimeout({
-          url: src.url, ...commonParams,
+          url: src.url, ...baseParams,
           onProgress: (msg) => sendEvent('source_progress', { id: src.id, message: msg }),
         });
         sendEvent('source_result', { id: src.id, name: src.name, type: src.type, url: src.url, ...result });
