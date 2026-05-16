@@ -40,10 +40,15 @@ function cleanNameForActweb(name) {
 }
 
 // ─── Submit search form on index.jsp ─────────────────────────────────────────
+//
+// searchType: 'name' | 'account' | 'cadref'
+// We find the right radio button by matching its label text rather than using
+// hardcoded numeric values — actweb instances vary per county.
+// 'name' leaves the default radio untouched (Owner Name is always the default).
 
-async function submitSearch(page, actBase, searchValue, searchBy) {
+async function submitSearch(page, actBase, searchValue, searchType) {
   const indexUrl = `${actBase}/index.jsp`;
-  console.log(`[actweb] navigating to ${indexUrl}`);
+  console.log(`[actweb] navigating to ${indexUrl} (searchType=${searchType})`);
   await safeGoto(page, indexUrl);
 
   try {
@@ -54,9 +59,21 @@ async function submitSearch(page, actBase, searchValue, searchBy) {
     return false;
   }
 
-  try {
-    await page.check(`input[name="searchby"][value="${searchBy}"]`, { timeout: 5000 }).catch(() => {});
-  } catch (_) {}
+  // Select the right radio button by label text — don't hardcode numeric values
+  if (searchType !== 'name') {
+    const keyword = searchType === 'cadref' ? 'cad reference' : 'account no';
+    const selected = await page.evaluate((kw) => {
+      const radios = Array.from(document.querySelectorAll('input[name="searchby"]'));
+      for (const radio of radios) {
+        const container = radio.closest('td, tr, div, label, span') || radio.parentElement;
+        const txt = (container?.innerText || container?.textContent || '').toLowerCase();
+        if (txt.includes(kw)) { radio.click(); return radio.value; }
+      }
+      return null;
+    }, keyword);
+    console.log(`[actweb] radio "${keyword}" → value=${selected}`);
+  }
+  // For 'name', the default (Owner Name) radio is already selected — don't touch it
 
   try {
     await Promise.all([
@@ -263,50 +280,46 @@ async function search(page, { accountNumber = '', firstName = '', lastName = '',
     const cap = await detectCaptcha(page);
     if (cap.detected) return { ...cap, searchedUrl: page.url() };
 
-    // ── Strategy 1: account number search ──────────────────────────────────────
+    // ── Search strategies (tried in order until results found) ────────────────
     let resultsList = [];
 
+    async function trySearch(label, value, searchType) {
+      if (resultsList.length) return;
+      console.log(`[actweb] ${label}: "${value}"`);
+      const submitted = await submitSearch(page, actBase, value, searchType);
+      if (!submitted) return;
+      const pageText = await page.evaluate(() => document.body.innerText || '').catch(() => '');
+      if (!/no\s+records?\s+found|no\s+results|0\s+record/i.test(pageText)) {
+        resultsList = await extractResultsList(page);
+        if (resultsList.length) console.log(`[actweb] found ${resultsList.length} results via ${label}`);
+      }
+    }
+
+    // Strategy 1: CAD Reference No. search (TX CAD parcel IDs are CAD refs on actweb)
     if (hasAcct) {
-      const acctVal = (accountNumber || '').trim();
-      console.log(`[actweb] searching by account: "${acctVal}"`);
-      const submitted = await submitSearch(page, actBase, acctVal, '4');
-      if (submitted) {
-        const pageText = await page.evaluate(() => document.body.innerText || '').catch(() => '');
-        if (!/no\s+records?\s+found|no\s+results|0\s+record/i.test(pageText)) {
-          resultsList = await extractResultsList(page);
-        }
+      await trySearch('CAD reference', (accountNumber || '').trim(), 'cadref');
+    }
+
+    // Strategy 2: Account No. search (some counties use actweb account numbers directly)
+    if (hasAcct) {
+      await trySearch('account number', (accountNumber || '').trim(), 'account');
+    }
+
+    // Strategy 3: Full cleaned owner name (strips & — actweb stores "SMITH DENNIS A NORMA A")
+    if (hasName) {
+      const cleanedName = cleanNameForActweb(lastName || fullName || firstName || '');
+      if (cleanedName) {
+        onProgress(`ACTweb: searching by owner name "${cleanedName}"...`);
+        await trySearch('owner name', cleanedName, 'name');
       }
     }
 
-    // ── Strategy 2: full cleaned name search ───────────────────────────────────
-    if (!resultsList.length && hasName) {
-      const rawName = (lastName || fullName || firstName || '').trim();
-      const cleanedName = cleanNameForActweb(rawName);
-      console.log(`[actweb] searching by name: "${cleanedName}"`);
-      onProgress(`ACTweb: retrying with owner name "${cleanedName}"...`);
-      const submitted = await submitSearch(page, actBase, cleanedName, '3');
-      if (submitted) {
-        const pageText = await page.evaluate(() => document.body.innerText || '').catch(() => '');
-        if (!/no\s+records?\s+found|no\s+results|0\s+record/i.test(pageText)) {
-          resultsList = await extractResultsList(page);
-        }
-      }
-    }
-
-    // ── Strategy 3: last name only (first word) ────────────────────────────────
-    if (!resultsList.length && hasName) {
-      const rawName = (lastName || fullName || firstName || '').trim();
-      const lastNameOnly = cleanNameForActweb(rawName).split(' ')[0];
-      if (lastNameOnly && lastNameOnly.length >= 2) {
-        console.log(`[actweb] searching by last name only: "${lastNameOnly}"`);
-        onProgress(`ACTweb: retrying with last name "${lastNameOnly}"...`);
-        const submitted = await submitSearch(page, actBase, lastNameOnly, '3');
-        if (submitted) {
-          const pageText = await page.evaluate(() => document.body.innerText || '').catch(() => '');
-          if (!/no\s+records?\s+found|no\s+results|0\s+record/i.test(pageText)) {
-            resultsList = await extractResultsList(page);
-          }
-        }
+    // Strategy 4: Last name only (first word) — broadest fallback
+    if (hasName) {
+      const lastName1 = cleanNameForActweb(lastName || fullName || firstName || '').split(' ')[0];
+      if (lastName1 && lastName1.length >= 2) {
+        onProgress(`ACTweb: retrying with last name "${lastName1}"...`);
+        await trySearch('last name only', lastName1, 'name');
       }
     }
 
