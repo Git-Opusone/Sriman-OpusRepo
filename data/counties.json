@@ -21918,7 +21918,9 @@
         "url": "http://www.angelinacounty.net/departments/tax",
         "platform": "generic",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/angelina"
+        "netronlinePath": "/state/TX/county/angelina",
+        "taxUrl": "https://actweb.acttax.com/act_webdev/angelina/index.jsp",
+        "taxPlatform": "actweb"
       },
       "Aransas": {
         "url": "http://www.aransascad.org/",
@@ -22122,7 +22124,9 @@
         "url": "http://www.chamberscad.org/",
         "platform": "generic",
         "lastVerified": null,
-        "netronlinePath": "/state/TX/county/chambers"
+        "netronlinePath": "/state/TX/county/chambers",
+        "taxUrl": "https://www.chamberstax.com/",
+        "taxPlatform": "generic"
       },
       "Cherokee": {
         "url": "https://esearch.cherokeecad.com/",
@@ -22184,7 +22188,9 @@
         "url": "https://www.co.comal.tx.us/tax/",
         "platform": "generic",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/comal"
+        "netronlinePath": "/state/TX/county/comal",
+        "taxUrl": "https://property.co.comal.tx.us/search",
+        "taxPlatform": "generic"
       },
       "Comanche": {
         "url": "https://esearch.comanchecad.org/",
@@ -22250,7 +22256,9 @@
         "url": "https://www.dallascad.org/SearchOwner.aspx",
         "platform": "generic",
         "lastVerified": null,
-        "netronlinePath": "/state/TX/county/dallas"
+        "netronlinePath": "/state/TX/county/dallas",
+        "taxUrl": "https://tax.dallascounty.org/",
+        "taxPlatform": "generic"
       },
       "Dawson": {
         "url": "http://www.dawsoncad.org/",
@@ -22462,7 +22470,9 @@
         "url": "http://www.graysonappraisal.org/",
         "platform": "generic",
         "lastVerified": null,
-        "netronlinePath": "/state/TX/county/grayson"
+        "netronlinePath": "/state/TX/county/grayson",
+        "taxUrl": "https://grayson.propertytaxpayments.net/search",
+        "taxPlatform": "generic"
       },
       "Gregg": {
         "url": "https://esearch.gcad.org/",
@@ -22684,7 +22694,9 @@
         "url": "https://esearch.johnsoncad.com/",
         "platform": "bis",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/johnson"
+        "netronlinePath": "/state/TX/county/johnson",
+        "taxUrl": "https://www.johnsoncountytaxoffice.org/search",
+        "taxPlatform": "generic"
       },
       "Jones": {
         "url": "http://www.jonescad.org/",
@@ -22804,7 +22816,9 @@
         "url": "https://propaccess.trueautomation.com/ClientDB/PropertySearch.aspx?cid=8",
         "platform": "trueautomation",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/liberty"
+        "netronlinePath": "/state/TX/county/liberty",
+        "taxUrl": "https://www.libertycountytax.com/search",
+        "taxPlatform": "generic"
       },
       "Limestone": {
         "url": "http://www.limestonecad.com/",
@@ -22882,7 +22896,9 @@
         "url": "http://www.maverickcad.org",
         "platform": "generic",
         "lastVerified": null,
-        "netronlinePath": "/state/TX/county/maverick"
+        "netronlinePath": "/state/TX/county/maverick",
+        "taxUrl": "https://esearch.co.maverick.tx.us/",
+        "taxPlatform": "generic"
       },
       "McCulloch": {
         "url": "http://www.mccullochcad.org/",
@@ -23002,7 +23018,9 @@
         "url": "https://esearch.nuecescad.com/",
         "platform": "bis",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/nueces"
+        "netronlinePath": "/state/TX/county/nueces",
+        "taxUrl": "https://actweb.acttax.com/act_webdev/nueces/index.jsp",
+        "taxPlatform": "actweb"
       },
       "Ochiltree": {
         "url": "https://www.ochiltreecad.org/",
@@ -23056,7 +23074,9 @@
         "url": "https://esearch.polkcad.org/",
         "platform": "bis",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/polk"
+        "netronlinePath": "/state/TX/county/polk",
+        "taxUrl": "https://esearch.polk-tax.com/",
+        "taxPlatform": "generic"
       },
       "Potter": {
         "url": "https://www.pottercountytax.com/search",
@@ -23128,7 +23148,9 @@
         "url": "https://www.rockwallcad.com/",
         "platform": "generic",
         "lastVerified": "2026-05-15",
-        "netronlinePath": "/state/TX/county/rockwall"
+        "netronlinePath": "/state/TX/county/rockwall",
+        "taxUrl": "https://rockwall.propertytaxpayments.net/search",
+        "taxPlatform": "generic"
       },
       "Runnels": {
         "url": "http://runnelscad.org/",
@@ -23140,7 +23162,9 @@
         "url": "http://www.ruskcad.org/",
         "platform": "generic",
         "lastVerified": null,
-        "netronlinePath": "/state/TX/county/rusk"
+        "netronlinePath": "/state/TX/county/rusk",
+        "taxUrl": "https://ruskcountytax.com/",
+        "taxPlatform": "generic"
       },
       "Sabine": {
         "url": "http://iswdataclient.azurewebsites.net/webIndex.aspx?dbkey=sabinecad&time=201711141513000",
@@ -23383,8 +23407,8 @@
         "platform": "publicportal",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/webb",
-        "taxUrl": "https://actweb.acttax.com/act_webdev/webb/index.jsp",
-        "taxPlatform": "actweb"
+        "taxUrl": "https://webb.go2gov.net/",
+        "taxPlatform": "generic"
       },
       "Wharton": {
         "url": "https://esearch.whartoncad.net/",
