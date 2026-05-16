@@ -11,8 +11,6 @@ function countyFromUrl(url) {
 }
 
 function baseFromUrl(url) {
-  // Returns e.g. https://actweb.acttax.com/act_webdev/galveston
-  // Handles both actweb.acttax.com and {county}.acttax.com subdomain variants
   const m = url.match(/(https?:\/\/[^/]+\.acttax\.com\/act_webdev\/[^/]+)/i);
   return m ? m[1] : new URL(url).origin;
 }
@@ -28,6 +26,19 @@ async function safeGoto(page, url, timeout = 45000) {
   }
 }
 
+/**
+ * Clean an owner name for actweb search:
+ * - Remove & (actweb stores names without it: "SMITH DENNIS A NORMA A")
+ * - Collapse extra whitespace
+ */
+function cleanNameForActweb(name) {
+  return (name || '')
+    .replace(/\s*&\s*/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase();
+}
+
 // ─── Submit search form on index.jsp ─────────────────────────────────────────
 
 async function submitSearch(page, actBase, searchValue, searchBy) {
@@ -35,7 +46,6 @@ async function submitSearch(page, actBase, searchValue, searchBy) {
   console.log(`[actweb] navigating to ${indexUrl}`);
   await safeGoto(page, indexUrl);
 
-  // Fill search criteria
   try {
     await page.waitForSelector('input[name="criteria"]', { timeout: 10000 });
     await page.fill('input[name="criteria"]', searchValue);
@@ -44,12 +54,10 @@ async function submitSearch(page, actBase, searchValue, searchBy) {
     return false;
   }
 
-  // Select search type radio button
   try {
     await page.check(`input[name="searchby"][value="${searchBy}"]`, { timeout: 5000 }).catch(() => {});
   } catch (_) {}
 
-  // Submit form
   try {
     await Promise.all([
       page.waitForNavigation({ waitUntil: 'networkidle', timeout: 45000 }).catch(() => {}),
@@ -65,7 +73,7 @@ async function submitSearch(page, actBase, searchValue, searchBy) {
   return true;
 }
 
-// ─── Extract account list from showlist.jsp results table ─────────────────────
+// ─── Extract account list from showlist.jsp ───────────────────────────────────
 
 async function extractResultsList(page) {
   return page.evaluate(() => {
@@ -75,25 +83,23 @@ async function extractResultsList(page) {
       const rows = Array.from(tbl.querySelectorAll('tr'));
       if (rows.length < 2) continue;
 
-      // Find header row to detect column positions
       const headerRow = rows.find(r => {
         const txt = (r.innerText || '').toLowerCase();
         return txt.includes('account') || txt.includes('owner');
       });
       if (!headerRow) continue;
 
-      const headerCells = Array.from(headerRow.querySelectorAll('th, td')).map(c => (c.innerText || '').trim().toLowerCase());
+      const headerCells = Array.from(headerRow.querySelectorAll('th, td'))
+        .map(c => (c.innerText || '').trim().toLowerCase());
       const acctCol  = headerCells.findIndex(h => h.includes('account') && !h.includes('long'));
       const ownerCol = headerCells.findIndex(h => h.includes('owner'));
       const addrCol  = headerCells.findIndex(h => h.includes('site') || h.includes('address'));
 
-      // Walk data rows
       for (const row of rows) {
         if (row === headerRow) continue;
         const cells = Array.from(row.querySelectorAll('td'));
         if (cells.length < 2) continue;
 
-        // Look for account number link
         let acctNum = '', detailUrl = '', ownerName = '', siteAddress = '';
         const links = row.querySelectorAll('a[href]');
         for (const a of Array.from(links)) {
@@ -105,13 +111,11 @@ async function extractResultsList(page) {
           }
         }
 
-        // If no explicit detail link, use first cell link
         if (!detailUrl && cells[0]) {
           const a = cells[0].querySelector('a');
           if (a) { detailUrl = a.href; acctNum = acctNum || (a.innerText || '').trim(); }
         }
 
-        // Extract text by column index
         const ct = cells.map(c => (c.innerText || '').trim());
         if (acctCol >= 0 && ct[acctCol]) acctNum = acctNum || ct[acctCol];
         if (ownerCol >= 0) ownerName = ct[ownerCol] || '';
@@ -129,88 +133,79 @@ async function extractResultsList(page) {
   }).catch(() => []);
 }
 
-// ─── Extract tax data from detail page ────────────────────────────────────────
+// ─── Extract tax data from showdetail2.jsp ────────────────────────────────────
+//
+// actweb uses "<b>Label:</b>&nbsp;Value" inside a single <td> — NOT adjacent
+// cells. We rely on text regex rather than DOM sibling traversal.
 
 async function extractDetailPage(page) {
   return page.evaluate(() => {
     const text = document.body.innerText || '';
-    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
-    // ── Basic fields from label:value DOM scan ────────────────────────────────
-    const domMap = {};
-    Array.from(document.querySelectorAll('td, th')).forEach(el => {
-      const lbl = (el.innerText || '').replace(/\s+/g, ' ').trim().toLowerCase().replace(/[:\*]+$/, '').trim();
-      if (!lbl || lbl.length > 80) return;
-      const sib = el.nextElementSibling;
-      if (sib) {
-        const val = (sib.innerText || '').replace(/\s+/g, ' ').trim();
-        if (val && val.length < 400) domMap[lbl] = val;
-      }
-    });
-
-    const get = (...keys) => {
-      for (const k of keys) {
-        const v = domMap[k.toLowerCase()];
-        if (v) return v;
+    function grab(text, ...patterns) {
+      for (const pat of patterns) {
+        const m = text.match(pat);
+        if (m && m[1]) return m[1].trim();
       }
       return '';
-    };
-
-    let ownerName    = get('owner name', 'owner', 'name');
-    let siteAddress  = get('site address', 'situs address', 'property address', 'address');
-    let legalDesc    = get('legal description', 'legal desc', 'description');
-    let accountNum   = get('account number', 'account no', 'account', 'acct');
-    let assessedVal  = get('appraised value', 'assessed value', 'total appraised value');
-
-    // Text fallbacks
-    if (!ownerName) {
-      const m = text.match(/Owner(?:'s)?\s*Name[:\s]+([A-Z][^\n\r]{2,80})/i);
-      if (m) ownerName = m[1].trim();
-    }
-    if (!accountNum) {
-      const m = text.match(/Account\s*(?:No|Number|#)[:\s]+([A-Z0-9\-]+)/i);
-      if (m) accountNum = m[1].trim();
-    }
-    if (!assessedVal) {
-      const m = text.match(/(?:Appraised|Assessed)\s*Value[:\s]*\$?([\d,]+)/i);
-      if (m) assessedVal = `$${m[1]}`;
     }
 
-    // ── Current amount due ────────────────────────────────────────────────────
-    let totalDue = '', currentDue = '';
-    const totalM   = text.match(/Total\s+(?:Amount\s+)?Due[:\s]*\$?([\d,]+\.?\d*)/i);
-    const currentM = text.match(/Current\s+(?:Amount\s+)?Due[:\s]*\$?([\d,]+\.?\d*)/i);
-    if (totalM)   totalDue   = `$${totalM[1]}`;
-    if (currentM) currentDue = `$${currentM[1]}`;
+    const accountNum  = grab(text, /Account\s*(?:No\.?|Number|#)[:\s]+([A-Z0-9\-]+)/i);
+    const cadRef      = grab(text, /Appraisal\s+District\s+(?:Number|No\.?)[:\s]*([\d]+)/i);
+    const ownerName   = grab(text,
+      /Owner(?:'s)?\s*Name[:\s]+([A-Z][^\n\r]{2,80})/i,
+      /Certified\s+Owner[:\s]+([A-Z][^\n\r]{2,80})/i
+    );
+    const siteAddress = grab(text,
+      /Property\s+Site\s+Address[:\s]+([^\n\r]{4,80})/i,
+      /Parcel\s+Address[:\s]+([^\n\r]{4,80})/i
+    );
+    const legalDesc   = grab(text, /Legal\s+Description[:\s]+([^\n\r]{4,200})/i);
 
-    // ── Tax tables — find tables with year/entity breakdown ───────────────────
+    // Monetary fields — actweb showdetail2.jsp layout
+    const taxLevy     = grab(text, /Current\s+Tax\s+Levy[:\s]*\$?([\d,]+\.?\d*)/i);
+    const currentDue  = grab(text, /Current\s+(?:Year\s+)?Amount\s+Due[:\s]*\$?([\d,]+\.?\d*)/i);
+    const priorDue    = grab(text, /Prior\s+Year\s+Amount\s+Due[:\s]*\$?([\d,]+\.?\d*)/i);
+    const totalDue    = grab(text,
+      /Total\s+Amount\s+Due[:\s]*\$?([\d,]+\.?\d*)/i,
+      /Total\s+Due[:\s]*\$?([\d,]+\.?\d*)/i
+    );
+    const lastPayAmt  = grab(text, /Last\s+Payment\s+Amount[^:\n]*[:\s]*\$?([\d,]+\.?\d*)/i);
+    const lastPayDate = grab(text, /Last\s+Payment\s+Date[^:\n]*[:\s]*([\d\/]+)/i);
+
+    // Assessed / value fields
+    const grossVal    = grab(text, /Gross\s*Value[:\s]*\$?([\d,]+)/i);
+    const landVal     = grab(text, /Land\s*Value[:\s]*\$?([\d,]+)/i);
+    const impVal      = grab(text,
+      /Improvement\s*Value[:\s]*\$?([\d,]+)/i,
+      /Improvement[:\s]*\$?([\d,]+)/i
+    );
+    const cappedVal   = grab(text, /Capped\s*Value[:\s]*\$?([\d,]+)/i);
+    const agVal       = grab(text, /Agricultural\s*(?:Market\s*)?Value[:\s]*\$?([\d,]+)/i);
+
+    // Format a dollar string
+    const fmt = v => v ? `$${v}` : '';
+
+    // ── Tax tables (per-entity breakdown) ──────────────────────────────────────
     const billTables = [];
     const yearHeaders = [];
 
     for (const tbl of Array.from(document.querySelectorAll('table'))) {
       const rows = Array.from(tbl.querySelectorAll('tr'));
       const flat = rows
-        .map(r => Array.from(r.querySelectorAll('td, th')).map(c => (c.innerText || '').replace(/\s+/g, ' ').trim()))
+        .map(r => Array.from(r.querySelectorAll('td, th'))
+          .map(c => (c.innerText || '').replace(/\s+/g, ' ').trim()))
         .filter(r => r.some(c => c.length > 0));
 
       if (flat.length < 2) continue;
-
-      // Must have dollar amounts or tax-related content
-      const hasDollar = flat.some(r => r.some(c => /\$[\d,]+/.test(c) || /[\d,]+\.\d{2}/.test(c)));
-      const hasTaxContent = flat.some(r => r.some(c => /taxing|entity|levy|due|paid|balance/i.test(c)));
-
-      if (!hasDollar && !hasTaxContent) continue;
+      const hasDollar  = flat.some(r => r.some(c => /\$[\d,]+/.test(c) || /[\d,]+\.\d{2}/.test(c)));
+      const hasTaxKw   = flat.some(r => r.some(c => /taxing|entity|levy|due|paid|balance|unit/i.test(c)));
+      if (!hasDollar && !hasTaxKw) continue;
       if (flat[0] && flat[0].join('').length < 3) continue;
 
       billTables.push(flat);
-
-      // Extract year from nearby text or table content
-      let yearLabel = '';
-      const tblText = tbl.innerText || '';
-      const yrM = tblText.match(/\b((?:19|20)\d{2})\b/);
-      if (yrM) yearLabel = yrM[1];
-
-      // Walk up DOM for year heading
+      const yrM = (tbl.innerText || '').match(/\b((?:19|20)\d{2})\b/);
+      let yearLabel = yrM ? yrM[1] : '';
       if (!yearLabel) {
         let el = tbl;
         for (let d = 0; d < 6 && !yearLabel; d++) {
@@ -228,12 +223,26 @@ async function extractDetailPage(page) {
       yearHeaders.push(yearLabel);
     }
 
-    console.log(`[actweb-extract] owner="${ownerName}" acct="${accountNum}" assessed="${assessedVal}" totalDue="${totalDue}" tables=${billTables.length}`);
+    console.log(`[actweb-extract] acct="${accountNum}" cad="${cadRef}" levy="${taxLevy}" totalDue="${totalDue}" tables=${billTables.length}`);
 
-    return { ownerName, siteAddress, legalDesc, accountNum, assessedVal, totalDue, currentDue, billTables, yearHeaders, detailUrl: window.location.href };
+    return {
+      ownerName, siteAddress, legalDesc,
+      accountNum, cadRef,
+      grossVal: fmt(grossVal), landVal: fmt(landVal), impVal: fmt(impVal),
+      cappedVal: fmt(cappedVal), agVal: fmt(agVal),
+      taxLevy: fmt(taxLevy),
+      currentDue: fmt(currentDue), priorDue: fmt(priorDue), totalDue: fmt(totalDue),
+      lastPayAmt: fmt(lastPayAmt), lastPayDate,
+      billTables, yearHeaders,
+      detailUrl: window.location.href,
+    };
   }).catch(() => ({
-    ownerName: '', siteAddress: '', legalDesc: '', accountNum: '', assessedVal: '',
-    totalDue: '', currentDue: '', billTables: [], yearHeaders: [], detailUrl: page.url(),
+    ownerName: '', siteAddress: '', legalDesc: '',
+    accountNum: '', cadRef: '',
+    grossVal: '', landVal: '', impVal: '', cappedVal: '', agVal: '',
+    taxLevy: '', currentDue: '', priorDue: '', totalDue: '',
+    lastPayAmt: '', lastPayDate: '',
+    billTables: [], yearHeaders: [], detailUrl: page.url(),
   }));
 }
 
@@ -247,58 +256,79 @@ async function search(page, { accountNumber = '', firstName = '', lastName = '',
 
   if (!hasAcct && !hasName) return null;
 
-  const searchValue = hasAcct
-    ? (accountNumber || '').trim()
-    : (lastName || fullName || '').trim().toUpperCase();
-  const searchBy = hasAcct ? '4' : '3';
-
   onProgress(`ACTweb: searching ${county} County...`);
-  console.log(`[actweb] county=${county} base=${actBase} searchBy=${searchBy} value="${searchValue}"`);
+  console.log(`[actweb] county=${county} base=${actBase}`);
 
   try {
     const cap = await detectCaptcha(page);
     if (cap.detected) return { ...cap, searchedUrl: page.url() };
 
-    // Submit search form
-    let submitted = await submitSearch(page, actBase, searchValue, searchBy);
-    if (!submitted) {
-      console.log('[actweb] form submit failed');
-      return null;
-    }
+    // ── Strategy 1: account number search ──────────────────────────────────────
+    let resultsList = [];
 
-    // Check for no results — if account search found nothing, try owner name fallback
-    let pageText = await page.evaluate(() => document.body.innerText || '').catch(() => '');
-    if (/no\s+records?\s+found|no\s+results|0\s+record/i.test(pageText) && hasAcct) {
-      const nameFallback = (lastName || fullName || firstName || '').trim().toUpperCase();
-      if (nameFallback) {
-        console.log(`[actweb] account search empty — retrying with name: "${nameFallback}"`);
-        onProgress(`ACTweb: retrying with owner name "${nameFallback}"...`);
-        submitted = await submitSearch(page, actBase, nameFallback, '3');
-        if (submitted) {
-          pageText = await page.evaluate(() => document.body.innerText || '').catch(() => '');
+    if (hasAcct) {
+      const acctVal = (accountNumber || '').trim();
+      console.log(`[actweb] searching by account: "${acctVal}"`);
+      const submitted = await submitSearch(page, actBase, acctVal, '4');
+      if (submitted) {
+        const pageText = await page.evaluate(() => document.body.innerText || '').catch(() => '');
+        if (!/no\s+records?\s+found|no\s+results|0\s+record/i.test(pageText)) {
+          resultsList = await extractResultsList(page);
         }
       }
     }
-    if (/no\s+records?\s+found|no\s+results|0\s+record/i.test(pageText)) {
-      return { records: [], totalFound: 0, summary: `No records found for "${searchValue}" in ${county} County.`, searchedUrl: page.url() };
+
+    // ── Strategy 2: full cleaned name search ───────────────────────────────────
+    if (!resultsList.length && hasName) {
+      const rawName = (lastName || fullName || firstName || '').trim();
+      const cleanedName = cleanNameForActweb(rawName);
+      console.log(`[actweb] searching by name: "${cleanedName}"`);
+      onProgress(`ACTweb: retrying with owner name "${cleanedName}"...`);
+      const submitted = await submitSearch(page, actBase, cleanedName, '3');
+      if (submitted) {
+        const pageText = await page.evaluate(() => document.body.innerText || '').catch(() => '');
+        if (!/no\s+records?\s+found|no\s+results|0\s+record/i.test(pageText)) {
+          resultsList = await extractResultsList(page);
+        }
+      }
     }
 
-    // Check captcha on results page
+    // ── Strategy 3: last name only (first word) ────────────────────────────────
+    if (!resultsList.length && hasName) {
+      const rawName = (lastName || fullName || firstName || '').trim();
+      const lastNameOnly = cleanNameForActweb(rawName).split(' ')[0];
+      if (lastNameOnly && lastNameOnly.length >= 2) {
+        console.log(`[actweb] searching by last name only: "${lastNameOnly}"`);
+        onProgress(`ACTweb: retrying with last name "${lastNameOnly}"...`);
+        const submitted = await submitSearch(page, actBase, lastNameOnly, '3');
+        if (submitted) {
+          const pageText = await page.evaluate(() => document.body.innerText || '').catch(() => '');
+          if (!/no\s+records?\s+found|no\s+results|0\s+record/i.test(pageText)) {
+            resultsList = await extractResultsList(page);
+          }
+        }
+      }
+    }
+
+    if (!resultsList.length) {
+      const searchVal = (accountNumber || lastName || fullName || firstName || '').trim();
+      return {
+        records: [], totalFound: 0,
+        summary: `No records found for "${searchVal}" in ${county} County.`,
+        searchedUrl: page.url(),
+      };
+    }
+
+    // ── Check captcha on results page ──────────────────────────────────────────
     const cap2 = await detectCaptcha(page);
     if (cap2.detected) return { ...cap2, searchedUrl: page.url() };
 
-    // ── Extract results list ──────────────────────────────────────────────────
+    // ── Load and extract detail pages ──────────────────────────────────────────
     onProgress('Reading search results...');
-    const resultsList = await extractResultsList(page);
     console.log(`[actweb] found ${resultsList.length} results`);
 
-    if (!resultsList.length) return null;
-
     const records = [];
-    const MAX_DETAIL = 5;
-    const toProcess = resultsList.slice(0, MAX_DETAIL);
-
-    for (const item of toProcess) {
+    for (const item of resultsList.slice(0, 5)) {
       if (!item.detailUrl) continue;
 
       onProgress(`Loading detail for ${item.acctNum || 'account'}...`);
@@ -308,38 +338,47 @@ async function search(page, { accountNumber = '', firstName = '', lastName = '',
         await safeGoto(page, item.detailUrl);
         await page.waitForTimeout(1500);
 
-        const detail = await extractDetailPage(page);
-        const ownerName    = detail.ownerName    || item.ownerName    || '';
-        const siteAddress  = detail.siteAddress  || item.siteAddress  || '';
-        const acctNum      = detail.accountNum   || item.acctNum      || '';
-        const totalDue     = detail.totalDue     || '';
-        const currentDue   = detail.currentDue   || '';
-        const assessed     = detail.assessedVal  || '';
+        const d = await extractDetailPage(page);
+        const ownerName   = d.ownerName    || item.ownerName    || '';
+        const siteAddress = d.siteAddress  || item.siteAddress  || '';
+        const acctNum     = d.accountNum   || item.acctNum      || '';
+        const totalDue    = d.totalDue     || '';
+        const assessedVal = d.grossVal     || d.impVal          || '';
 
         let paymentStatus = '';
         if (totalDue) {
           paymentStatus = parseFloat(totalDue.replace(/[^0-9.]/g, '')) === 0 ? 'Paid' : 'Balance Due';
+        } else if (d.lastPayAmt && parseFloat(d.lastPayAmt.replace(/[^0-9.]/g, '')) > 0) {
+          paymentStatus = 'Paid';
         }
 
         records.push({
           parcelId:        acctNum || item.acctNum,
           ownerName,
           propertyAddress: siteAddress,
-          taxAmountDue:    totalDue || assessed,
+          taxAmountDue:    totalDue || d.currentDue || assessedVal,
           taxYear:         '2025',
           paymentStatus,
           county,
           state:           'TX',
           additionalDetails: JSON.stringify({
             'Account Number':    acctNum,
-            'Assessed Value':    assessed,
-            'Total Taxes Due':   totalDue,
-            'Current Due':       currentDue,
-            'Legal Description': detail.legalDesc || '',
+            'CAD Reference No':  d.cadRef         || '',
+            'Current Tax Levy':  d.taxLevy        || '',
+            'Current Amount Due': d.currentDue    || '',
+            'Prior Year Due':    d.priorDue       || '',
+            'Total Amount Due':  totalDue         || '',
+            'Last Payment':      d.lastPayAmt && d.lastPayDate
+                                   ? `${d.lastPayAmt} on ${d.lastPayDate}`
+                                   : (d.lastPayAmt || ''),
+            'Gross Value':       d.grossVal       || '',
+            'Land Value':        d.landVal        || '',
+            'Improvement Value': d.impVal         || '',
+            'Legal Description': d.legalDesc      || '',
             'Source':            `${county} County Tax Office (ACTweb)`,
-            'Detail URL':        detail.detailUrl || item.detailUrl,
-            'Bill Tables':       detail.billTables  || [],
-            'Year Headers':      detail.yearHeaders || [],
+            'Detail URL':        d.detailUrl      || item.detailUrl,
+            'Bill Tables':       d.billTables     || [],
+            'Year Headers':      d.yearHeaders    || [],
           }),
         });
       } catch (detailErr) {
