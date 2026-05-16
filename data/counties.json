@@ -22129,8 +22129,8 @@
         "platform": "prodigycad",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/cameron",
-        "taxUrl": "https://camerontax.go2gov.net/",
-        "taxPlatform": "generic"
+        "taxUrl": "https://camerontax.go2gov.net/cameron/cart/search/showNameSearch.do",
+        "taxPlatform": "go2gov"
       },
       "Camp": {
         "url": "https://esearch.campcad.org/",
@@ -23695,8 +23695,8 @@
         "platform": "publicportal",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/webb",
-        "taxUrl": "https://webb.go2gov.net/",
-        "taxPlatform": "generic"
+        "taxUrl": "https://webb.go2gov.net/webb/cart/search/showNameSearch.do",
+        "taxPlatform": "go2gov"
       },
       "Wharton": {
         "url": "https://esearch.whartoncad.net/",

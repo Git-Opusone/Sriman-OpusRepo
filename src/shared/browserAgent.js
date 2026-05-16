@@ -24,6 +24,7 @@ const bisHandler              = require('../tax/handlers/bis');
 const publicPortalHandler     = require('../tax/handlers/publicportal');
 const andersonTaxHandler      = require('../tax/handlers/andersontax');
 const actwebHandler           = require('../tax/handlers/actweb');
+const go2govHandler           = require('../tax/handlers/go2gov');
 const ptaxproHandler          = require('../tax/handlers/ptaxpro');
 const { detectCaptcha }       = require('./captchaDetector');
 
@@ -530,6 +531,20 @@ async function runBrowserAgent({
       } catch (handlerErr) {
         console.log(`[agent] ACTweb handler error: ${handlerErr.message} — continuing with AI`);
         onProgress('ACTweb handler error — falling back to AI agent...');
+      }
+    }
+
+    if (platform === 'go2gov') {
+      onProgress('Detected Go2Gov tax portal — using dedicated handler...');
+      try {
+        const handlerResult = await go2govHandler.search(page, {
+          accountNumber, firstName, lastName, fullName, onProgress,
+        });
+        if (handlerResult) return handlerResult;
+        onProgress('Go2Gov handler fell back — continuing with AI agent...');
+      } catch (handlerErr) {
+        console.log(`[agent] Go2Gov handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('Go2Gov handler error — falling back to AI agent...');
       }
     }
 

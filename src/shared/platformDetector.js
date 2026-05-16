@@ -39,6 +39,8 @@ const PLATFORM_RULES = [
   { platform: 'bis',          test: u => /cadcentral\.com/i.test(u)                     },
   // ACTweb — TX county tax portal (actweb.acttax.com or {county}.acttax.com subdomains)
   { platform: 'actweb',       test: u => /acttax\.com/i.test(u)                        },
+  // Go2Gov — TX county tax portal (camerontax.go2gov.net, webb.go2gov.net, etc.)
+  { platform: 'go2gov',       test: u => /go2gov\.net/i.test(u)                        },
   // Houston County Tax Office uses BIS platform under a non-standard domain
   { platform: 'bis',          test: u => /houstoncountytaxoffice\.com/i.test(u)        },
   // Public Portal (Aumentum Technologies) — {county}cad.net / {county}cad.org domains
@@ -120,6 +122,7 @@ function platformLabel(platform) {
   const labels = {
     txcountytax:  'TX County Tax Office (Kendo)',
     actweb:       'ACTweb Tax Portal',
+    go2gov:       'Go2Gov Tax Portal',
     ptaxpro:      'PTaxPro / whoownsit.com',
     bis:          'BIS Consultants',
     qpublic:      'qPublic',
