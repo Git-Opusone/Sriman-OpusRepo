@@ -22091,8 +22091,8 @@
         "platform": "prodigycad",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/cameron",
-        "taxUrl": "https://actweb.acttax.com/act_webdev/cameron/index.jsp",
-        "taxPlatform": "actweb"
+        "taxUrl": "https://camerontax.go2gov.net/",
+        "taxPlatform": "generic"
       },
       "Camp": {
         "url": "https://esearch.campcad.org/",
@@ -22275,7 +22275,7 @@
         "platform": "generic",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/denton",
-        "taxUrl": "https://taxonline.dentoncounty.com/",
+        "taxUrl": "https://taxweb.dentoncounty.gov/search/",
         "taxPlatform": "generic"
       },
       "DeWitt": {
@@ -22525,7 +22525,7 @@
         "platform": "generic",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/harris",
-        "taxUrl": "https://www.hctax.net/Property/Search",
+        "taxUrl": "https://www.hctax.net/property/propertytax",
         "taxPlatform": "generic"
       },
       "Harrison": {
@@ -23207,7 +23207,7 @@
         "platform": "generic",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/smith",
-        "taxUrl": "http://publictax.smith-county.com/",
+        "taxUrl": "https://publictax.smith-county.com/search",
         "taxPlatform": "generic"
       },
       "Somervell": {
@@ -23257,7 +23257,7 @@
         "platform": "bis",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/tarrant",
-        "taxUrl": "https://taxonline.tarrantcounty.com/",
+        "taxUrl": "https://taxonline.tarrantcounty.com/TaxPayer/Search/",
         "taxPlatform": "generic"
       },
       "Taylor": {
@@ -23301,7 +23301,7 @@
         "platform": "generic",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/travis",
-        "taxUrl": "https://taxoffice.traviscountytx.gov/",
+        "taxUrl": "https://tax-office.traviscountytx.gov/properties/taxes/account-search",
         "taxPlatform": "generic"
       },
       "Trinity": {
