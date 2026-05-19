@@ -365,6 +365,13 @@ async function extractBillData(page) {
     const billTables  = [];
     const yearHeaders = [];
 
+    // Entity names in the 2025 Kendo grid sometimes include UI navigation text
+    // (payment portal links, owner info labels, etc.) alongside real entities.
+    // This regex matches strings that are clearly NOT tax entity names.
+    const GARBAGE_ENTITY_RX = /pending\s+in\s+the\s+amount|payment\s+processing|click\s+below|custom\s+values|eStatement|secure\s+website|continuing\s+to\s+a|^owner\s+(name|id)$|^(market|land|agricultural)\s+value|entities\s+&\s+exemptions|^tax\s+year$|^exemptions$|^appraised\s+value|sign.?up/i;
+    const isGarbageEntityName = (name) =>
+      !name || name.length > 70 || GARBAGE_ENTITY_RX.test(name.trim());
+
     for (const tbl of Array.from(document.querySelectorAll('table'))) {
       const rows = Array.from(tbl.querySelectorAll('tr'));
       const flat = rows
@@ -384,6 +391,7 @@ async function extractBillData(page) {
       if (!hasTaxingEntityHeader || !hasDollarAmounts) continue;
 
       // Filter out Kendo Grid expansion sub-rows (Levy, P&I, Att.Fee, Credits/Disc.)
+      // Also filter rows where the first cell (entity name) is clearly UI navigation text.
       const SUB_ROW_RX = /^(Levy|P&I|Att\.?\s*Fee|Credits\s*\/?\s*Disc|Discount)\b/i;
       const cleanFlat = [
         flat[0], // keep header row
@@ -392,6 +400,8 @@ async function extractBillData(page) {
           if (SUB_ROW_RX.test(first)) return false;
           // skip concatenated single-cell summary row "Levy$40.76P&I$0.00..."
           if (r.filter(c => c.length > 0).length <= 2 && /Levy|P&I/i.test(r.join(''))) return false;
+          // skip rows where entity name is garbage UI/navigation text
+          if (isGarbageEntityName(first)) return false;
           return true;
         }),
       ];
@@ -526,43 +536,122 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
     onProgress('Extracting property data...');
     const detail = await extractDetailData(page, propId);
 
-    // ── 5b. Click "Payment History" tab to load bill tables ──────────────────
-    // The tax office detail page has tabs (Details / Bills / Payment History).
-    // Bill tables only render after that tab is activated.
-    onProgress('Loading payment history...');
-    const HISTORY_TAB_SELECTORS = [
-      'a:has-text("Payment History")',
-      'a:has-text("Bills")',
-      'li:has-text("Payment History") a',
-      'li:has-text("Bills") a',
-      '[href*="PaymentHistory"]',
-      '[href*="payment-history"]',
-      '[href*="Bills"]',
-    ];
+    // ── 5b. Ensure "Property Details" (bill tables) view is active ──────────────
+    // Anderson County uses a "Page:" SELECT DROPDOWN (not tabs) to switch between
+    // "Property Details" (TAXING ENTITY tables, 2025 data) and "Payment History"
+    // (receipts only — no entity breakdown). We must land on "Property Details".
+    onProgress('Loading bill history...');
     let clickedHistoryTab = false;
-    for (const sel of HISTORY_TAB_SELECTORS) {
-      try {
-        const el = page.locator(sel).first();
-        if (await el.count({ timeout: 2000 }) > 0 && await el.isVisible({ timeout: 2000 })) {
-          await el.click({ timeout: 5000 });
+
+    // Strategy 1: native <select> or Playwright-accessible Kendo select
+    try {
+      const selects = page.locator('select');
+      const selCount = await selects.count({ timeout: 3000 }).catch(() => 0);
+      for (let si = 0; si < selCount && !clickedHistoryTab; si++) {
+        const sel = selects.nth(si);
+        if (!await sel.isVisible({ timeout: 1000 }).catch(() => false)) continue;
+        const opts = await sel.locator('option').allInnerTexts().catch(() => []);
+        console.log(`[andersontax] select[${si}] options: ${opts.join(', ')}`);
+        const detailsOpt = opts.find(o => /property\s+details/i.test(o) || /billing/i.test(o));
+        if (detailsOpt) {
+          await sel.selectOption({ label: detailsOpt });
           await page.waitForTimeout(2500);
-          await handleDisclaimerIfPresent(page, 'payment-history-tab');
-          console.log(`[andersontax] clicked history tab via: ${sel}`);
+          console.log(`[andersontax] Page dropdown → "${detailsOpt}"`);
           clickedHistoryTab = true;
-          break;
+        }
+      }
+    } catch (_) {}
+
+    // Strategy 2: Kendo DropDownList widget (visible wrapper, hidden native select)
+    if (!clickedHistoryTab) {
+      try {
+        const kdl = page.locator('[data-role="dropdownlist"], .k-dropdown').first();
+        if (await kdl.count({ timeout: 2000 }) > 0 && await kdl.isVisible({ timeout: 2000 })) {
+          await kdl.click({ timeout: 3000 });
+          await page.waitForTimeout(600);
+          const detailItem = page.locator('.k-list-container li, .k-popup li, .k-list li')
+            .filter({ hasText: /property\s+details|billing/i }).first();
+          if (await detailItem.count({ timeout: 2000 }) > 0) {
+            await detailItem.click({ timeout: 3000 });
+            await page.waitForTimeout(2500);
+            clickedHistoryTab = true;
+            console.log('[andersontax] Page dropdown → Property Details via Kendo widget');
+          } else {
+            await page.keyboard.press('Escape').catch(() => {});
+          }
         }
       } catch (_) {}
     }
 
-    // If no tab found, scroll to bottom to trigger any lazy-loaded sections
+    // Strategy 3: Tab links (fallback for other TX county tax sites without dropdown)
+    if (!clickedHistoryTab) {
+      const TAB_SELECTORS = [
+        'a:has-text("Property Details")',
+        'li:has-text("Property Details") a',
+        'a:has-text("Bills")',
+        'li:has-text("Bills") a',
+        '[href*="Bills"]',
+        'a:has-text("Payment History")',
+        'li:has-text("Payment History") a',
+        '[href*="PaymentHistory"]',
+        '[href*="payment-history"]',
+      ];
+      for (const sel of TAB_SELECTORS) {
+        try {
+          const el = page.locator(sel).first();
+          if (await el.count({ timeout: 2000 }) > 0 && await el.isVisible({ timeout: 2000 })) {
+            await el.click({ timeout: 5000 });
+            await page.waitForTimeout(2500);
+            await handleDisclaimerIfPresent(page, 'history-tab');
+            console.log(`[andersontax] clicked tab via: ${sel}`);
+            clickedHistoryTab = true;
+            break;
+          }
+        } catch (_) {}
+      }
+    }
+
+    // If no navigation matched, scroll to trigger any lazy-loaded sections
     if (!clickedHistoryTab) {
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight)).catch(() => {});
       await page.waitForTimeout(1500);
     }
 
-    // Wait for at least one bill table to appear (up to 8 s)
+    // Expand collapsed Kendo accordion year sections (2025 may be collapsed ">>>" by default)
+    try {
+      await page.evaluate(async () => {
+        const YEAR_RX = /\b(19|20)\d{2}\b/;
+        // Expand aria-collapsed panels near year text
+        const collapsed = Array.from(document.querySelectorAll(
+          '[aria-expanded="false"], .k-i-arrow-e, [class*="collapsed"]'
+        ));
+        for (const el of collapsed) {
+          const parent = el.closest('[class*="section"],[class*="panel"],[class*="accordion"],li,div') || el.parentElement;
+          if (parent && YEAR_RX.test(parent.innerText || '')) {
+            el.click();
+            await new Promise(r => setTimeout(r, 300));
+          }
+        }
+        // Also click bare ">>>" toggle buttons adjacent to year headings
+        for (const el of Array.from(document.querySelectorAll('*'))) {
+          if (el.children.length > 0) continue;
+          const t = (el.textContent || '').trim();
+          if (t === '>>>' || t === '▶' || t === '+') {
+            const p = el.closest('div,li,section') || el.parentElement;
+            if (p && YEAR_RX.test(p.innerText || '')) {
+              el.click();
+              await new Promise(r => setTimeout(r, 300));
+            }
+          }
+        }
+      });
+      await page.waitForTimeout(1500);
+      console.log('[andersontax] accordion expansion done');
+    } catch (_) {}
+
+    // Wait for bill tables — generous timeout for current-year lazy load
     await page.waitForSelector('table', { timeout: 8000 }).catch(() => {});
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(3000);
 
     const bill = await extractBillData(page);
 

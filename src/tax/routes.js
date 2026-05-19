@@ -431,10 +431,14 @@ router.get('/search/multi/stream', async (req, res) => {
     metrics.activeSearchesGauge.set(activeSearches);
     console.log(`[tax] multi search started (${startedCount} sources) — active: ${activeSearches}/${MAX_CONCURRENT}`);
 
+    // CAD (appraisal) portals use plain numeric IDs — strip any "R" prefix the
+    // caller may have included (e.g. Anderson County "R60110" → "60110").
+    const cadRawAccountNumber = (accountNumber || '').replace(/^[rR]/, '');
     const baseParams = {
       firstName: firstName || '', lastName: lastName || '',
       fullName: fullName || '', accountNumber: accountNumber || '',
     };
+    const cadBaseParams = { ...baseParams, accountNumber: cadRawAccountNumber };
 
     // ── Sequential CAD→TaxOffice strategy ────────────────────────────────────
     // Run the appraisal (CAD) source first. Extract the real account number from
@@ -454,7 +458,7 @@ router.get('/search/multi/stream', async (req, res) => {
       sendEvent('source_progress', { id: cadSrc.id, message: `Starting search at ${cadSrc.name}...` });
       try {
         const cadResult = await runBrowserAgentWithTimeout({
-          url: cadSrc.url, ...baseParams,
+          url: cadSrc.url, ...cadBaseParams,
           onProgress: (msg) => sendEvent('source_progress', { id: cadSrc.id, message: msg }),
         });
         sendEvent('source_result', { id: cadSrc.id, name: cadSrc.name, type: cadSrc.type, url: cadSrc.url, ...cadResult });
