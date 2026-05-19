@@ -80,6 +80,31 @@ async function safeGoto(page, url, timeout = 25000) {
   }
 }
 
+// Returns null when accessible, or an error string describing why not.
+// Catches Cloudflare 1020 / access-denied / empty pages that fool captchaDetector.
+async function checkSiteBlocked(page) {
+  try {
+    return await page.evaluate(() => {
+      const html  = (document.documentElement.innerHTML || '').toLowerCase();
+      const text  = (document.body?.innerText || '').toLowerCase();
+      const title = (document.title || '').toLowerCase();
+      if (html.includes('error 1020') || html.includes('error 1015') || html.includes('error 1006'))
+        return 'Cloudflare block (Error 1020/1015/1006) — server IP is not allowed by this county website';
+      if ((title.includes('access denied') || text.includes('access denied')) && html.includes('cloudflare'))
+        return 'Cloudflare access denied — server IP blocked';
+      if (html.includes('cf-error-code') || html.includes('cf-error-details'))
+        return 'Cloudflare error page detected';
+      if (text.includes('your ip address') && (html.includes('cloudflare') || html.includes('ray id')))
+        return 'Cloudflare IP block — server datacenter IP in blocklist';
+      // Generic "this site can't be reached" / empty page
+      const bodyLen = (document.body?.innerText || '').trim().length;
+      if (bodyLen < 30 && !document.querySelector('.k-grid, form, input'))
+        return 'Page loaded but appears empty — site may be unreachable from server';
+      return null;  // accessible
+    });
+  } catch (_) { return null; }
+}
+
 // ─── Extract data from Kendo grid search results ──────────────────────────────
 // Uses header-derived column positions to avoid offset bugs from hidden columns
 
@@ -465,11 +490,29 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
       await page.waitForTimeout(2000);
     }
 
-    // Check for CAPTCHA on the search results page (EC2 may be challenged here)
+    // Check for CAPTCHA or IP-based block on the search results page.
+    // EC2 datacenter IPs are often blocked by Cloudflare (Error 1020/1015) —
+    // captchaDetector misses these; checkSiteBlocked catches them specifically.
     const capSearch = await detectCaptcha(page);
     if (capSearch.detected) {
       console.log(`[andersontax] CAPTCHA detected on search page: ${capSearch.captchaType}`);
       return { ...capSearch, searchedUrl: page.url() };
+    }
+    const blockReason = await checkSiteBlocked(page);
+    if (blockReason) {
+      console.log(`[andersontax] site blocked: ${blockReason} — url=${page.url()}`);
+      return {
+        records: [{ parcelId: propId, ownerName: '', propertyAddress: '', taxAmountDue: '',
+          taxYear: '2025', paymentStatus: '', county: countyFromUrl(taxBase), state: 'TX',
+          additionalDetails: JSON.stringify({
+            'Property ID': propId,
+            'Source': `${countyFromUrl(taxBase)} County Tax Office`,
+            'Note': `Anderson County Tax Office website is not accessible from the server: ${blockReason}. Please visit http://tax.co.anderson.tx.us directly to verify tax status.`,
+          }) }],
+        totalFound: 0,
+        summary: `Anderson County Tax Office blocked server access (${blockReason}). Direct access at tax.co.anderson.tx.us required.`,
+        searchedUrl: page.url(),
+      };
     }
 
     // ── 2. Wait for Kendo grid and pull search-row data ───────────────────────
@@ -480,15 +523,17 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
     let basic = await extractFromSearchGrid(page, propId);
     console.log(`[andersontax] grid (R-prefix): owner="${basic.ownerName}" acct="${basic.accountNumber}" link="${basic.propertyLink}"`);
 
-    // If no results with R-prefix, retry with plain numeric ID (some TX sites index both)
-    if (!basic.ownerName && !basic.propertyLink) {
+    // If no results with R-prefix AND the grid exists (site IS loaded), retry with plain ID.
+    // Skip the retry when grid is absent — it means the page is blocked/unreachable.
+    const gridPresent = await page.locator('.k-grid, [data-role="grid"]').count().catch(() => 0) > 0;
+    if (!basic.ownerName && !basic.propertyLink && gridPresent) {
       const searchUrlStripped = `${taxBase}/Property-Search-Result/searchtext/${encodeURIComponent(stripped)}`;
-      console.log(`[andersontax] R-prefix search empty — retrying with stripped ID: ${searchUrlStripped}`);
-      await safeGoto(page, searchUrlStripped, 20000);
-      await page.waitForTimeout(2000);
+      console.log(`[andersontax] R-prefix search empty (grid exists) — retrying with stripped ID`);
+      await safeGoto(page, searchUrlStripped, 15000);
+      await page.waitForTimeout(1500);
       await handleDisclaimerIfPresent(page, 'search-stripped');
       await page.waitForSelector('.k-grid tbody tr, [data-role="grid"] tbody tr',
-        { timeout: 6000 }).catch(() => {});
+        { timeout: 4000 }).catch(() => {});
       await page.waitForTimeout(1000);
       basic = await extractFromSearchGrid(page, stripped);
       console.log(`[andersontax] grid (stripped): owner="${basic.ownerName}" acct="${basic.accountNumber}" link="${basic.propertyLink}"`);
@@ -505,8 +550,8 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
     let reachedDetail = false;
     for (const url of directUrlCandidates) {
       onProgress('Checking property detail...');
-      await safeGoto(page, url, 12000);
-      await page.waitForTimeout(1000);
+      await safeGoto(page, url, 7000);  // short — these are guesses; don't burn timeout budget
+      await page.waitForTimeout(800);
       await handleDisclaimerIfPresent(page, 'detail-direct');
       if (await isDetailPage(page)) {
         reachedDetail = true;
