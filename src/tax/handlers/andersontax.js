@@ -465,13 +465,34 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
       await page.waitForTimeout(2000);
     }
 
+    // Check for CAPTCHA on the search results page (EC2 may be challenged here)
+    const capSearch = await detectCaptcha(page);
+    if (capSearch.detected) {
+      console.log(`[andersontax] CAPTCHA detected on search page: ${capSearch.captchaType}`);
+      return { ...capSearch, searchedUrl: page.url() };
+    }
+
     // ── 2. Wait for Kendo grid and pull search-row data ───────────────────────
     await page.waitForSelector('.k-grid tbody tr, [data-role="grid"] tbody tr',
       { timeout: 6000 }).catch(() => {});
     await page.waitForTimeout(1000);
 
-    const basic = await extractFromSearchGrid(page, propId);
-    console.log(`[andersontax] grid: owner="${basic.ownerName}" acct="${basic.accountNumber}" link="${basic.propertyLink}"`);
+    let basic = await extractFromSearchGrid(page, propId);
+    console.log(`[andersontax] grid (R-prefix): owner="${basic.ownerName}" acct="${basic.accountNumber}" link="${basic.propertyLink}"`);
+
+    // If no results with R-prefix, retry with plain numeric ID (some TX sites index both)
+    if (!basic.ownerName && !basic.propertyLink) {
+      const searchUrlStripped = `${taxBase}/Property-Search-Result/searchtext/${encodeURIComponent(stripped)}`;
+      console.log(`[andersontax] R-prefix search empty — retrying with stripped ID: ${searchUrlStripped}`);
+      await safeGoto(page, searchUrlStripped, 20000);
+      await page.waitForTimeout(2000);
+      await handleDisclaimerIfPresent(page, 'search-stripped');
+      await page.waitForSelector('.k-grid tbody tr, [data-role="grid"] tbody tr',
+        { timeout: 6000 }).catch(() => {});
+      await page.waitForTimeout(1000);
+      basic = await extractFromSearchGrid(page, stripped);
+      console.log(`[andersontax] grid (stripped): owner="${basic.ownerName}" acct="${basic.accountNumber}" link="${basic.propertyLink}"`);
+    }
 
     // ── 3. Navigate to property detail ────────────────────────────────────────
     // Strategy A: try direct URL patterns with SHORT timeouts (10s each)
@@ -505,7 +526,7 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
       await page.waitForTimeout(1000);
 
       try {
-        const pidCell = page.locator('td').filter({ hasText: new RegExp(`^${propId}$`) }).first();
+        const pidCell = page.locator('td').filter({ hasText: new RegExp(`^(${propId}|${stripped})$`) }).first();
         if (await pidCell.count({ timeout: 2000 }) > 0) {
           await Promise.all([
             page.waitForNavigation({ timeout: 10000, waitUntil: 'load' }).catch(() => {}),
@@ -543,6 +564,21 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
     // We MUST land on "Property Details" before running extractBillData.
     onProgress('Loading bill history...');
     let clickedHistoryTab = false;
+
+    // Wait for Kendo to be fully initialized before dropdown strategies.
+    // On EC2 (headless, slower CDN), Kendo loads later than on localhost.
+    // All 4 strategies silently fail when kendo is undefined — this prevents that.
+    await page.waitForFunction(
+      () => typeof kendo !== 'undefined' && typeof kendo.widgetInstance === 'function',
+      { timeout: 12000 }
+    ).catch(() => {
+      console.log('[andersontax] Kendo not detected after 12s — proceeding without it');
+    });
+    await page.waitForTimeout(500);
+
+    const pageUrlBeforeDDL = page.url();
+    const pageTitle = await page.title().catch(() => '');
+    console.log(`[andersontax] before dropdown switch: url=${pageUrlBeforeDDL} title="${pageTitle}"`);
 
     // Strategy 0: Kendo JavaScript API — most reliable, bypasses all UI issues
     // Works even when the native <select> is hidden and has no <option> elements.
@@ -712,6 +748,16 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
     await page.waitForTimeout(2000);
 
     const bill = await extractBillData(page);
+
+    if (bill.billTables.length === 0) {
+      const finalUrl   = page.url();
+      const finalTitle = await page.title().catch(() => '');
+      const bodySnippet = await page.evaluate(
+        () => (document.body?.innerText || '').slice(0, 400).replace(/\s+/g, ' ')
+      ).catch(() => '');
+      console.log(`[andersontax] NO bill tables — finalUrl=${finalUrl} title="${finalTitle}"`);
+      console.log(`[andersontax] page snippet: ${bodySnippet}`);
+    }
 
     const ownerName    = detail.ownerName    || basic.ownerName    || '';
     const situsAddress = detail.situsAddress || basic.situsAddress || '';
