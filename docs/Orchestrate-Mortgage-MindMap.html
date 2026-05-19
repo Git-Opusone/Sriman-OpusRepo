@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Orchestrate-Mortgage — End-to-End Architecture Mind Map</title>
+<title>Orchestrate-Mortgage V3.0 — End-to-End Architecture Mind Map</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 
@@ -717,14 +717,15 @@
 <body>
 
 <header>
-  <div class="badge">V2.2 · April 2026 · Internal Architecture Document</div>
+  <div class="badge">V3.0 · May 2026 · Internal Architecture Document</div>
   <h1>Orchestrate-Mortgage<br>Architecture Mind Map</h1>
-  <p>Property Tax &amp; Title Search — Agentic AI Platform · End-to-End Flow from Search to Structured Data</p>
+  <p>Property Tax &amp; Title Search — Agentic AI Platform · TX Dual-Search · 15+ Handlers · Tiered CAPTCHA</p>
   <div class="stats-bar">
     <div class="stat"><div class="stat-value">3,200+</div><div class="stat-label">US Counties</div></div>
+    <div class="stat"><div class="stat-value">254</div><div class="stat-label">TX Tax Counties</div></div>
     <div class="stat"><div class="stat-value">50+</div><div class="stat-label">State Sub-Agents</div></div>
     <div class="stat"><div class="stat-value">21,000+</div><div class="stat-label">Assessor URLs</div></div>
-    <div class="stat"><div class="stat-value">6</div><div class="stat-label">Platform Handlers</div></div>
+    <div class="stat"><div class="stat-value">15+</div><div class="stat-label">Platform Handlers</div></div>
     <div class="stat"><div class="stat-value">&lt;3 min</div><div class="stat-label">Per Search</div></div>
     <div class="stat"><div class="stat-value">&lt;5ms</div><div class="stat-label">Cache Hit</div></div>
   </div>
@@ -732,10 +733,11 @@
 
 <nav class="nav-tabs">
   <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
-  <button class="tab-btn" onclick="showTab('journey')">Dev Journey (Steps 1–10)</button>
+  <button class="tab-btn" onclick="showTab('journey')">Dev Journey (Steps 1–12)</button>
   <button class="tab-btn" onclick="showTab('agents')">Agent Architecture</button>
   <button class="tab-btn" onclick="showTab('request-flow')">Request Flow</button>
-  <button class="tab-btn" onclick="showTab('handlers')">6 Platform Handlers</button>
+  <button class="tab-btn" onclick="showTab('tx-dual-search')">TX Dual-Search</button>
+  <button class="tab-btn" onclick="showTab('handlers')">15+ Platform Handlers</button>
   <button class="tab-btn" onclick="showTab('captcha')">CAPTCHA & Blockers</button>
   <button class="tab-btn" onclick="showTab('cache')">Search Cache</button>
   <button class="tab-btn" onclick="showTab('stack')">Tech Stack & Costs</button>
@@ -764,7 +766,7 @@
       <rect x="460" y="330" width="280" height="80" rx="14" fill="rgba(31,111,235,0.25)" stroke="#1f6feb" stroke-width="1.5"/>
       <text x="600" y="362" text-anchor="middle" fill="#58a6ff" font-family="Syne, sans-serif" font-size="15" font-weight="800">Orchestrate-Mortgage</text>
       <text x="600" y="382" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="11">Agentic AI Property Search Platform</text>
-      <text x="600" y="398" text-anchor="middle" fill="#475569" font-family="DM Mono, monospace" font-size="10">mortgage-search-service · V2.2</text>
+      <text x="600" y="398" text-anchor="middle" fill="#475569" font-family="DM Mono, monospace" font-size="10">mortgage-search-service · V3.0</text>
 
       <!-- ── USER INPUT (left) ── -->
       <rect x="30" y="348" width="160" height="52" rx="10" fill="rgba(148,163,184,0.1)" stroke="rgba(148,163,184,0.25)" stroke-width="1"/>
@@ -808,9 +810,9 @@
       <text x="310" y="278" text-anchor="middle" fill="#475569" font-family="DM Sans, sans-serif" font-size="10">URL + HTML fingerprinting</text>
       <line x1="420" y1="255" x2="460" y2="350" stroke="#0d9488" stroke-width="1" marker-end="url(#arr)"/>
 
-      <!-- ── 6 HANDLERS (left middle-bottom) ── -->
+      <!-- ── 6 CAD HANDLERS (left middle-bottom) ── -->
       <rect x="30" y="470" width="390" height="160" rx="12" fill="rgba(22,163,74,0.06)" stroke="rgba(22,163,74,0.2)" stroke-width="1"/>
-      <text x="225" y="495" text-anchor="middle" fill="#4ade80" font-family="Syne, sans-serif" font-size="12" font-weight="700">6 Deterministic Platform Handlers</text>
+      <text x="225" y="495" text-anchor="middle" fill="#4ade80" font-family="Syne, sans-serif" font-size="12" font-weight="700">6 CAD Platform Handlers</text>
 
       <rect x="42" y="508" width="100" height="36" rx="7" fill="rgba(22,163,74,0.2)" stroke="rgba(22,163,74,0.35)" stroke-width="0.8"/>
       <text x="92" y="524" text-anchor="middle" fill="#4ade80" font-family="DM Mono, monospace" font-size="10" font-weight="500">qpublic.js</text>
@@ -839,14 +841,29 @@
       <text x="225" y="625" text-anchor="middle" fill="#475569" font-family="DM Sans, sans-serif" font-size="10">+ AI Fallback: GPT-4o-mini loop (vision + tool calling)</text>
       <line x1="225" y1="470" x2="550" y2="412" stroke="#16a34a" stroke-width="1" marker-end="url(#arr)"/>
 
-      <!-- ── CAPTCHA & BLOCKERS ── -->
-      <rect x="450" y="520" width="300" height="120" rx="12" fill="rgba(217,119,6,0.08)" stroke="rgba(217,119,6,0.25)" stroke-width="1"/>
-      <text x="600" y="545" text-anchor="middle" fill="#fbbf24" font-family="Syne, sans-serif" font-size="12" font-weight="700">CAPTCHA &amp; Bot Blockers</text>
-      <text x="600" y="563" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">8.1 Country IP validation (US-region only)</text>
-      <text x="600" y="578" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">8.2 Cloudflare Human/Bot detection</text>
-      <text x="600" y="593" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">8.3 reCAPTCHA / hCaptcha / Turnstile</text>
-      <text x="600" y="608" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">8.4 Concurrency CAP · 8.5 Search timings</text>
-      <text x="600" y="623" text-anchor="middle" fill="#475569" font-family="DM Sans, sans-serif" font-size="9">Playwright Stealth · playwright-extra · puppeteer-extra-plugin-stealth</text>
+      <!-- ── TX TAX OFFICE HANDLERS (far left, below CAD) ── -->
+      <rect x="30" y="650" width="390" height="80" rx="12" fill="rgba(13,148,136,0.08)" stroke="rgba(13,148,136,0.25)" stroke-width="1"/>
+      <text x="225" y="672" text-anchor="middle" fill="#2dd4bf" font-family="Syne, sans-serif" font-size="11" font-weight="700">9 TX Tax Office Handlers · 254 Counties</text>
+      <text x="225" y="688" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="9">propertytaxpayments(191) · actweb(17) · txcountytax(9)</text>
+      <text x="225" y="702" text-anchor="middle" fill="#475569" font-family="DM Sans, sans-serif" font-size="9">taxweb(4) · go2gov(2) · andersontax(1) · ptaxpro · publicportal · bis</text>
+      <text x="225" y="716" text-anchor="middle" fill="#0d9488" font-family="DM Mono, monospace" font-size="9">/api/tax/search/multi/stream · Sequential CAD → Tax Office</text>
+      <line x1="225" y1="650" x2="225" y2="632" stroke="#0d9488" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr)"/>
+
+      <!-- ── CAPSOLVER CAPTCHA (center-right of CAPTCHA box) ── -->
+      <rect x="450" y="660" width="300" height="60" rx="10" fill="rgba(217,119,6,0.06)" stroke="rgba(217,119,6,0.18)" stroke-width="1"/>
+      <text x="600" y="680" text-anchor="middle" fill="#fbbf24" font-family="Syne, sans-serif" font-size="10" font-weight="700">CapSolver (Tier-2, Paid Last Resort)</text>
+      <text x="600" y="696" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="9">AntiTurnstileTaskProxyLess · REST API · /api/tax/capsolver/balance</text>
+      <text x="600" y="710" text-anchor="middle" fill="#475569" font-family="DM Mono, monospace" font-size="9">captchaSolver.js · only if Tier-1 (free 25s wait) fails</text>
+
+      <!-- ── CAPTCHA & BLOCKERS (Tiered) ── -->
+      <rect x="450" y="520" width="300" height="130" rx="12" fill="rgba(217,119,6,0.08)" stroke="rgba(217,119,6,0.25)" stroke-width="1"/>
+      <text x="600" y="545" text-anchor="middle" fill="#fbbf24" font-family="Syne, sans-serif" font-size="12" font-weight="700">Tiered CAPTCHA Resolution</text>
+      <text x="600" y="562" text-anchor="middle" fill="#4ade80" font-family="DM Sans, sans-serif" font-size="10">Tier-1 FREE: CF JS challenge wait 25s · Turnstile click</text>
+      <text x="600" y="577" text-anchor="middle" fill="#fbbf24" font-family="DM Sans, sans-serif" font-size="10">Tier-2 PAID: CapSolver REST (last resort only)</text>
+      <text x="600" y="592" text-anchor="middle" fill="#f87171" font-family="DM Sans, sans-serif" font-size="10">BLOCKED: reCAPTCHA / hCaptcha (no solve)</text>
+      <text x="600" y="607" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">IP: US-region EC2 · Stealth: Playwright stealth plugin</text>
+      <text x="600" y="622" text-anchor="middle" fill="#64748b" font-family="DM Sans, sans-serif" font-size="10">Concurrency: MAX=3 · Timeout: 180s/search</text>
+      <text x="600" y="637" text-anchor="middle" fill="#475569" font-family="DM Mono, monospace" font-size="9">captchaDetector.js · captchaSolver.js (CapSolver)</text>
       <line x1="600" y1="410" x2="600" y2="518" stroke="#d97706" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arr)"/>
 
       <!-- ── SEARCH CACHE ── -->
@@ -877,7 +894,7 @@
   </div>
 
   <div class="info-box" style="margin-top:1.5rem;">
-    <strong style="color:#58a6ff;">Core Design Principle:</strong> "One Agent → Many Agents" — a single AI agent that learned to search one county was scaled to discover and map all 3,200+ counties across 50 US states. Deterministic handlers ($0 cost) cover the 6 dominant platforms; GPT-4o-mini AI fallback covers edge cases.
+    <strong style="color:#58a6ff;">Core Design Principle:</strong> "One Agent → Many Agents" — a single AI agent that learned to search one county was scaled to discover and map all 3,200+ counties across 50 US states. V3.0 adds <strong style="color:#2dd4bf;">Texas Tax Office Dual-Search</strong>: 254 TX counties, 9 Tax Office handlers, and sequential CAD→Tax Office search. Deterministic handlers ($0 cost) cover 15+ platforms; GPT-4o-mini AI fallback covers edge cases. CAPTCHA resolution is tiered: Tier-1 free (Cloudflare auto-pass) → Tier-2 CapSolver paid (last resort only).
   </div>
 </section>
 
@@ -885,8 +902,8 @@
      JOURNEY — Steps 1–10
      ══════════════════════════════════════════════════════════════════ -->
 <section id="journey" class="section">
-  <div class="section-title">Development Journey — Steps 1 to 10</div>
-  <div class="section-sub">The 10 phases of how Orchestrate-Mortgage was conceived and built</div>
+  <div class="section-title">Development Journey — Steps 1 to 12</div>
+  <div class="section-sub">The 12 phases of how Orchestrate-Mortgage was conceived and built — from single-county proof-of-concept to full TX Tax Office dual-search coverage</div>
 
   <div class="flow-diagram">
 
@@ -1090,13 +1107,77 @@
     <div class="flow-step">
       <div class="step-num-col">
         <div class="step-num" style="background:#1f6feb;">10</div>
+        <div class="step-line"></div>
       </div>
       <div class="step-content">
         <div class="step-card">
           <h3 style="color:#58a6ff;">Store in DB → Power Reports &amp; Everything</h3>
           <p>All search results are stored in the database. This persistent layer powers downstream reporting, audit trails, repeat searches (served from LRU cache), and integration with the broader Orchestrate-Mortgage platform. Every property record searched becomes part of the institutional knowledge base.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num-col">
+        <div class="step-num" style="background:#0d9488;">11</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-content">
+        <div class="step-card">
+          <h3 style="color:#2dd4bf;">TX Tax Office Dual-Search Integration — 254 Counties</h3>
+          <p>Texas separates property appraisal (CAD) from tax collection (Tax Office) — two different systems, two different searches. Built a <strong style="color:#2dd4bf;">sequential dual-search</strong>: CAD runs first, extracts <code style="background:rgba(13,148,136,0.2);color:#2dd4bf;padding:1px 4px;border-radius:3px;">cadAccountNumber</code> via <code style="background:rgba(13,148,136,0.2);color:#2dd4bf;padding:1px 4px;border-radius:3px;">extractTaxAccountId()</code> and <code style="background:rgba(13,148,136,0.2);color:#2dd4bf;padding:1px 4px;border-radius:3px;">cadOwnerLastName</code> (up to 3 words), then passes both to the Tax Office handler.</p>
+          <p>All 254 TX counties mapped with <code style="background:rgba(13,148,136,0.2);color:#2dd4bf;padding:1px 4px;border-radius:3px;">taxUrl</code> + <code style="background:rgba(13,148,136,0.2);color:#2dd4bf;padding:1px 4px;border-radius:3px;">taxPlatform</code> in counties.json. New endpoint: <code style="background:rgba(13,148,136,0.2);color:#2dd4bf;padding:1px 4px;border-radius:3px;">POST /api/tax/search/multi/stream</code> (SSE).</p>
+          <div class="pipeline">
+            <div class="pipe-node pipe-node-blue">User Input (TX)</div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-node pipe-node-teal">CAD Handler</div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-node pipe-node-green">extractTaxAccountId()</div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-node pipe-node-amber">Tax Office Handler</div>
+            <div class="pipe-arrow">→</div>
+            <div class="pipe-node pipe-node-green">Combined SSE</div>
+          </div>
+          <div class="tags" style="margin-top:0.75rem;">
+            <span class="tag tag-teal">propertytaxpayments.js (191)</span>
+            <span class="tag tag-blue">actweb.js (17)</span>
+            <span class="tag tag-green">txcountytax.js (9)</span>
+            <span class="tag tag-amber">taxweb.js (4)</span>
+            <span class="tag tag-purple">go2gov.js (2)</span>
+            <span class="tag tag-coral">andersontax.js (1)</span>
+            <span class="tag tag-gray">ptaxpro · publicportal · bis</span>
+          </div>
+          <div class="info-box" style="margin-top:0.75rem;">
+            <strong>actweb specifics:</strong> TX parcel IDs (e.g., 645536) ARE CAD Reference Numbers on actweb — passed directly as <code style="color:#58a6ff;">cadref</code> search type. Radio buttons detected by label text (not hardcoded values). Detail page uses text-regex extraction from <code style="color:#58a6ff;">showdetail2.jsp</code>. 4-strategy search: cadRef → accountNo → fullName → lastName.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num-col">
+        <div class="step-num" style="background:#d97706;">12</div>
+      </div>
+      <div class="step-content">
+        <div class="step-card">
+          <h3 style="color:#fbbf24;">Tiered CAPTCHA Resolution + CapSolver Integration</h3>
+          <p>After deploying the propertytaxpayments.net handler for 191 counties, Cloudflare challenges began blocking searches. Built a <strong style="color:#fbbf24;">3-tier CAPTCHA resolution system</strong> where paid API is strictly last resort — preserving CapSolver credits for genuine failures only.</p>
+          <div class="captcha-grid" style="margin-top:0.75rem;">
+            <div class="captcha-card">
+              <h4 style="color:#4ade80;">Tier 1 — Free (captchaDetector.js)</h4>
+              <p><strong>JS Challenge:</strong> Wait up to 25s polling every 2.5s — real Chromium auto-passes. <strong>Turnstile:</strong> Wait 6s (managed auto-approve) + try clicking iframe checkbox. Cost: $0 always.</p>
+            </div>
+            <div class="captcha-card">
+              <h4>Tier 2 — CapSolver (captchaSolver.js)</h4>
+              <p>Only triggered if Tier-1 failed AND CAPSOLVER_API_KEY set AND type is Cloudflare. AntiTurnstileTaskProxyLess task via Node https. Polls every 3s, max 120s. Token injected into page then form submitted.</p>
+            </div>
+            <div class="captcha-card">
+              <h4 style="color:#f87171;">Blocked — No Solve</h4>
+              <p>reCAPTCHA / hCaptcha / generic challenges return <code>captchaBlocked</code> immediately. No CapSolver credits spent on unsolvable types. Balance: <code>GET /api/tax/capsolver/balance</code>.</p>
+            </div>
+          </div>
           <div class="success-box" style="margin-top:0.75rem;">
-            <strong style="color:#4ade80;">Status: Ready for Staging</strong> — All 10 steps complete. The platform is a fully automated end-to-end property tax &amp; title search system covering 3,200+ US counties.
+            <strong style="color:#4ade80;">V3.0 Complete:</strong> All 12 steps done. 3,200+ US counties (CAD) + 254 TX Tax Office counties. 15+ deterministic handlers + tiered CAPTCHA. Fully automated end-to-end property tax &amp; title search platform.
           </div>
         </div>
       </div>
@@ -1244,11 +1325,110 @@
 </section>
 
 <!-- ══════════════════════════════════════════════════════════════════
+     TX DUAL-SEARCH
+     ══════════════════════════════════════════════════════════════════ -->
+<section id="tx-dual-search" class="section">
+  <div class="section-title">TX County Dual-Search Architecture</div>
+  <div class="section-sub">Sequential CAD → Tax Office search for all 254 Texas counties — two databases, one automated workflow</div>
+
+  <div class="info-box">
+    <strong style="color:#2dd4bf;">Why dual-search?</strong> Texas separates property appraisal (CAD = County Appraisal District) from tax collection (Tax Office). The CAD holds owner records and assessed values; the Tax Office holds tax bills and payment history. These are separate websites on separate platforms — both must be queried to get a complete property picture.
+  </div>
+
+  <div class="grid-2" style="margin-bottom:1.5rem;">
+    <div class="card">
+      <h3 style="font-family:'Syne',sans-serif;font-weight:700;color:#2dd4bf;margin-bottom:0.75rem;">Phase 1 — CAD Search</h3>
+      <p style="font-size:0.84rem;color:var(--text-secondary);line-height:1.65;margin-bottom:0.75rem;">Playwright navigates to the CAD URL using an existing handler (qpublic/tyler/beacon/ptaxpro/publicportal). Extracts owner information and the CAD account number.</p>
+      <div class="tags">
+        <span class="tag tag-green">qpublic.js</span>
+        <span class="tag tag-blue">tyler.js</span>
+        <span class="tag tag-teal">beacon.js</span>
+        <span class="tag tag-purple">ptaxpro.js</span>
+        <span class="tag tag-gray">publicportal.js</span>
+      </div>
+      <div style="margin-top:0.75rem;font-size:0.8rem;color:var(--text-muted);">
+        <strong style="color:#2dd4bf;">extractTaxAccountId()</strong> priority chain:<br>
+        1. additionalDetails.taxOfficeRef<br>
+        2. additionalDetails.refId / geoId / propId<br>
+        3. Common key patterns (acctNum, parcelId…)<br>
+        4. Top-level parcelId (last resort)
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="font-family:'Syne',sans-serif;font-weight:700;color:#fbbf24;margin-bottom:0.75rem;">Phase 2 — Tax Office Search</h3>
+      <p style="font-size:0.84rem;color:var(--text-secondary);line-height:1.65;margin-bottom:0.75rem;">Uses cadAccountNumber + cadOwnerLastName from Phase 1. Routes to the Tax Office handler matching the county's <code style="background:rgba(217,119,6,0.15);color:#fbbf24;padding:1px 4px;border-radius:3px;">taxPlatform</code>. Runs 4-strategy search on actweb.</p>
+      <div class="tags">
+        <span class="tag tag-teal">propertytaxpayments (191)</span>
+        <span class="tag tag-amber">actweb (17)</span>
+        <span class="tag tag-blue">txcountytax (9)</span>
+        <span class="tag tag-green">taxweb (4)</span>
+        <span class="tag tag-purple">go2gov (2)</span>
+        <span class="tag tag-coral">andersontax (1)</span>
+      </div>
+      <div style="margin-top:0.75rem;font-size:0.8rem;color:var(--text-muted);">
+        <strong style="color:#fbbf24;">actweb 4-strategy search:</strong><br>
+        1. CAD Reference (cadref) — TX parcel ID = CAD ref<br>
+        2. Account No. (account) with account number<br>
+        3. Full cleaned owner name<br>
+        4. Last name only (first word)
+      </div>
+    </div>
+  </div>
+
+  <div class="pipeline" style="margin-bottom:1.5rem;">
+    <div class="pipe-node pipe-node-gray">User Input (TX)</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-node pipe-node-blue">/api/tax/search/multi/stream</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-node pipe-node-teal">CAD Handler</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-node pipe-node-green">extractTaxAccountId()</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-node pipe-node-amber">Tax Office Handler</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-node pipe-node-purple">SSE: cad_result + tax_result</div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-node pipe-node-green">Combined Result</div>
+  </div>
+
+  <div class="section-title" style="font-size:1.1rem;margin-bottom:0.5rem;">Tax Office Platform Coverage</div>
+  <table class="cost-table" style="margin-bottom:1.5rem;">
+    <thead>
+      <tr>
+        <th>Platform</th>
+        <th>Handler File</th>
+        <th>Counties</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>propertytaxpayments.net</td><td><code>propertytaxpayments.js</code></td><td>191</td><td>Largest single handler — form-based search</td></tr>
+      <tr><td>actweb</td><td><code>actweb.js</code></td><td>17</td><td>showdetail2.jsp · radio by label text · parcel ID = CAD ref</td></tr>
+      <tr><td>txcountytax</td><td><code>txcountytax.js</code></td><td>9</td><td>TX County Tax portal</td></tr>
+      <tr><td>taxweb</td><td><code>taxweb.js</code></td><td>4</td><td>TaxWeb platform</td></tr>
+      <tr><td>go2gov</td><td><code>go2gov.js</code></td><td>2</td><td>Cameron + Webb counties</td></tr>
+      <tr><td>andersontax</td><td><code>andersontax.js</code></td><td>1</td><td>Anderson County custom handler</td></tr>
+      <tr><td>ptaxpro</td><td><code>ptaxpro.js</code></td><td>varies</td><td>PTaxPro platform</td></tr>
+      <tr><td>publicportal</td><td><code>publicportal.js</code></td><td>varies</td><td>Public Portal TX CAD integration</td></tr>
+      <tr><td>bis</td><td><code>bis.js</code></td><td>3</td><td>BIS React/Angular (shared with CAD side)</td></tr>
+      <tr><td style="color:#4ade80;font-weight:700;">TOTAL</td><td></td><td style="color:#4ade80;font-weight:700;">254</td><td style="color:#4ade80;">100% TX county coverage</td></tr>
+    </tbody>
+  </table>
+
+  <div class="warn-box">
+    <strong style="color:#fbbf24;">Key Design Decision:</strong> TX parcel IDs (e.g., <code style="color:#fbbf24;">645536</code>) ARE CAD Reference Numbers on actweb systems — they are passed directly as the <code style="color:#fbbf24;">cadref</code> search type. No conversion needed. The CAD Reference is what the Tax Office uses as its primary key for that property.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════
      HANDLERS
      ══════════════════════════════════════════════════════════════════ -->
 <section id="handlers" class="section">
-  <div class="section-title">6 Platform Handlers</div>
-  <div class="section-sub">Deterministic Playwright handlers for each major county assessor software platform — zero AI cost when matched</div>
+  <div class="section-title">15+ Platform Handlers — CAD &amp; Tax Office</div>
+  <div class="section-sub">Deterministic Playwright handlers for every major county platform — zero AI cost when matched. V3.0 adds 9 TX Tax Office handlers on top of 6 CAD handlers.</div>
+
+  <div class="section-title" style="font-size:1rem;margin-bottom:0.75rem;color:var(--teal-l);">6 CAD / Assessor Handlers</div>
+  <div class="grid-2" style="margin-bottom:1.5rem;">
 
   <div class="grid-2" style="margin-bottom:1.5rem;">
 
@@ -1338,6 +1518,95 @@
 
   </div>
 
+  <div class="section-title" style="font-size:1rem;margin:1.5rem 0 0.75rem;color:var(--teal-l);">9 TX Tax Office Handlers (V3.0)</div>
+  <div class="grid-2" style="margin-bottom:1.5rem;">
+
+    <div class="handler-card">
+      <div class="handler-head" style="border-color:rgba(13,148,136,0.2);">
+        <div class="handler-icon" style="background:rgba(13,148,136,0.15);">💰</div>
+        <div>
+          <div class="handler-name" style="color:#2dd4bf;">propertytaxpayments.js</div>
+          <div class="handler-file">propertytaxpayments.net · 191 TX counties</div>
+        </div>
+      </div>
+      <div class="handler-body">
+        <p>Largest single Tax Office handler. Form-based search on propertytaxpayments.net. Supports search by account number and owner name. Extracts tax levy, current due, prior due, total due, payment history.</p>
+        <div class="state-chips"><span class="state-chip">191 counties</span><span class="state-chip">TX only</span><span class="state-chip">largest coverage</span></div>
+      </div>
+    </div>
+
+    <div class="handler-card">
+      <div class="handler-head" style="border-color:rgba(31,111,235,0.2);">
+        <div class="handler-icon" style="background:rgba(31,111,235,0.15);">📋</div>
+        <div>
+          <div class="handler-name" style="color:#58a6ff;">actweb.js</div>
+          <div class="handler-file">ActWeb · 17 TX counties · showdetail2.jsp</div>
+        </div>
+      </div>
+      <div class="handler-body">
+        <p>ActWeb Tax Office platform. 4-strategy search: cadRef (parcel ID = CAD ref number) → account no → full name → last name only. Radio buttons detected by label text (not hardcoded values). Text-regex extraction from showdetail2.jsp.</p>
+        <div class="state-chips"><span class="state-chip">17 counties</span><span class="state-chip">Hidalgo</span><span class="state-chip">Nueces</span><span class="state-chip">+ 14 more</span></div>
+      </div>
+    </div>
+
+    <div class="handler-card">
+      <div class="handler-head" style="border-color:rgba(22,163,74,0.2);">
+        <div class="handler-icon" style="background:rgba(22,163,74,0.15);">🏛</div>
+        <div>
+          <div class="handler-name" style="color:#4ade80;">txcountytax.js</div>
+          <div class="handler-file">TX County Tax Portal · 9 counties</div>
+        </div>
+      </div>
+      <div class="handler-body">
+        <p>TX County Tax portal. Form-based search by owner name or account number. Structured table extraction for tax bills and payment status.</p>
+        <div class="state-chips"><span class="state-chip">9 counties</span><span class="state-chip">TX only</span></div>
+      </div>
+    </div>
+
+    <div class="handler-card">
+      <div class="handler-head" style="border-color:rgba(124,58,237,0.2);">
+        <div class="handler-icon" style="background:rgba(124,58,237,0.15);">💳</div>
+        <div>
+          <div class="handler-name" style="color:#a78bfa;">taxweb.js</div>
+          <div class="handler-file">TaxWeb Platform · 4 TX counties</div>
+        </div>
+      </div>
+      <div class="handler-body">
+        <p>TaxWeb platform handler. Search by account number or owner name. Supports multiple tax year records and payment status extraction.</p>
+        <div class="state-chips"><span class="state-chip">4 counties</span><span class="state-chip">TX only</span></div>
+      </div>
+    </div>
+
+    <div class="handler-card">
+      <div class="handler-head" style="border-color:rgba(217,119,6,0.2);">
+        <div class="handler-icon" style="background:rgba(217,119,6,0.15);">🏗</div>
+        <div>
+          <div class="handler-name" style="color:#fbbf24;">go2gov.js</div>
+          <div class="handler-file">Go2Gov · Cameron &amp; Webb counties</div>
+        </div>
+      </div>
+      <div class="handler-body">
+        <p>Go2Gov government payment platform. Used by Cameron County and Webb County (Laredo). Handles the modern government payment portal workflow.</p>
+        <div class="state-chips"><span class="state-chip">Cameron</span><span class="state-chip">Webb</span></div>
+      </div>
+    </div>
+
+    <div class="handler-card">
+      <div class="handler-head" style="border-color:rgba(220,38,38,0.2);">
+        <div class="handler-icon" style="background:rgba(220,38,38,0.15);">📍</div>
+        <div>
+          <div class="handler-name" style="color:#f87171;">andersontax.js · ptaxpro.js · publicportal.js</div>
+          <div class="handler-file">Single-county + multi-county TX handlers</div>
+        </div>
+      </div>
+      <div class="handler-body">
+        <p><strong>andersontax.js:</strong> Anderson County only — custom handler for their specific Tax Office portal. <strong>ptaxpro.js:</strong> PTaxPro platform across multiple TX counties. <strong>publicportal.js:</strong> Public Portal TX CAD/Tax integration (SPA-detected).</p>
+        <div class="state-chips"><span class="state-chip">Anderson (1)</span><span class="state-chip">PTaxPro (varies)</span><span class="state-chip">PublicPortal (varies)</span></div>
+      </div>
+    </div>
+
+  </div>
+
   <div class="card">
     <h3 style="font-family:'Syne',sans-serif;font-weight:700;color:#94a3b8;margin-bottom:0.75rem;">AI Fallback Agent (GPT-4o-mini Vision Loop)</h3>
     <p style="font-size:0.85rem;color:var(--text-secondary);line-height:1.65;margin-bottom:0.75rem;">When no deterministic handler matches, or when a handler returns null, the AI fallback loop engages. GPT-4o-mini receives screenshots of the county website and uses 6 tool calls to interact: <code>take_screenshot</code>, <code>get_page_content</code>, <code>fill_input</code>, <code>click_element</code>, <code>navigate</code>, <code>extract_results</code>. The loop runs for up to N iterations until results are extracted or timeout is reached.</p>
@@ -1356,8 +1625,24 @@
      CAPTCHA
      ══════════════════════════════════════════════════════════════════ -->
 <section id="captcha" class="section">
-  <div class="section-title">CAPTCHA &amp; Bot Detection Handling</div>
-  <div class="section-sub">Six categories of access barriers encountered across county assessor websites and how each is mitigated</div>
+  <div class="section-title">CAPTCHA &amp; Bot Detection — Tiered Resolution</div>
+  <div class="section-sub">V3.0: Free Tier-1 self-solve first; paid CapSolver (Tier-2) only as absolute last resort. reCAPTCHA / hCaptcha are not attempted and return captchaBlocked immediately.</div>
+
+  <div class="grid-3" style="margin-bottom:1.5rem;">
+    <div class="captcha-card" style="border:1px solid rgba(22,163,74,0.3);background:rgba(22,163,74,0.06);">
+      <h4 style="color:#4ade80;">Tier 1 — Free Self-Solve (captchaDetector.js)</h4>
+      <p><strong style="color:#4ade80;">JS Challenge:</strong> Real Chromium auto-passes Cloudflare 5-second JS challenge. Wait up to 25s polling every 2.5s. Cost: $0.</p>
+      <p style="margin-top:0.5rem;"><strong style="color:#4ade80;">Turnstile:</strong> Wait 6s (managed Turnstile auto-approves). If pending: find challenges.cloudflare.com iframe, click checkbox. Wait 4s. Cost: $0.</p>
+    </div>
+    <div class="captcha-card">
+      <h4>Tier 2 — CapSolver (captchaSolver.js)</h4>
+      <p>Only if: Tier-1 failed AND CAPSOLVER_API_KEY set AND type is Cloudflare. Task: AntiTurnstileTaskProxyLess via REST API. Polls every 3s, max 120s. Token injected then form submitted. Balance: GET /api/tax/capsolver/balance.</p>
+    </div>
+    <div class="captcha-card" style="border:1px solid rgba(220,38,38,0.25);background:rgba(220,38,38,0.05);">
+      <h4 style="color:#f87171;">Blocked — No Solve Attempted</h4>
+      <p>reCAPTCHA, hCaptcha, and generic CAPTCHA challenges return captchaBlocked immediately. No CapSolver credits spent on types that CapSolver cannot solve.</p>
+    </div>
+  </div>
 
   <div class="captcha-grid" style="margin-bottom:1.5rem;">
     <div class="captcha-card">
@@ -1454,8 +1739,9 @@
     <div class="tech-item"><h4>Node.js + Express</h4><p>Backend server. Express + SSE streaming. SEARCH_TIMEOUT_MS=180000. MAX_CONCURRENT=5.</p></div>
     <div class="tech-item"><h4>Playwright Chromium</h4><p>playwright-extra + puppeteer-extra-plugin-stealth. Headless browser automation for all county sites.</p></div>
     <div class="tech-item"><h4>GPT-4o-mini API</h4><p>Vision + tool calling. AI fallback for unrecognized platforms. ~$0.15/1M input, $0.60/1M output tokens.</p></div>
-    <div class="tech-item"><h4>platformDetector.js</h4><p>URL + HTML fingerprinting router. Classifies counties to: qpublic, tyler, beacon, patriot, vision, bis, generic.</p></div>
-    <div class="tech-item"><h4>counties.json</h4><p>Master data file. 3,200+ county records. Fields: state, county, assessorUrl, platform, lastHealthCheck.</p></div>
+    <div class="tech-item"><h4>platformDetector.js</h4><p>URL + HTML fingerprinting router. Classifies counties to: qpublic, tyler, beacon, patriot, vision, bis, actweb, propertytaxpayments, txcountytax, and more.</p></div>
+    <div class="tech-item"><h4>counties.json</h4><p>Master data file. 3,200+ county records. Fields: state, county, assessorUrl, platform, taxUrl, taxPlatform (TX), lastHealthCheck.</p></div>
+    <div class="tech-item"><h4>captchaSolver.js (NEW)</h4><p>CapSolver REST API integration. AntiTurnstileTaskProxyLess task. Node.js https module (no npm package). Balance endpoint wired to API route.</p></div>
     <div class="tech-item"><h4>LRU Cache (in-memory)</h4><p>Map-based cache. _searchCache in server.js. Future: Redis drop-in replacement for multi-server deployments.</p></div>
     <div class="tech-item"><h4>netronline.com</h4><p>Primary source for US county assessor URL discovery. Crawled by master agent to build counties.json.</p></div>
     <div class="tech-item"><h4>Server-Sent Events (SSE)</h4><p>Real-time streaming of search progress, results, and errors back to the frontend SPA.</p></div>
@@ -1484,9 +1770,9 @@
 </main>
 
 <footer>
-  <strong>Orchestrate-Mortgage — Property Tax &amp; Title Search Agentic AI Platform</strong> &nbsp;|&nbsp; V2.2 &nbsp;|&nbsp;
-  <span>Confidential — Internal Development &amp; Document by Sriman S.</span> &nbsp;|&nbsp; April 2026<br>
-  <span style="font-size:0.68rem;margin-top:4px;display:block;opacity:0.5;">mortgage-search-service · Node.js + Playwright + OpenAI GPT-4o-mini · 3,200+ Counties · 6 Platform Handlers · 50+ State Sub-Agents</span>
+  <strong>Orchestrate-Mortgage — Property Tax &amp; Title Search Agentic AI Platform</strong> &nbsp;|&nbsp; V3.0 &nbsp;|&nbsp;
+  <span>Confidential — Internal Development &amp; Document by Sriman S.</span> &nbsp;|&nbsp; May 2026<br>
+  <span style="font-size:0.68rem;margin-top:4px;display:block;opacity:0.5;">mortgage-search-service · Node.js + Playwright + OpenAI GPT-4o-mini + CapSolver · 3,200+ Counties · 254 TX Tax Counties · 15+ Platform Handlers · 50+ State Sub-Agents · Tiered CAPTCHA</span>
 </footer>
 
 <script>

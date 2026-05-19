@@ -70,39 +70,23 @@
   .pipeline-step.active { border-color: var(--blue); background: var(--blue-light); }
   .pipeline-step.success { border-color: var(--green); background: var(--green-light); }
   .pipeline-step.trigger { border-color: var(--orange); background: var(--orange-light); }
+  .pipeline-step.deploy { border-color: var(--purple); background: var(--purple-light); }
   .pipeline-arrow { display: flex; align-items: center; padding: 0 4px; color: #9ca3af; font-size: 20px; font-weight: bold; flex-shrink: 0; }
   .pipeline-step .step-num { width: 28px; height: 28px; border-radius: 50%; background: var(--blue); color: white; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; }
   .pipeline-step.success .step-num { background: var(--green); }
   .pipeline-step.trigger .step-num { background: var(--orange); }
+  .pipeline-step.deploy .step-num { background: var(--purple); }
   .pipeline-step .step-icon { font-size: 24px; margin-bottom: 8px; }
   .pipeline-step .step-label { font-size: 12px; font-weight: 600; color: var(--dark); margin-bottom: 4px; }
   .pipeline-step .step-sub { font-size: 11px; color: #6b7280; }
-
-  /* Architecture diagram */
-  .arch-diagram { background: var(--dark2); border-radius: 16px; padding: 32px; color: white; }
-  .arch-row { display: flex; justify-content: center; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
-  .arch-box { border-radius: 10px; padding: 14px 18px; text-align: center; min-width: 130px; border: 2px solid transparent; }
-  .arch-box .arch-icon { font-size: 28px; margin-bottom: 6px; }
-  .arch-box .arch-label { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; }
-  .arch-box .arch-sub { font-size: 10px; opacity: 0.75; margin-top: 3px; }
-  .arch-box.dev { background: #1e3a8a; border-color: #3b82f6; }
-  .arch-box.github { background: #1f2937; border-color: #6b7280; }
-  .arch-box.actions { background: #1c2b1c; border-color: #16a34a; }
-  .arch-box.ecr { background: #1c1f2e; border-color: #f59e0b; }
-  .arch-box.ec2 { background: #2d1b1b; border-color: #ef4444; }
-  .arch-box.nginx { background: #1a2a1a; border-color: #22c55e; }
-  .arch-box.docker { background: #112233; border-color: #38bdf8; }
-  .arch-box.user { background: #1e1b3a; border-color: #a78bfa; }
-  .arch-arrow { color: #9ca3af; font-size: 22px; display: flex; align-items: center; flex-direction: column; gap: 2px; }
-  .arch-arrow .arrow-label { font-size: 10px; color: #6b7280; white-space: nowrap; }
-  .arch-divider { width: 100%; border: none; border-top: 1px dashed #374151; margin: 8px 0 16px; }
-  .arch-section-label { text-align: center; font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #6b7280; margin-bottom: 16px; }
 
   /* File tree */
   .file-tree { background: var(--dark); color: #e2e8f0; border-radius: 10px; padding: 20px; font-family: monospace; font-size: 13px; line-height: 2; }
   .file-tree .folder { color: #60a5fa; }
   .file-tree .file { color: #e2e8f0; }
   .file-tree .file-key { color: #34d399; }
+  .file-tree .file-new { color: #f59e0b; }
+  .file-tree .file-updated { color: #a78bfa; }
   .file-tree .comment { color: #6b7280; }
 
   /* Step list */
@@ -127,6 +111,7 @@
   .pill-orange { background: var(--orange-light); color: var(--orange); }
   .pill-purple { background: var(--purple-light); color: var(--purple); }
   .pill-red { background: var(--red-light); color: var(--red); }
+  .pill-yellow { background: var(--yellow-light); color: var(--yellow); }
 
   /* Timeline */
   .timeline { position: relative; padding-left: 32px; }
@@ -151,6 +136,11 @@
   .status-dot.blue { background: var(--blue); }
   .status-dot.orange { background: var(--orange); }
 
+  /* Deploy sub-steps */
+  .sub-steps { margin-top: 8px; padding-left: 16px; }
+  .sub-step { font-size: 12px; color: #6b7280; padding: 3px 0; display: flex; align-items: flex-start; gap: 6px; }
+  .sub-step::before { content: '▸'; color: var(--purple); flex-shrink: 0; margin-top: 1px; }
+
   /* Responsive */
   @media (max-width: 640px) {
     .header h1 { font-size: 1.6rem; }
@@ -166,849 +156,701 @@
 
 <!-- ═══════════════════════════════════════════════════════════ HEADER -->
 <div class="header">
-  <div class="badge">Technical Documentation</div>
+  <div class="badge">V3.0 &middot; Updated May 2026</div>
   <h1>Opus One — CI/CD Pipeline & Architecture</h1>
-  <p>Complete guide to how code flows from your laptop to the live AWS server automatically — every single push.</p>
+  <p>Complete reference for the automated build, deploy, and monitoring pipeline — every push goes live via GitHub Actions, ECR, and EC2.</p>
   <div class="meta">
-    <span>🌐 Live: http://44.253.126.67</span>
-    <span>☁️ AWS us-west-2 (Oregon)</span>
-    <span>🐳 Docker + ECR + EC2</span>
-    <span>⚙️ GitHub Actions CI/CD</span>
-    <span>📅 May 2026</span>
+    <span>Branch: claude/mortgage-search-microservice</span>
+    <span>Region: us-west-2 (Oregon)</span>
+    <span>Registry: Amazon ECR (opus-ecr)</span>
+    <span><span class="status-dot green"></span>Status: Active</span>
   </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════ NAV -->
 <nav class="nav">
   <ul>
-    <li><a href="#overview">Overview</a></li>
-    <li><a href="#architecture">Architecture</a></li>
-    <li><a href="#cicd-flow">CI/CD Flow</a></li>
-    <li><a href="#github-actions">GitHub Actions</a></li>
-    <li><a href="#dockerfile">Dockerfile</a></li>
-    <li><a href="#aws-infra">AWS Infrastructure</a></li>
-    <li><a href="#secrets">Secrets & Config</a></li>
-    <li><a href="#app-stack">App Stack</a></li>
-    <li><a href="#deploy-commands">Deploy Commands</a></li>
-    <li><a href="#troubleshooting">Troubleshooting</a></li>
+    <li><a href="#pipeline-overview">1. Pipeline Overview</a></li>
+    <li><a href="#docker-build">2. Docker & Build</a></li>
+    <li><a href="#github-secrets">3. GitHub Secrets</a></li>
+    <li><a href="#ec2-deployment">4. EC2 Deployment</a></li>
+    <li><a href="#monitoring-stack">5. Monitoring Stack</a></li>
+    <li><a href="#app-configuration">6. App Configuration</a></li>
+    <li><a href="#env-vars">7. Environment Variables</a></li>
   </ul>
 </nav>
 
 <div class="container">
 
-<!-- ═══════════════════════════════════════════════════════════ SECTION 1: OVERVIEW -->
-<section class="section" id="overview">
+<!-- ═══════════════════════════════════════════════════════════ SECTION 1: PIPELINE OVERVIEW -->
+<section class="section" id="pipeline-overview">
   <div class="section-title">
     <div class="icon" style="background:#dbeafe">🚀</div>
-    1. High-Level Overview
+    1. Pipeline Overview
   </div>
-  <p class="section-subtitle">What is CI/CD and what does it mean for this project?</p>
+  <p class="section-subtitle">Full CI/CD pipeline — from trigger to live deployment. Every push to the branch runs all steps automatically.</p>
 
-  <div class="box box-blue">
-    <strong>What is CI/CD in plain English?</strong><br>
-    CI/CD stands for <strong>Continuous Integration / Continuous Deployment</strong>. It means: every time you save and push your code to GitHub, a robot (GitHub Actions) automatically tests, packages, and deploys your application to the live server — with zero manual steps from you. You write code → push → it goes live automatically.
-  </div>
-
-  <div class="grid-3" style="margin-top:20px">
-    <div class="card">
-      <div class="card-header" style="background:#dbeafe">
-        <span style="font-size:24px">💻</span>
-        <div class="card-title">You (Developer)</div>
-      </div>
-      <div class="card-body">
-        <p style="font-size:14px">Write code in VS Code on your laptop. When ready, run 3 git commands. That's your entire job.</p>
-        <div style="margin-top:12px">
-          <div class="inline-code">git add .</div><br>
-          <div class="inline-code" style="margin-top:4px">git commit -m "message"</div><br>
-          <div class="inline-code" style="margin-top:4px">git push</div>
-        </div>
+  <!-- Trigger -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header" style="background:var(--orange-light)">
+      <span style="font-size:22px">⚡</span>
+      <div>
+        <div class="card-title">Trigger</div>
+        <div style="font-size:12px;color:#6b7280">Pipeline starts on push or manual dispatch</div>
       </div>
     </div>
-    <div class="card">
-      <div class="card-header" style="background:#dcfce7">
-        <span style="font-size:24px">🤖</span>
-        <div class="card-title">GitHub Actions (Robot)</div>
-      </div>
-      <div class="card-body">
-        <p style="font-size:14px">Automatically wakes up when you push. Builds your app into a Docker image, uploads it to AWS, and restarts the live server. Takes ~4 minutes.</p>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header" style="background:#ffedd5">
-        <span style="font-size:24px">☁️</span>
-        <div class="card-title">AWS (Live Server)</div>
-      </div>
-      <div class="card-body">
-        <p style="font-size:14px">Your application runs 24/7 on an EC2 server in Oregon. Users access it at <strong>http://44.253.126.67</strong>. Nginx routes traffic into the app.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Simple pipeline visual -->
-  <div class="card" style="margin-top:20px">
-    <div class="card-header"><span style="font-size:20px">⚡</span><div class="card-title">The 4-Minute Deploy Pipeline — What Happens After git push</div></div>
     <div class="card-body">
-      <div class="pipeline">
-        <div class="pipeline-step trigger">
-          <div class="step-icon">💻</div>
+      <div class="grid-2">
+        <div class="box box-orange" style="margin-bottom:0">
+          <strong>Push to branch</strong><br>
+          <span style="font-size:13px">Any commit pushed to <span class="inline-code">claude/mortgage-search-microservice-klXBo</span> or <span class="inline-code">main</span> automatically starts the workflow.</span>
+        </div>
+        <div class="box box-purple" style="margin-bottom:0">
+          <strong>Workflow Dispatch</strong><br>
+          <span style="font-size:13px">Can also be triggered manually from the GitHub Actions tab — useful for redeploying without a code change.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline visual flow -->
+  <div class="card">
+    <div class="card-header"><span style="font-size:20px">🔄</span><div class="card-title">Full Pipeline — Steps in Order</div></div>
+    <div class="card-body">
+      <div class="pipeline" style="flex-wrap:wrap;gap:8px">
+        <div class="pipeline-step trigger" style="min-width:130px">
+          <div class="step-icon">⚡</div>
+          <div class="step-num" style="background:var(--orange)">T</div>
+          <div class="step-label">Trigger</div>
+          <div class="step-sub">Push / Dispatch</div>
+        </div>
+        <div class="pipeline-arrow">→</div>
+        <div class="pipeline-step active" style="min-width:130px">
+          <div class="step-icon">📥</div>
           <div class="step-num">1</div>
-          <div class="step-label">git push</div>
-          <div class="step-sub">Your laptop</div>
+          <div class="step-label">Checkout Code</div>
+          <div class="step-sub">actions/checkout@v4</div>
         </div>
         <div class="pipeline-arrow">→</div>
-        <div class="pipeline-step active">
-          <div class="step-icon">🐙</div>
+        <div class="pipeline-step active" style="min-width:130px">
+          <div class="step-icon">🔐</div>
           <div class="step-num">2</div>
-          <div class="step-label">GitHub Detects</div>
-          <div class="step-sub">Branch push trigger</div>
+          <div class="step-label">AWS Credentials</div>
+          <div class="step-sub">configure-aws-credentials@v4</div>
         </div>
         <div class="pipeline-arrow">→</div>
-        <div class="pipeline-step active">
-          <div class="step-icon">🤖</div>
+        <div class="pipeline-step active" style="min-width:130px">
+          <div class="step-icon">🔑</div>
           <div class="step-num">3</div>
-          <div class="step-label">Actions Starts</div>
-          <div class="step-sub">deploy.yml runs</div>
+          <div class="step-label">ECR Login</div>
+          <div class="step-sub">amazon-ecr-login@v2</div>
         </div>
         <div class="pipeline-arrow">→</div>
-        <div class="pipeline-step active">
+        <div class="pipeline-step active" style="min-width:130px">
           <div class="step-icon">🐳</div>
           <div class="step-num">4</div>
-          <div class="step-label">Docker Build</div>
-          <div class="step-sub">~2 min on runner</div>
+          <div class="step-label">Build & Push</div>
+          <div class="step-sub">:SHA + :latest → ECR</div>
         </div>
         <div class="pipeline-arrow">→</div>
-        <div class="pipeline-step active">
-          <div class="step-icon">📦</div>
+        <div class="pipeline-step deploy" style="min-width:130px">
+          <div class="step-icon">📋</div>
           <div class="step-num">5</div>
-          <div class="step-label">Push to ECR</div>
-          <div class="step-sub">AWS image registry</div>
+          <div class="step-label">Copy Config</div>
+          <div class="step-sub">scp-action@v0.1.7</div>
         </div>
         <div class="pipeline-arrow">→</div>
-        <div class="pipeline-step active">
-          <div class="step-icon">🔄</div>
+        <div class="pipeline-step deploy" style="min-width:130px">
+          <div class="step-icon">🖥️</div>
           <div class="step-num">6</div>
-          <div class="step-label">EC2 Pulls & Restarts</div>
-          <div class="step-sub">SSH + docker run</div>
+          <div class="step-label">SSH Deploy</div>
+          <div class="step-sub">ssh-action@v1.0.3</div>
         </div>
         <div class="pipeline-arrow">→</div>
-        <div class="pipeline-step success">
+        <div class="pipeline-step success" style="min-width:130px">
           <div class="step-icon">✅</div>
-          <div class="step-num">7</div>
-          <div class="step-label">Live!</div>
-          <div class="step-sub">44.253.126.67</div>
+          <div class="step-num">✓</div>
+          <div class="step-label">Live</div>
+          <div class="step-sub">App + monitoring up</div>
         </div>
       </div>
     </div>
   </div>
-</section>
 
-<!-- ═══════════════════════════════════════════════════════════ SECTION 2: ARCHITECTURE -->
-<section class="section" id="architecture">
-  <div class="section-title">
-    <div class="icon" style="background:#ede9fe">🏗️</div>
-    2. Full System Architecture
-  </div>
-  <p class="section-subtitle">Every component in the system and how they connect.</p>
-
-  <div class="arch-diagram">
-    <div class="arch-section-label">── Developer Environment ──</div>
-    <div class="arch-row">
-      <div class="arch-box dev">
-        <div class="arch-icon">💻</div>
-        <div class="arch-label">VS Code</div>
-        <div class="arch-sub">Your Laptop</div>
-      </div>
-      <div class="arch-arrow">→<div class="arch-arrow-label">git push</div></div>
-      <div class="arch-box github">
-        <div class="arch-icon">🐙</div>
-        <div class="arch-label">GitHub Repo</div>
-        <div class="arch-sub">Git-Opusone/Sriman-OpusRepo</div>
-      </div>
-    </div>
-
-    <hr class="arch-divider">
-    <div class="arch-section-label">── CI/CD Layer (Automated Robot) ──</div>
-    <div class="arch-row">
-      <div class="arch-box actions">
-        <div class="arch-icon">⚙️</div>
-        <div class="arch-label">GitHub Actions</div>
-        <div class="arch-sub">.github/workflows/deploy.yml</div>
-      </div>
-      <div class="arch-arrow">→<div class="arch-arrow-label">Job 1: builds image</div></div>
-      <div class="arch-box docker">
-        <div class="arch-icon">🐳</div>
-        <div class="arch-label">Docker Build</div>
-        <div class="arch-sub">Playwright + Node.js image</div>
-      </div>
-      <div class="arch-arrow">→<div class="arch-arrow-label">docker push</div></div>
-      <div class="arch-box ecr">
-        <div class="arch-icon">📦</div>
-        <div class="arch-label">AWS ECR</div>
-        <div class="arch-sub">opus-ecr registry</div>
-      </div>
-    </div>
-
-    <hr class="arch-divider">
-    <div class="arch-section-label">── AWS Production Infrastructure (us-west-2, Oregon) ──</div>
-    <div class="arch-row">
-      <div class="arch-box ec2">
-        <div class="arch-icon">🖥️</div>
-        <div class="arch-label">EC2 t3.medium</div>
-        <div class="arch-sub">44.253.126.67 · Ubuntu 24.04</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px;align-items:center;color:#9ca3af;font-size:12px">
-        <span>runs on EC2 ↓</span>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <div class="arch-box nginx">
-          <div class="arch-icon">🔀</div>
-          <div class="arch-label">Nginx</div>
-          <div class="arch-sub">port 80 → 3000 proxy</div>
-        </div>
-        <div class="arch-box docker">
-          <div class="arch-icon">🐳</div>
-          <div class="arch-label">Docker Container</div>
-          <div class="arch-sub">opus-one-app · port 3000</div>
-        </div>
-      </div>
-      <div class="arch-arrow">→<div class="arch-arrow-label">Node.js + Playwright</div></div>
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <div class="arch-box" style="background:#1a1a2e;border-color:#818cf8">
-          <div class="arch-icon">🤖</div>
-          <div class="arch-label">OpenAI GPT-4o-mini</div>
-          <div class="arch-sub">Vision AI (external API)</div>
-        </div>
-        <div class="arch-box" style="background:#1a2a1a;border-color:#4ade80">
-          <div class="arch-icon">🌐</div>
-          <div class="arch-label">County Websites</div>
-          <div class="arch-sub">Playwright browser automation</div>
-        </div>
-      </div>
-    </div>
-
-    <hr class="arch-divider">
-    <div class="arch-section-label">── End Users ──</div>
-    <div class="arch-row">
-      <div class="arch-box user">
-        <div class="arch-icon">👤</div>
-        <div class="arch-label">User Browser</div>
-        <div class="arch-sub">http://44.253.126.67</div>
-      </div>
-      <div class="arch-arrow">→ HTTP port 80 →</div>
-      <div class="arch-box nginx" style="min-width:100px">
-        <div class="arch-icon">🔀</div>
-        <div class="arch-label">Nginx</div>
-      </div>
-      <div class="arch-arrow">→ port 3000 →</div>
-      <div class="arch-box docker" style="min-width:100px">
-        <div class="arch-icon">📱</div>
-        <div class="arch-label">App</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════ SECTION 3: CICD FLOW -->
-<section class="section" id="cicd-flow">
-  <div class="section-title">
-    <div class="icon" style="background:#dcfce7">🔄</div>
-    3. Detailed CI/CD Flow — Step by Step
-  </div>
-  <p class="section-subtitle">Exactly what happens, in order, from your push to the live server.</p>
-
-  <div class="grid-2">
-    <div>
-      <h3 style="margin-bottom:16px;font-size:1rem;color:var(--blue)">Phase 1 — Developer Action (You)</h3>
-      <div class="timeline">
-        <div class="timeline-item orange">
-          <h4>You write code changes locally</h4>
-          <p>Edit files in VS Code. The app runs on localhost:3000 for testing with npm start.</p>
-        </div>
-        <div class="timeline-item orange">
-          <h4>git add . → stages your changes</h4>
-          <p>Tells git "these are the files I want to include in my next save point."</p>
-        </div>
-        <div class="timeline-item orange">
-          <h4>git commit -m "message" → saves a snapshot</h4>
-          <p>Creates a permanent save point in git history with a description. Like a game save.</p>
-        </div>
-        <div class="timeline-item orange">
-          <h4>git push → sends to GitHub</h4>
-          <p>Uploads your commit to the GitHub repository online. This is what triggers the pipeline.</p>
-        </div>
-      </div>
-    </div>
-
-    <div>
-      <h3 style="margin-bottom:16px;font-size:1rem;color:var(--green)">Phase 2 — GitHub Actions (Automatic Robot)</h3>
-      <div class="timeline">
-        <div class="timeline-item green">
-          <h4>GitHub detects the push</h4>
-          <p>GitHub sees code was pushed to branch <span class="inline-code">claude/mortgage-search-microservice-klXBo</span> and wakes up the workflow.</p>
-        </div>
-        <div class="timeline-item green">
-          <h4>deploy.yml starts running</h4>
-          <p>GitHub spins up a fresh Ubuntu virtual machine (called a "runner"). Your deploy.yml instructions run on it.</p>
-        </div>
-        <div class="timeline-item green">
-          <h4>Job 1: Build & Push Docker Image (~2 min)</h4>
-          <p>The runner downloads your code, reads the Dockerfile, and builds a self-contained Docker image of your entire app including Node.js, Playwright, Chromium, and all your code.</p>
-        </div>
-        <div class="timeline-item green">
-          <h4>Image tagged and pushed to ECR</h4>
-          <p>The image gets two tags: one with the exact commit SHA (unique ID) and one called "latest". Both are pushed to AWS ECR (your private Docker image storage).</p>
-        </div>
-        <div class="timeline-item green">
-          <h4>Job 2: Deploy to EC2 (~36 sec)</h4>
-          <p>GitHub Actions SSHs into your EC2 server, logs into ECR, pulls the new image, stops the old container, and starts a fresh container with the new image.</p>
-        </div>
-        <div class="timeline-item green">
-          <h4>Pipeline complete — app is live</h4>
-          <p>The new version of your app is now running on 44.253.126.67. GitHub shows a green checkmark.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════ SECTION 4: GITHUB ACTIONS FILE -->
-<section class="section" id="github-actions">
-  <div class="section-title">
-    <div class="icon" style="background:#dcfce7">⚙️</div>
-    4. GitHub Actions — deploy.yml Explained
-  </div>
-  <p class="section-subtitle">File location: <span class="inline-code">.github/workflows/deploy.yml</span> — This is the brain of the CI/CD pipeline.</p>
-
-  <div class="box box-blue" style="margin-bottom:20px">
-    <strong>What is deploy.yml?</strong> It is a recipe file written in YAML format. It tells GitHub's robot exactly what to do, step by step, every time you push code. Think of it as a cooking recipe — GitHub follows it exactly.
-  </div>
-
-  <div class="card">
-    <div class="card-header"><span>📋</span><div class="card-title">Full deploy.yml with Line-by-Line Explanation</div></div>
+  <!-- Step-by-step detail -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-header"><span style="font-size:20px">📋</span><div class="card-title">Step-by-Step Detail</div></div>
     <div class="card-body">
+      <div class="steps">
 
-      <div class="box box-orange">
-        <strong>SECTION 1: When to run</strong> — The trigger condition
+        <div class="step-item">
+          <div class="step-circle" style="background:var(--orange)">1</div>
+          <div class="step-content">
+            <h4>Checkout Code — <span class="inline-code">actions/checkout@v4</span></h4>
+            <p>Downloads the full repository onto the GitHub Actions runner VM. All subsequent steps operate on this code.</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-circle">2</div>
+          <div class="step-content">
+            <h4>Configure AWS Credentials — <span class="inline-code">aws-actions/configure-aws-credentials@v4</span></h4>
+            <p>Injects <span class="inline-code">AWS_ACCESS_KEY_ID</span> and <span class="inline-code">AWS_SECRET_ACCESS_KEY</span> from GitHub Secrets into the runner environment, allowing all subsequent AWS CLI and Docker commands to authenticate against us-west-2.</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-circle">3</div>
+          <div class="step-content">
+            <h4>Login to Amazon ECR — <span class="inline-code">aws-actions/amazon-ecr-login@v2</span></h4>
+            <p>Performs <span class="inline-code">docker login</span> to the ECR registry using the AWS credentials from step 2. After this, Docker commands can push images to the private registry.</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-circle">4</div>
+          <div class="step-content">
+            <h4>Build &amp; Push Docker Image</h4>
+            <p>Runs three Docker commands in sequence:</p>
+            <div class="sub-steps">
+              <div class="sub-step"><span class="inline-code">docker build -t $ECR_REGISTRY/opus-ecr:$SHA .</span> — builds image using Dockerfile</div>
+              <div class="sub-step"><span class="inline-code">docker tag ... :latest</span> — also tags with :latest alias</div>
+              <div class="sub-step"><span class="inline-code">docker push</span> both the SHA tag and the :latest tag to ECR</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-circle" style="background:var(--purple)">5</div>
+          <div class="step-content">
+            <h4>Deploy — Copy Monitoring Config to EC2 — <span class="inline-code">appleboy/scp-action@v0.1.7</span></h4>
+            <p>Copies the monitoring stack files (docker-compose.yml, .env template) from the repo to <span class="inline-code">~/opus-monitoring/</span> on the EC2 instance over SCP before the SSH deploy step runs. Uses <span class="inline-code">EC2_HOST</span> and <span class="inline-code">EC2_SSH_KEY</span> secrets.</p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-circle" style="background:var(--purple)">6</div>
+          <div class="step-content">
+            <h4>Deploy — SSH into EC2 — <span class="inline-code">appleboy/ssh-action@v1.0.3</span></h4>
+            <p>SSHes into the EC2 instance and runs the full deployment script in sequence:</p>
+            <div class="sub-steps">
+              <div class="sub-step">Create docker network <span class="inline-code">opus-monitoring</span> (if not exists)</div>
+              <div class="sub-step">ECR login on EC2 — <span class="inline-code">aws ecr get-login-password | docker login</span></div>
+              <div class="sub-step">Pull latest image — <span class="inline-code">docker pull $ECR_REGISTRY/opus-ecr:latest</span></div>
+              <div class="sub-step">Stop &amp; remove existing container — <span class="inline-code">docker stop opus-one-app &amp;&amp; docker rm opus-one-app</span></div>
+              <div class="sub-step">Start fresh container — <span class="inline-code">docker run -d</span> with all env vars (see Section 4)</div>
+              <div class="sub-step">Write monitoring .env from Grafana secrets, then <span class="inline-code">docker compose up -d</span> in <span class="inline-code">~/opus-monitoring/</span></div>
+              <div class="sub-step">Prune old images — <span class="inline-code">docker image prune -f</span></div>
+              <div class="sub-step">Diagnostics — <span class="inline-code">docker ps</span> and <span class="inline-code">docker logs alloy --tail 20</span></div>
+            </div>
+          </div>
+        </div>
+
       </div>
-      <pre><code>name: Build &amp; Deploy to AWS EC2   # Name shown in GitHub Actions tab
-
-on:
-  push:
-    branches:
-      - main
-      - claude/mortgage-search-microservice-klXBo  # Run when code is pushed to THIS branch
-  workflow_dispatch:   # Also allow manual trigger from GitHub website (button click)</code></pre>
-
-      <div class="box box-purple" style="margin-top:16px">
-        <strong>SECTION 2: Global variables</strong> — Values reused throughout the file
-      </div>
-      <pre><code>env:
-  AWS_REGION: us-west-2        # Oregon region — where your EC2 and ECR live
-  ECR_REPOSITORY: opus-ecr     # Name of your ECR repository (Docker image storage)
-  CONTAINER_NAME: opus-one-app # What to name the running Docker container on EC2</code></pre>
-
-      <div class="box box-blue" style="margin-top:16px">
-        <strong>SECTION 3: Job 1 — Build &amp; Push Docker Image</strong>
-      </div>
-      <pre><code>jobs:
-  build-and-push:
-    name: Build &amp; Push Docker Image
-    runs-on: ubuntu-latest   # GitHub spins up a fresh Ubuntu virtual machine for this
-
-    steps:
-      # Step 1: Download your code onto the runner VM
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Step 2: Give the runner permission to talk to AWS
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}      # From GitHub Secrets
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }} # From GitHub Secrets
-          aws-region: us-west-2
-
-      # Step 3: Login to ECR (so Docker can push the image there)
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
-      # Step 4: Build the Docker image, tag it, and push to ECR
-      - name: Build, tag, and push image to ECR
-        env:
-          ECR_REGISTRY: 393060838208.dkr.ecr.us-west-2.amazonaws.com
-          IMAGE_TAG: ${{ github.sha }}  # Unique ID = the git commit hash (e.g. 4d8f67b)
-        run: |
-          # Build the image using Dockerfile in the repo root
-          docker build -t $ECR_REGISTRY/opus-ecr:$IMAGE_TAG .
-
-          # Also tag it as "latest" (so EC2 always pulls the newest)
-          docker tag $ECR_REGISTRY/opus-ecr:$IMAGE_TAG $ECR_REGISTRY/opus-ecr:latest
-
-          # Push both tags to ECR
-          docker push $ECR_REGISTRY/opus-ecr:$IMAGE_TAG
-          docker push $ECR_REGISTRY/opus-ecr:latest</code></pre>
-
-      <div class="box box-green" style="margin-top:16px">
-        <strong>SECTION 4: Job 2 — Deploy to EC2</strong> — Only runs after Job 1 succeeds
-      </div>
-      <pre><code>  deploy:
-    name: Deploy to EC2
-    runs-on: ubuntu-latest
-    needs: build-and-push   # IMPORTANT: waits for Job 1 to finish successfully
-
-    steps:
-      # SSHs into your EC2 server and runs the deployment commands
-      - name: Deploy to EC2 via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}      # 44.253.126.67
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}    # Contents of your .pem key file
-          script: |
-            # 1. Login to ECR from the EC2 server
-            aws ecr get-login-password --region us-west-2 | \
-              docker login --username AWS --password-stdin $ECR_REGISTRY
-
-            # 2. Pull the new image
-            docker pull $ECR_REGISTRY/opus-ecr:latest
-
-            # 3. Stop and remove the OLD running container (ignore error if none)
-            docker stop opus-one-app || true
-            docker rm   opus-one-app || true
-
-            # 4. Start a NEW container with the fresh image + all environment variables
-            docker run -d \
-              --name opus-one-app \
-              --restart unless-stopped \    # Auto-restart if server reboots
-              -p 3000:3000 \                # Map EC2 port 3000 to container port 3000
-              -e OPENAI_API_KEY="..." \     # From GitHub Secrets
-              -e OPENAI_MODEL="gpt-4o-mini" \
-              -e PORT="3000" \
-              -e BROWSER_HEADLESS="true" \
-              -e MAX_CONCURRENT_SEARCHES="3" \
-              $ECR_REGISTRY/opus-ecr:latest
-
-            # 5. Clean up old images to save disk space
-            docker image prune -f</code></pre>
-    </div>
-  </div>
-
-  <div class="grid-2" style="margin-top:16px">
-    <div class="box box-green">
-      <strong>What "actions/checkout@v4" means:</strong><br>
-      <span style="font-size:13px">This is a pre-built action (reusable plugin) made by GitHub. It downloads your repository's code onto the runner virtual machine. @v4 means version 4.</span>
-    </div>
-    <div class="box box-purple">
-      <strong>What "${{ secrets.XYZ }}" means:</strong><br>
-      <span style="font-size:13px">GitHub Secrets are encrypted values stored in your repo settings. The pipeline reads them at runtime. Nobody can see the actual values in the logs — they appear as ***.</span>
     </div>
   </div>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════════ SECTION 5: DOCKERFILE -->
-<section class="section" id="dockerfile">
+<!-- ═══════════════════════════════════════════════════════════ SECTION 2: DOCKER & BUILD -->
+<section class="section" id="docker-build">
   <div class="section-title">
     <div class="icon" style="background:#dbeafe">🐳</div>
-    5. Dockerfile — Packaging the Application
+    2. Docker & Build
   </div>
-  <p class="section-subtitle">File location: <span class="inline-code">Dockerfile</span> (root of repo) — The recipe for building your application's container.</p>
-
-  <div class="box box-blue">
-    <strong>What is Docker?</strong> Docker is like a shipping container for software. Instead of installing Node.js, Playwright, and all dependencies on every server by hand, you pack everything into a single "image" (a snapshot). That image runs identically on any machine — your laptop, GitHub's server, AWS EC2. No more "it works on my machine" problems.
-  </div>
-
-  <div class="card" style="margin-top:20px">
-    <div class="card-header"><span>📋</span><div class="card-title">Full Dockerfile with Explanation</div></div>
-    <div class="card-body">
-<pre><code># BASE IMAGE: Use Microsoft's official Playwright image
-# This image already has Ubuntu + all system libraries Chromium needs
-# Without this, you'd need to install 50+ system packages manually
-FROM mcr.microsoft.com/playwright:v1.44.0-jammy
-
-# Set the working directory inside the container
-# All subsequent commands run from /app
-WORKDIR /app
-
-# ── LAYER CACHING TRICK ──────────────────────────────────────────────
-# Copy package.json FIRST (before copying all your code)
-# Docker caches each layer. If package.json hasn't changed,
-# it skips the npm install step on next build = much faster rebuilds
-COPY package*.json ./
-
-# Install only production dependencies (not dev tools like nodemon)
-RUN npm ci --only=production
-
-# Install the Chromium browser that Playwright will control
-RUN npx playwright install chromium
-
-# ── COPY YOUR APPLICATION CODE ───────────────────────────────────────
-# Now copy everything else (code files, public/, src/, data/, etc.)
-# This is done AFTER npm install so code changes don't trigger reinstall
-COPY . .
-
-# Delete files not needed in production (saves image size)
-RUN rm -rf .env.example docs scripts .vscode .claude
-
-# ── SECURITY: Run as non-root user ───────────────────────────────────
-# By default containers run as root (admin) which is dangerous
-# Create a normal user "appuser" and switch to it
-RUN groupadd -r appuser &amp;&amp; useradd -r -g appuser appuser
-RUN chown -R appuser:appuser /app
-USER appuser
-
-# Tell Docker this container listens on port 3000
-EXPOSE 3000
-
-# ── HEALTH CHECK ─────────────────────────────────────────────────────
-# Docker checks this every 30 seconds to know if the app is alive
-# If it fails 3 times, Docker marks the container as unhealthy
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/health', \
-  (r) => r.statusCode === 200 ? process.exit(0) : process.exit(1))"
-
-# The command that starts the app when container launches
-CMD ["node", "server.js"]</code></pre>
-    </div>
-  </div>
-
-  <div class="grid-2" style="margin-top:16px">
-    <div class="card">
-      <div class="card-header" style="background:#dbeafe"><span>📏</span><div class="card-title">Docker Image Size Breakdown</div></div>
-      <div class="card-body">
-        <table>
-          <tr><th>Layer</th><th>Size</th></tr>
-          <tr><td>Playwright base (Ubuntu + Chrome)</td><td>~700 MB</td></tr>
-          <tr><td>Node.js dependencies (node_modules)</td><td>~150 MB</td></tr>
-          <tr><td>Chromium browser download</td><td>~170 MB</td></tr>
-          <tr><td>Your application code</td><td>~2 MB</td></tr>
-          <tr><td><strong>Total Docker image</strong></td><td><strong>~1.0 GB</strong></td></tr>
-        </table>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header" style="background:#dcfce7"><span>⚡</span><div class="card-title">.dockerignore — Files Excluded from Build</div></div>
-      <div class="card-body">
-        <p style="font-size:13px;margin-bottom:12px">These files are NOT copied into the Docker image:</p>
-        <div class="file-tree">
-          <div><span class="comment"># .dockerignore</span></div>
-          <div><span class="file">node_modules</span> <span class="comment">← huge, reinstalled fresh</span></div>
-          <div><span class="file">.git</span> <span class="comment">← git history, not needed</span></div>
-          <div><span class="file">.env</span> <span class="comment">← secrets, never in image!</span></div>
-          <div><span class="file">*.log</span> <span class="comment">← log files</span></div>
-          <div><span class="file">.vscode</span> <span class="comment">← editor settings</span></div>
-          <div><span class="file">.claude</span> <span class="comment">← AI assistant files</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════ SECTION 6: AWS INFRA -->
-<section class="section" id="aws-infra">
-  <div class="section-title">
-    <div class="icon" style="background:#ffedd5">☁️</div>
-    6. AWS Infrastructure
-  </div>
-  <p class="section-subtitle">Every AWS resource used and its purpose.</p>
+  <p class="section-subtitle">How the application is packaged into a Docker image. Uses system Chromium — saves 300 MB vs bundled Playwright browser.</p>
 
   <div class="grid-2">
     <div class="card">
-      <div class="card-header" style="background:#ffedd5">
-        <span style="font-size:22px">🖥️</span>
-        <div>
-          <div class="card-title">EC2 Instance — The Server</div>
-          <div style="font-size:12px;color:#6b7280">opus-aai-prod</div>
-        </div>
-      </div>
+      <div class="card-header" style="background:#dbeafe"><span style="font-size:22px">📋</span><div class="card-title">Dockerfile Overview</div></div>
       <div class="card-body">
-        <table>
-          <tr><td><strong>Type</strong></td><td>t3.medium</td></tr>
-          <tr><td><strong>CPU</strong></td><td>2 vCPU</td></tr>
-          <tr><td><strong>RAM</strong></td><td>4 GB (needed for Playwright)</td></tr>
-          <tr><td><strong>OS</strong></td><td>Ubuntu 24.04 LTS</td></tr>
-          <tr><td><strong>Region</strong></td><td>us-west-2 (Oregon)</td></tr>
-          <tr><td><strong>Public IP</strong></td><td>44.253.126.67 (Elastic — static)</td></tr>
-          <tr><td><strong>Storage</strong></td><td>30 GB gp3 SSD</td></tr>
-          <tr><td><strong>Monthly cost</strong></td><td>~$30</td></tr>
-        </table>
-        <div class="box box-yellow" style="margin-top:12px;font-size:13px">
-          <strong>Why t3.medium?</strong> Each Playwright Chromium browser uses ~400MB RAM. With 3 concurrent searches = ~1.2GB. Plus Node.js and OS = needs at least 4GB total.
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header" style="background:#fef9c3">
-        <span style="font-size:22px">📦</span>
-        <div>
-          <div class="card-title">ECR — Container Registry</div>
-          <div style="font-size:12px;color:#6b7280">Elastic Container Registry</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <table>
-          <tr><td><strong>Repository</strong></td><td>opus-ecr</td></tr>
-          <tr><td><strong>Region</strong></td><td>us-west-2</td></tr>
-          <tr><td><strong>Visibility</strong></td><td>Private</td></tr>
-          <tr><td><strong>Image URI</strong></td><td style="font-size:12px">393060838208.dkr.ecr.us-west-2.amazonaws.com/opus-ecr</td></tr>
-          <tr><td><strong>Monthly cost</strong></td><td>~$0.10/GB stored</td></tr>
-        </table>
-        <div class="box box-blue" style="margin-top:12px;font-size:13px">
-          <strong>What ECR does:</strong> It's like a private Docker Hub. GitHub Actions pushes your Docker image here. EC2 pulls from here. Only your AWS account can access it.
-        </div>
-        <p style="font-size:13px;margin-top:12px"><strong>Tags stored:</strong></p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-          <span class="pill pill-green">latest</span>
-          <span class="pill pill-blue">4d8f67b... (commit SHA)</span>
-          <span class="pill pill-blue">e017bf0... (commit SHA)</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header" style="background:#dcfce7">
-        <span style="font-size:22px">🔒</span>
-        <div>
-          <div class="card-title">Security Group — Firewall Rules</div>
-          <div style="font-size:12px;color:#6b7280">Opus-SecGroup</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <table>
-          <tr><th>Port</th><th>Protocol</th><th>Source</th><th>Purpose</th></tr>
-          <tr><td>22</td><td>SSH</td><td>0.0.0.0/0</td><td>Remote terminal access</td></tr>
-          <tr><td>80</td><td>HTTP</td><td>0.0.0.0/0</td><td>Web traffic via Nginx</td></tr>
-          <tr><td>443</td><td>HTTPS</td><td>0.0.0.0/0</td><td>Secure web (future)</td></tr>
-          <tr><td>3000</td><td>TCP</td><td>0.0.0.0/0</td><td>Direct app access</td></tr>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header" style="background:#ede9fe">
-        <span style="font-size:22px">👤</span>
-        <div>
-          <div class="card-title">IAM — Permissions</div>
-          <div style="font-size:12px;color:#6b7280">Identity & Access Management</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <table>
-          <tr><th>Who</th><th>Role/Policy</th><th>Can Do</th></tr>
-          <tr><td>sriman-admin (IAM User)</td><td>AdministratorAccess</td><td>Everything</td></tr>
-          <tr><td>EC2 Instance</td><td>ec2-ecr-pull-role</td><td>Pull images from ECR</td></tr>
-          <tr><td>GitHub Actions</td><td>Uses sriman-admin keys</td><td>Push images to ECR</td></tr>
-        </table>
-        <div class="box box-orange" style="margin-top:12px;font-size:13px">
-          <strong>Why IAM roles for EC2?</strong> Instead of storing AWS keys on the server (risky), we attach a role. EC2 automatically gets temporary credentials — more secure.
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" style="margin-top:16px">
-    <div class="card-header" style="background:#dbeafe"><span>🔀</span><div class="card-title">Nginx — The Traffic Director</div></div>
-    <div class="card-body">
-      <p style="font-size:14px;margin-bottom:12px">Nginx runs on EC2 as a <strong>reverse proxy</strong>. It sits in front of your app and routes incoming web traffic.</p>
-      <div class="grid-2">
-        <div>
-          <p style="font-size:13px;font-weight:600;margin-bottom:8px">Why Nginx instead of exposing port 3000 directly?</p>
-          <ul style="font-size:13px;padding-left:20px;color:#6b7280;line-height:2">
-            <li>Standard web port 80 (users don't need to type :3000)</li>
-            <li>Can add SSL/HTTPS easily with Certbot</li>
-            <li>Handles request timeouts (set to 300s for Playwright searches)</li>
-            <li>Can serve multiple apps on one server in future</li>
-            <li>Passes real user IP to the app</li>
-          </ul>
-        </div>
-        <div>
-<pre style="font-size:12px"><code># /etc/nginx/sites-available/opus-one
-server {
-    listen 80;
-    server_name _;
-
-    # Long timeout for Playwright searches
-    proxy_read_timeout 300s;
-
-    location / {
-        # Forward all traffic to Node.js
-        proxy_pass http://localhost:3000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}</code></pre>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════ SECTION 7: SECRETS -->
-<section class="section" id="secrets">
-  <div class="section-title">
-    <div class="icon" style="background:#fee2e2">🔑</div>
-    7. GitHub Secrets — Secure Configuration
-  </div>
-  <p class="section-subtitle">Sensitive values stored encrypted in GitHub, injected into the pipeline at runtime.</p>
-
-  <div class="box box-red">
-    <strong>What are GitHub Secrets?</strong> They are encrypted key-value pairs stored in your GitHub repository settings. They are NEVER visible in logs (shown as ***). The CI/CD pipeline reads them as environment variables at runtime. This is how we avoid hardcoding passwords in code files.
-  </div>
-
-  <div class="card" style="margin-top:20px">
-    <div class="card-header"><span>🔐</span><div class="card-title">All 6 Secrets Configured</div></div>
-    <div class="card-body">
-      <table>
-        <tr><th>Secret Name</th><th>What It Contains</th><th>Used By</th><th>Where Set</th></tr>
-        <tr>
-          <td><span class="inline-code">AWS_ACCESS_KEY_ID</span></td>
-          <td>IAM user access key (like a username for AWS API)</td>
-          <td>Job 1: Configure AWS credentials</td>
-          <td>IAM → Users → sriman-admin → Access keys CSV</td>
-        </tr>
-        <tr>
-          <td><span class="inline-code">AWS_SECRET_ACCESS_KEY</span></td>
-          <td>IAM user secret key (like a password for AWS API)</td>
-          <td>Job 1: Configure AWS credentials</td>
-          <td>IAM → Users → sriman-admin → Access keys CSV</td>
-        </tr>
-        <tr>
-          <td><span class="inline-code">EC2_HOST</span></td>
-          <td>44.253.126.67 (Elastic IP of EC2)</td>
-          <td>Job 2: SSH connection target</td>
-          <td>EC2 → Elastic IPs</td>
-        </tr>
-        <tr>
-          <td><span class="inline-code">EC2_SSH_KEY</span></td>
-          <td>Full contents of opus-one-key.pem file</td>
-          <td>Job 2: SSH authentication</td>
-          <td>The .pem file downloaded when EC2 was created</td>
-        </tr>
-        <tr>
-          <td><span class="inline-code">ECR_REGISTRY</span></td>
-          <td>393060838208.dkr.ecr.us-west-2.amazonaws.com</td>
-          <td>Job 1 &amp; 2: Docker image URL base</td>
-          <td>ECR → Repository URI (without /opus-ecr)</td>
-        </tr>
-        <tr>
-          <td><span class="inline-code">OPENAI_API_KEY</span></td>
-          <td>sk-proj-... (OpenAI API key)</td>
-          <td>Job 2: Passed to Docker container as env var</td>
-          <td>platform.openai.com → API keys</td>
-        </tr>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════ SECTION 8: APP STACK -->
-<section class="section" id="app-stack">
-  <div class="section-title">
-    <div class="icon" style="background:#ede9fe">📱</div>
-    8. Application Stack & File Structure
-  </div>
-  <p class="section-subtitle">What the application is made of and how the files are organized.</p>
-
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-header"><span>🗂️</span><div class="card-title">Project File Structure</div></div>
-      <div class="card-body">
-        <div class="file-tree">
-          <div><span class="folder">Sriman-OpusRepo/</span></div>
-          <div>&nbsp;&nbsp;<span class="folder">.github/</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="folder">workflows/</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file-key">deploy.yml</span> <span class="comment">← CI/CD pipeline</span></div>
-          <div>&nbsp;&nbsp;<span class="folder">src/</span> <span class="comment">← County platform handlers</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="folder">handlers/</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">tyler.js</span> <span class="comment">← Tyler Technologies</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">qpublic.js</span> <span class="comment">← QPublic platform</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">beacon.js</span> <span class="comment">← Beacon/Schneider</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">patriot.js</span> <span class="comment">← Patriot Properties</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">publicportal.js</span> <span class="comment">← Aumentum/Tyler</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">vision.js</span> <span class="comment">← AI vision fallback</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">andersontax.js</span> <span class="comment">← Anderson Tax Office</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">platformDetector.js</span> <span class="comment">← Detects county platform</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">countyDirectory.js</span> <span class="comment">← Loads counties.json</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">urlHealthCheck.js</span> <span class="comment">← Verifies URLs active</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">captchaDetector.js</span> <span class="comment">← CAPTCHA detection</span></div>
-          <div>&nbsp;&nbsp;<span class="folder">public/</span> <span class="comment">← Frontend (HTML/CSS/JS)</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file-key">index.html</span> <span class="comment">← Main UI page</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">OpusOne-Svg.svg</span> <span class="comment">← Logo</span></div>
-          <div>&nbsp;&nbsp;<span class="folder">data/</span></div>
-          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file-key">counties.json</span> <span class="comment">← All US county URLs (946KB)</span></div>
-          <div>&nbsp;&nbsp;<span class="file-key">server.js</span> <span class="comment">← Express API server</span></div>
-          <div>&nbsp;&nbsp;<span class="file-key">browserAgent.js</span> <span class="comment">← Playwright automation</span></div>
-          <div>&nbsp;&nbsp;<span class="file-key">Dockerfile</span> <span class="comment">← Container build recipe</span></div>
-          <div>&nbsp;&nbsp;<span class="file">.dockerignore</span> <span class="comment">← Excluded from Docker</span></div>
-          <div>&nbsp;&nbsp;<span class="file">docker-compose.yml</span> <span class="comment">← Local testing only</span></div>
-          <div>&nbsp;&nbsp;<span class="file">package.json</span> <span class="comment">← Dependencies list</span></div>
+        <div class="steps">
+          <div class="step-item">
+            <div class="step-circle" style="background:var(--dark2);font-size:11px">BASE</div>
+            <div class="step-content">
+              <h4>Base Image — <span class="inline-code">node:20-slim</span></h4>
+              <p>Debian Bookworm slim variant. Minimal OS — all extra system packages are installed explicitly.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-circle" style="background:var(--orange);font-size:11px">PKG</div>
+            <div class="step-content">
+              <h4>System Packages — Playwright Dependencies</h4>
+              <p>Installs <span class="inline-code">chromium</span> plus all required shared libraries:</p>
+              <div style="margin-top:6px;font-size:12px;color:#6b7280;line-height:1.9">
+                ca-certificates, fonts-liberation, libatk-bridge2.0-0, libatk1.0-0, libcups2, libdbus-1-3, libdrm2, libgbm1, libglib2.0-0, libgtk-3-0, libnss3, libx11-6, libxcomposite1, libxdamage1, libxext6, libxfixes3, libxrandr2, libxshmfence1, xdg-utils
+              </div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-circle" style="background:var(--purple);font-size:11px">ENV</div>
+            <div class="step-content">
+              <h4>Environment — Skip Playwright Browser Download</h4>
+              <p><span class="inline-code">PLAYWRIGHT_BROWSERS_PATH=/usr/bin</span><br>
+              <span class="inline-code">PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1</span><br>
+              Points Playwright at the system Chromium instead of downloading its own copy.</p>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-circle" style="background:var(--green);font-size:11px">APP</div>
+            <div class="step-content">
+              <h4>Application Layers</h4>
+              <div class="sub-steps" style="padding-left:0">
+                <div class="sub-step"><span class="inline-code">COPY package*.json ./</span> — copy manifests first (cache layer)</div>
+                <div class="sub-step"><span class="inline-code">npm ci --omit=dev</span> — production deps only</div>
+                <div class="sub-step"><span class="inline-code">COPY src/ ./src/</span> — copy application code</div>
+                <div class="sub-step"><span class="inline-code">EXPOSE 3000</span> — declare listening port</div>
+                <div class="sub-step"><span class="inline-code">CMD node src/server.js</span> — entry point</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
     <div>
       <div class="card" style="margin-bottom:16px">
-        <div class="card-header" style="background:#dbeafe"><span>⚡</span><div class="card-title">Technology Stack</div></div>
+        <div class="card-header" style="background:#dcfce7"><span>💡</span><div class="card-title">System Chromium — Why It Matters</div></div>
         <div class="card-body">
+          <div class="box box-green" style="margin-bottom:12px">
+            <strong>300 MB saved</strong> — Playwright's bundled Chromium download is ~300 MB. Using the distro-installed <span class="inline-code">chromium</span> package eliminates that download step entirely and reduces final image size.
+          </div>
           <table>
-            <tr><th>Layer</th><th>Technology</th><th>Why</th></tr>
-            <tr><td>Runtime</td><td>Node.js v24</td><td>JavaScript server-side</td></tr>
-            <tr><td>Web framework</td><td>Express.js</td><td>REST API + static files</td></tr>
-            <tr><td>Browser automation</td><td>Playwright + playwright-extra</td><td>Controls Chromium to fill forms</td></tr>
-            <tr><td>Stealth</td><td>puppeteer-extra-plugin-stealth</td><td>Avoids bot detection on county sites</td></tr>
-            <tr><td>AI / Vision</td><td>OpenAI GPT-4o-mini</td><td>Reads screenshots to fill forms</td></tr>
-            <tr><td>HTTP client</td><td>Axios</td><td>API calls to OpenAI</td></tr>
-            <tr><td>Container</td><td>Docker</td><td>Consistent packaging</td></tr>
-            <tr><td>Reverse proxy</td><td>Nginx</td><td>Port 80 → 3000</td></tr>
+            <tr><th>Approach</th><th>Image Size</th></tr>
+            <tr><td>Playwright base image + bundled Chromium</td><td>~1.1 GB</td></tr>
+            <tr><td>node:20-slim + system Chromium</td><td>~800 MB</td></tr>
           </table>
+          <div class="box box-yellow" style="margin-top:12px;font-size:13px">
+            <strong>Trade-off:</strong> System Chromium version is tied to Debian Bookworm's package repo. For most county site automation this is perfectly fine — Chromium 120+ handles all required JS.
+          </div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-header" style="background:#dcfce7"><span>🔄</span><div class="card-title">How a Search Request Works</div></div>
+        <div class="card-header" style="background:#ffedd5"><span>⚡</span><div class="card-title">Layer Caching Strategy</div></div>
+        <div class="card-body">
+          <p style="font-size:13px;margin-bottom:12px">Docker caches each layer. The build order is intentional:</p>
+          <div class="timeline">
+            <div class="timeline-item green">
+              <h4>System packages installed first</h4>
+              <p>Rarely changes — cached across almost all builds.</p>
+            </div>
+            <div class="timeline-item green">
+              <h4>package.json copied + npm ci</h4>
+              <p>Only re-runs when dependencies change. Most builds skip this.</p>
+            </div>
+            <div class="timeline-item orange">
+              <h4>src/ copied last</h4>
+              <p>Changes on every code push — always a new layer but it's tiny (just JS files).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ SECTION 3: GITHUB SECRETS -->
+<section class="section" id="github-secrets">
+  <div class="section-title">
+    <div class="icon" style="background:#fee2e2">🔑</div>
+    3. GitHub Secrets
+  </div>
+  <p class="section-subtitle">All secrets required in <strong>Settings → Secrets and variables → Actions</strong>. The pipeline reads these at runtime — values never appear in logs.</p>
+
+  <div class="box box-red" style="margin-bottom:20px">
+    <strong>Required:</strong> Every secret in this table must be set before the pipeline can succeed. Missing secrets cause the workflow step that references them to fail immediately.
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span>🔐</span><div class="card-title">All GitHub Secrets — Complete Reference</div></div>
+    <div class="card-body">
+      <table>
+        <tr>
+          <th>Secret Name</th>
+          <th>Purpose</th>
+          <th>Where Used</th>
+        </tr>
+        <tr>
+          <td><span class="inline-code">AWS_ACCESS_KEY_ID</span></td>
+          <td>AWS IAM user access key — authenticates the runner to AWS services</td>
+          <td>configure-aws-credentials step (Job 1)</td>
+        </tr>
+        <tr>
+          <td><span class="inline-code">AWS_SECRET_ACCESS_KEY</span></td>
+          <td>AWS IAM user secret key — paired with the access key above</td>
+          <td>configure-aws-credentials step (Job 1)</td>
+        </tr>
+        <tr>
+          <td><span class="inline-code">EC2_HOST</span></td>
+          <td>EC2 instance IP address or hostname (e.g. 44.253.126.67)</td>
+          <td>SSH step + SCP step (Job 2)</td>
+        </tr>
+        <tr>
+          <td><span class="inline-code">EC2_SSH_KEY</span></td>
+          <td>Full contents of the EC2 SSH private key (.pem file)</td>
+          <td>SSH step + SCP step (Job 2)</td>
+        </tr>
+        <tr>
+          <td><span class="inline-code">ECR_REGISTRY</span></td>
+          <td>Full ECR registry URL (e.g. <span style="font-size:12px">393060838208.dkr.ecr.us-west-2.amazonaws.com</span>)</td>
+          <td>docker pull on EC2 (Job 2 deploy script)</td>
+        </tr>
+        <tr>
+          <td><span class="inline-code">OPENAI_API_KEY</span></td>
+          <td>OpenAI API key — enables GPT-4o-mini AI fallback agent for complex search forms</td>
+          <td>App env var passed in docker run (Job 2)</td>
+        </tr>
+        <tr>
+          <td>
+            <span class="inline-code">CAPSOLVER_API_KEY</span>
+            <span class="pill pill-orange" style="margin-left:6px;font-size:10px">NEW</span>
+          </td>
+          <td>CapSolver credit-based API key for solving Cloudflare Turnstile + JS challenges</td>
+          <td>App env var passed in docker run (Job 2)</td>
+        </tr>
+        <tr>
+          <td><span class="inline-code">GRAFANA_PROM_URL</span></td>
+          <td>Prometheus remote-write endpoint URL for Grafana Cloud</td>
+          <td>Written to ~/opus-monitoring/.env at deploy time</td>
+        </tr>
+        <tr>
+          <td><span class="inline-code">GRAFANA_PROM_USER</span></td>
+          <td>Prometheus auth username (numeric instance ID)</td>
+          <td>Written to ~/opus-monitoring/.env at deploy time</td>
+        </tr>
+        <tr>
+          <td><span class="inline-code">GRAFANA_LOKI_URL</span></td>
+          <td>Loki log push endpoint URL for Grafana Cloud</td>
+          <td>Written to ~/opus-monitoring/.env at deploy time</td>
+        </tr>
+        <tr>
+          <td><span class="inline-code">GRAFANA_LOKI_USER</span></td>
+          <td>Loki auth username (numeric instance ID)</td>
+          <td>Written to ~/opus-monitoring/.env at deploy time</td>
+        </tr>
+        <tr>
+          <td><span class="inline-code">GRAFANA_API_KEY</span></td>
+          <td>Grafana Cloud API key used for both Prometheus and Loki authentication</td>
+          <td>Written to ~/opus-monitoring/.env at deploy time</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- CAPSOLVER warning box -->
+  <div class="box box-orange" style="margin-top:16px">
+    <strong>CAPSOLVER_API_KEY — Last-Resort Tier-2 Only</strong><br>
+    <span style="font-size:14px">
+      This key is only invoked as a paid last resort after the Tier-1 free CAPTCHA bypass fails.
+      <strong>Tier-1</strong> (25-second wait + iframe click) is completely free and handles approximately 90% of Cloudflare challenges encountered across TX county sites.
+      <strong>CapSolver is only called for Turnstile + JS challenges that survive the full Tier-1 bypass</strong> — typically fewer than 10% of encounters. Keep the account funded but expect minimal usage.
+    </span>
+  </div>
+
+  <div class="grid-2" style="margin-top:16px">
+    <div class="box box-blue" style="margin-bottom:0">
+      <strong>How to add a secret:</strong> GitHub repo → Settings → Secrets and variables → Actions → New repository secret. Paste the value. Secrets are write-only — you can update or delete but never read back.
+    </div>
+    <div class="box box-purple" style="margin-bottom:0">
+      <strong>How secrets appear in logs:</strong> GitHub automatically redacts secret values in all workflow logs, replacing them with <span class="inline-code">***</span>. You can safely check the logs without exposing credentials.
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ SECTION 4: EC2 DEPLOYMENT -->
+<section class="section" id="ec2-deployment">
+  <div class="section-title">
+    <div class="icon" style="background:#ffedd5">🖥️</div>
+    4. EC2 Deployment
+  </div>
+  <p class="section-subtitle">The exact docker run command and monitoring stack configuration deployed on every pipeline run.</p>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-header"><span style="font-size:20px">🐳</span><div class="card-title">docker run Command — App Container</div></div>
+    <div class="card-body">
+<pre><code>docker run -d \
+  --name opus-one-app \
+  --restart unless-stopped \
+  --network opus-monitoring \
+  -p 3000:3000 \
+  -e OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+  -e OPENAI_MODEL="gpt-4o-mini" \
+  -e PORT="3000" \
+  -e BROWSER_HEADLESS="true" \
+  -e MAX_CONCURRENT_SEARCHES="3" \
+  -e SEARCH_TIMEOUT_MS="180000" \
+  -e CACHE_TTL_HOURS="4" \
+  -e CACHE_MAX_SIZE="1000" \
+  -e CAPSOLVER_API_KEY="${{ secrets.CAPSOLVER_API_KEY }}" \
+  $ECR_REGISTRY/$ECR_REPOSITORY:latest</code></pre>
+      <div class="grid-2" style="margin-top:12px">
+        <div class="box box-blue" style="margin-bottom:0">
+          <strong>--network opus-monitoring</strong><br>
+          <span style="font-size:13px">Attaches the app container to the shared Docker network, allowing Grafana Alloy to scrape the app's <span class="inline-code">/metrics</span> endpoint and read container logs directly.</span>
+        </div>
+        <div class="box box-green" style="margin-bottom:0">
+          <strong>--restart unless-stopped</strong><br>
+          <span style="font-size:13px">Docker automatically restarts the container if it crashes or if the EC2 server reboots, ensuring continuous uptime without manual intervention.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span style="font-size:20px">📊</span><div class="card-title">Monitoring Stack Deploy — ~/opus-monitoring/</div></div>
+    <div class="card-body">
+      <div class="grid-2">
+        <div>
+          <p style="font-size:14px;margin-bottom:12px">The SCP step (Step 5) copies the monitoring compose file to the server, then the SSH step writes the .env and starts the stack:</p>
+<pre><code># Write .env from GitHub Secrets
+cat &gt; ~/opus-monitoring/.env &lt;&lt;EOF
+GRAFANA_PROM_URL=${{ secrets.GRAFANA_PROM_URL }}
+GRAFANA_PROM_USER=${{ secrets.GRAFANA_PROM_USER }}
+GRAFANA_LOKI_URL=${{ secrets.GRAFANA_LOKI_URL }}
+GRAFANA_LOKI_USER=${{ secrets.GRAFANA_LOKI_USER }}
+GRAFANA_API_KEY=${{ secrets.GRAFANA_API_KEY }}
+EOF
+
+# Start / update monitoring stack
+cd ~/opus-monitoring
+docker compose up -d --remove-orphans</code></pre>
+        </div>
+        <div>
+          <div class="box box-purple" style="margin-bottom:12px">
+            <strong>docker-compose.yml services:</strong>
+            <ul style="font-size:13px;padding-left:18px;margin-top:8px;line-height:2">
+              <li><strong>opus-alloy</strong> — Grafana Alloy agent</li>
+              <li><strong>node-exporter</strong> — system metrics</li>
+            </ul>
+          </div>
+          <div class="box box-blue" style="margin-bottom:12px">
+            <strong>Network:</strong> <span class="inline-code">opus-monitoring</span> (external)<br>
+            <span style="font-size:13px">Declared as <span class="inline-code">external: true</span> in compose so both the app container and monitoring containers share the same network bridge — enabling direct container-to-container scraping.</span>
+          </div>
+          <div class="box box-green" style="margin-bottom:0">
+            <strong>Diagnostics at end of deploy:</strong><br>
+            <span style="font-size:13px"><span class="inline-code">docker ps</span> — verify all containers running<br>
+            <span class="inline-code">docker logs alloy --tail 20</span> — confirm Alloy connected to Grafana Cloud</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-header" style="background:var(--gray-light)"><span>🔢</span><div class="card-title">Post-Deploy Cleanup</div></div>
+    <div class="card-body">
+      <div class="grid-3">
+        <div class="box box-orange" style="margin-bottom:0">
+          <strong>docker image prune -f</strong><br>
+          <span style="font-size:13px">Removes all dangling (untagged) images after each deploy. Prevents disk exhaustion on the EC2 instance over time — each 800 MB deploy would otherwise accumulate.</span>
+        </div>
+        <div class="box box-blue" style="margin-bottom:0">
+          <strong>docker ps (verify)</strong><br>
+          <span style="font-size:13px">Lists running containers. The pipeline output shows this in the Actions log so you can confirm opus-one-app, alloy, and node-exporter are all <span class="pill pill-green">Up</span>.</span>
+        </div>
+        <div class="box box-purple" style="margin-bottom:0">
+          <strong>Alloy log check</strong><br>
+          <span style="font-size:13px">Tails the last 20 lines of the Alloy container log. Confirms successful connection to Grafana Cloud endpoints and that metrics/logs are flowing.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ SECTION 5: MONITORING STACK -->
+<section class="section" id="monitoring-stack">
+  <div class="section-title">
+    <div class="icon" style="background:#ede9fe">📊</div>
+    5. Monitoring Stack
+  </div>
+  <p class="section-subtitle">Three components collect and ship telemetry to Grafana Cloud. All run on the same Docker network as the app.</p>
+
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-header" style="background:var(--purple-light)">
+        <span style="font-size:22px">🔭</span>
+        <div>
+          <div class="card-title">Grafana Alloy</div>
+          <div style="font-size:12px;color:#6b7280">Container: opus-alloy</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p style="font-size:13px;margin-bottom:12px">The central telemetry agent. Collects from multiple sources and ships to Grafana Cloud.</p>
+        <div class="box box-purple" style="margin-bottom:8px">
+          <strong>Metrics scraping:</strong><br>
+          <span style="font-size:13px">Scrapes <span class="inline-code">http://opus-one-app:3000/metrics</span> (Prometheus format) on a 15s interval. Also scrapes node-exporter on port 9100.</span>
+        </div>
+        <div class="box box-blue" style="margin-bottom:0">
+          <strong>Log collection:</strong><br>
+          <span style="font-size:13px">Reads Docker container logs from the Docker socket, adds labels (container name, job), and ships to Grafana Cloud Loki.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" style="background:var(--orange-light)">
+        <span style="font-size:22px">⚙️</span>
+        <div>
+          <div class="card-title">node-exporter</div>
+          <div style="font-size:12px;color:#6b7280">Container: node-exporter</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p style="font-size:13px;margin-bottom:12px">Exports EC2 host-level system metrics in Prometheus format on port 9100.</p>
+        <div class="box box-orange" style="margin-bottom:0">
+          <strong>Metrics exported:</strong>
+          <ul style="font-size:13px;padding-left:16px;margin-top:6px;line-height:2">
+            <li>CPU usage per core</li>
+            <li>Memory / swap utilization</li>
+            <li>Disk I/O and filesystem usage</li>
+            <li>Network bytes in/out</li>
+            <li>System load average</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header" style="background:var(--green-light)">
+        <span style="font-size:22px">📈</span>
+        <div>
+          <div class="card-title">App Metrics Endpoint</div>
+          <div style="font-size:12px;color:#6b7280">src/shared/metrics.js</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p style="font-size:13px;margin-bottom:12px">The app exposes a <span class="inline-code">GET /metrics</span> endpoint in Prometheus text format, implemented with <span class="inline-code">prom-client</span>.</p>
+        <div class="box box-green" style="margin-bottom:0">
+          <strong>Metrics tracked:</strong>
+          <ul style="font-size:13px;padding-left:16px;margin-top:6px;line-height:2">
+            <li>Search requests total (by county, platform)</li>
+            <li>Search duration histogram</li>
+            <li>Concurrent searches in flight</li>
+            <li>CAPTCHA encounters (Tier-1 vs Tier-2)</li>
+            <li>Cache hit / miss ratio</li>
+            <li>Error rate by handler</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-header"><span>🌐</span><div class="card-title">Data Flow — EC2 to Grafana Cloud</div></div>
+    <div class="card-body">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center;padding:16px 0">
+        <div class="box box-green" style="margin-bottom:0;text-align:center;min-width:140px">
+          <strong>App Container</strong><br>
+          <span style="font-size:12px">/metrics endpoint<br>Docker logs</span>
+        </div>
+        <div style="color:#9ca3af;font-size:22px">→</div>
+        <div class="box box-purple" style="margin-bottom:0;text-align:center;min-width:140px">
+          <strong>Grafana Alloy</strong><br>
+          <span style="font-size:12px">Scrapes &amp; collects<br>on opus-monitoring net</span>
+        </div>
+        <div style="color:#9ca3af;font-size:22px">→</div>
+        <div class="box box-blue" style="margin-bottom:0;text-align:center;min-width:140px">
+          <strong>Grafana Cloud</strong><br>
+          <span style="font-size:12px">Prometheus (metrics)<br>Loki (logs)</span>
+        </div>
+        <div style="color:#9ca3af;font-size:22px">→</div>
+        <div class="box box-orange" style="margin-bottom:0;text-align:center;min-width:140px">
+          <strong>Grafana Dashboards</strong><br>
+          <span style="font-size:12px">Visualization<br>&amp; alerting</span>
+        </div>
+      </div>
+      <div class="box box-yellow" style="margin-top:8px;font-size:13px">
+        <strong>node-exporter</strong> feeds into Alloy via the same scrape pipeline — host metrics appear alongside app metrics in Grafana dashboards.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════ SECTION 6: APP CONFIGURATION -->
+<section class="section" id="app-configuration">
+  <div class="section-title">
+    <div class="icon" style="background:#dcfce7">📁</div>
+    6. App Configuration — Source Files
+  </div>
+  <p class="section-subtitle">Current source file tree with updated/new files highlighted. Two new CAPTCHA files added in this version.</p>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><span>🗂️</span><div class="card-title">Source File Tree</div></div>
+      <div class="card-body">
+        <div class="file-tree">
+          <div><span class="folder">src/</span></div>
+          <div>&nbsp;&nbsp;<span class="file-key">server.js</span> <span class="comment">— Express app, concurrency gate, SSE</span></div>
+          <div>&nbsp;&nbsp;<span class="folder">shared/</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">browserAgent.js</span> <span class="comment">— Playwright launch + stealth</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file-updated">captchaDetector.js</span> <span class="comment">— Tiered CAPTCHA detection &amp; resolution ← UPDATED</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file-new">captchaSolver.js</span> <span class="comment">— CapSolver REST API integration ← NEW</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">countyDirectory.js</span> <span class="comment">— counties.json lookup</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">metrics.js</span> <span class="comment">— Prometheus metrics</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">platformDetector.js</span> <span class="comment">— URL + HTML fingerprinting</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">urlHealthCheck.js</span> <span class="comment">— Dead link detection</span></div>
+          <div>&nbsp;&nbsp;<span class="folder">tax/</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file-updated">routes.js</span> <span class="comment">— Tax search endpoints + multi/stream ← UPDATED</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="folder">handlers/</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">── CAD handlers (appraisal district) ──</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">qpublic.js</span> <span class="comment">— QPublic / Schneider</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">tyler.js</span> <span class="comment">— Tyler Technologies / iasWorld</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">beacon.js</span> <span class="comment">— Beacon / Schneider Geospatial</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">patriot.js</span> <span class="comment">— Patriot Properties</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">vision.js</span> <span class="comment">— AI vision fallback (GPT-4o-mini)</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">── Tax Office handlers ──</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">actweb.js</span> <span class="comment">— AcTWeb platform</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">propertytaxpayments.js</span> <span class="comment">— PropertyTaxPayments.com</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">txcountytax.js</span> <span class="comment">— TX County Tax Office</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">taxweb.js</span> <span class="comment">— TaxWeb SPA</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">go2gov.js</span> <span class="comment">— Go2Gov / MCTX</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">andersontax.js</span> <span class="comment">— Anderson Tax</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">ptaxpro.js</span> <span class="comment">— PTaxPro platform</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">publicportal.js</span> <span class="comment">— Aumentum PublicPortal (SPA)</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">bis.js</span> <span class="comment">— BIS (Spatial Data / city)</span></div>
+          <div>&nbsp;&nbsp;<span class="folder">title/</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">routes.js</span> <span class="comment">— Title search endpoints</span></div>
+          <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="file">browser.js</span> <span class="comment">— Playwright launch for title</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header" style="background:var(--orange-light)"><span>🆕</span><div class="card-title">New / Updated Files — V3.0</div></div>
+        <div class="card-body">
+          <div class="box box-orange" style="margin-bottom:12px">
+            <strong>captchaDetector.js — UPDATED</strong><br>
+            <span style="font-size:13px">Refactored to implement the two-tier CAPTCHA resolution strategy. Tier-1 is the free bypass (25s wait + Cloudflare iframe click). Tier-2 calls captchaSolver.js only if Tier-1 fails. Also handles navigation-based CAPTCHA resets and detects cookie consent overlays separately from actual CAPTCHAs.</span>
+          </div>
+          <div class="box box-yellow" style="margin-bottom:12px">
+            <strong>captchaSolver.js — NEW</strong><br>
+            <span style="font-size:13px">Thin REST client for the CapSolver API. Submits Cloudflare Turnstile tasks, polls for the solution token, and injects it into the page. Only instantiated when <span class="inline-code">CAPSOLVER_API_KEY</span> is set and Tier-1 has already failed.</span>
+          </div>
+          <div class="box box-purple">
+            <strong>tax/routes.js — UPDATED</strong><br>
+            <span style="font-size:13px">Updated to wire <span class="inline-code">captchaDetector</span> into the shared browser context. SSE streaming endpoint improvements for real-time progress events during multi-county batch searches.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" style="background:var(--blue-light)"><span>🔄</span><div class="card-title">CAPTCHA Tier Strategy</div></div>
         <div class="card-body">
           <div class="steps">
             <div class="step-item">
-              <div class="step-circle" style="background:#2563eb">1</div>
+              <div class="step-circle" style="background:var(--green)">T1</div>
               <div class="step-content">
-                <h4>User fills form on 44.253.126.67</h4>
-                <p>Selects Texas → Anderson, enters name or property ID</p>
+                <h4>Tier-1 — Free Bypass (~90% success)</h4>
+                <p>Wait 25 seconds for Cloudflare challenge to complete, then click the Turnstile iframe checkbox. Works for cookie-based Cloudflare challenges that don't require JS proof-of-work. Zero cost.</p>
               </div>
             </div>
             <div class="step-item">
-              <div class="step-circle" style="background:#2563eb">2</div>
+              <div class="step-circle" style="background:var(--orange)">T2</div>
               <div class="step-content">
-                <h4>Browser sends POST to /api/search</h4>
-                <p>server.js receives the request, looks up county URL from counties.json</p>
-              </div>
-            </div>
-            <div class="step-item">
-              <div class="step-circle" style="background:#2563eb">3</div>
-              <div class="step-content">
-                <h4>platformDetector identifies the county site type</h4>
-                <p>Checks URL pattern to pick the right handler (tyler, qpublic, beacon, etc.)</p>
-              </div>
-            </div>
-            <div class="step-item">
-              <div class="step-circle" style="background:#2563eb">4</div>
-              <div class="step-content">
-                <h4>Playwright opens a headless Chromium browser</h4>
-                <p>browserAgent.js launches Chrome invisibly, navigates to the county website</p>
-              </div>
-            </div>
-            <div class="step-item">
-              <div class="step-circle" style="background:#2563eb">5</div>
-              <div class="step-content">
-                <h4>Handler fills the search form + extracts results</h4>
-                <p>If form is complex, GPT-4o-mini analyzes a screenshot and decides what to click</p>
-              </div>
-            </div>
-            <div class="step-item">
-              <div class="step-circle" style="background:#16a34a">6</div>
-              <div class="step-content">
-                <h4>Results returned as JSON to the browser</h4>
-                <p>Property owner, address, assessed value, tax year displayed in the UI</p>
+                <h4>Tier-2 — CapSolver (~remaining 10%)</h4>
+                <p>If Tier-1 fails (challenge still present), submit a CapSolver task with the site key. CapSolver solves the Turnstile + JS challenge and returns a token. Injected into the page to unblock navigation. Paid per solve.</p>
               </div>
             </div>
           </div>
@@ -1018,174 +860,102 @@ server {
   </div>
 </section>
 
-<!-- ═══════════════════════════════════════════════════════════ SECTION 9: DEPLOY COMMANDS -->
-<section class="section" id="deploy-commands">
+<!-- ═══════════════════════════════════════════════════════════ SECTION 7: ENVIRONMENT VARIABLES -->
+<section class="section" id="env-vars">
   <div class="section-title">
-    <div class="icon" style="background:#dcfce7">💻</div>
-    9. Day-to-Day Developer Commands
+    <div class="icon" style="background:#fef9c3">⚙️</div>
+    7. Environment Variables
   </div>
-  <p class="section-subtitle">Everything you need to know to work with the project going forward.</p>
-
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-header" style="background:#dcfce7"><span>🚀</span><div class="card-title">Deploy to AWS (3 commands)</div></div>
-      <div class="card-body">
-        <p style="font-size:13px;margin-bottom:12px">Run these every time you want to push changes to the live server:</p>
-<pre><code># Stage all changed files
-git add .
-
-# Create a commit (save point)
-git commit -m "describe your change here"
-
-# Push to GitHub → triggers CI/CD automatically
-git push</code></pre>
-        <div class="box box-green" style="font-size:13px">
-          After <span class="inline-code">git push</span>, go to GitHub → Actions to watch the pipeline. Green = deployed in ~4 min.
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header" style="background:#dbeafe"><span>🖥️</span><div class="card-title">Local Development</div></div>
-      <div class="card-body">
-<pre><code># Start local server (localhost:3000)
-npm start
-
-# Start with auto-restart on file changes
-npm run dev
-
-# First-time setup (installs everything)
-npm run setup</code></pre>
-        <div class="box box-yellow" style="font-size:13px;margin-top:12px">
-          Local server needs a <span class="inline-code">.env</span> file with your OPENAI_API_KEY.
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header" style="background:#ffedd5"><span>🔧</span><div class="card-title">EC2 Server Commands (SSH)</div></div>
-      <div class="card-body">
-<pre><code># Connect to server
-ssh -i "G:\My Drive\DevOps\AWS\...\opus-aaiProd-EC2-keyPair.pem" ubuntu@44.253.126.67
-
-# Check if container is running
-docker ps
-
-# View app logs (last 50 lines)
-docker logs opus-one-app --tail 50
-
-# View live logs (streaming)
-docker logs opus-one-app -f
-
-# Restart app manually
-docker restart opus-one-app
-
-# Check Nginx status
-sudo systemctl status nginx</code></pre>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header" style="background:#ede9fe"><span>🔁</span><div class="card-title">Re-trigger Deployment Manually</div></div>
-      <div class="card-body">
-        <p style="font-size:13px;margin-bottom:12px">If you want to redeploy without making a code change:</p>
-<pre><code># Option 1: Empty commit (triggers pipeline)
-git commit --allow-empty -m "ci: redeploy"
-git push
-
-# Option 2: From GitHub website
-# Go to Actions tab → select workflow → "Run workflow" button</code></pre>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══════════════════════════════════════════════════════════ SECTION 10: TROUBLESHOOTING -->
-<section class="section" id="troubleshooting">
-  <div class="section-title">
-    <div class="icon" style="background:#fee2e2">🔍</div>
-    10. Troubleshooting Guide
-  </div>
-  <p class="section-subtitle">Common issues and how to fix them.</p>
+  <p class="section-subtitle">All environment variables consumed by the running container. Set via <span class="inline-code">-e</span> flags in the docker run command, sourced from GitHub Secrets.</p>
 
   <div class="card">
+    <div class="card-header"><span>📋</span><div class="card-title">Complete Environment Variable Reference</div></div>
     <div class="card-body">
       <table>
-        <tr><th>Symptom</th><th>Likely Cause</th><th>Fix</th></tr>
         <tr>
-          <td>GitHub Actions shows red ❌ on "Build &amp; Push"</td>
-          <td>ECR repo doesn't exist, wrong region, or bad AWS keys</td>
-          <td>Check ECR repo name matches deploy.yml. Verify AWS_ACCESS_KEY_ID secret is correct.</td>
+          <th>Variable</th>
+          <th>Default</th>
+          <th>Description</th>
         </tr>
         <tr>
-          <td>GitHub Actions shows red ❌ on "Deploy to EC2"</td>
-          <td>SSH timeout (port 22 blocked) or wrong SSH key</td>
-          <td>Check Security Group allows port 22 from 0.0.0.0/0. Verify EC2_SSH_KEY secret contains full .pem content.</td>
+          <td><span class="inline-code">OPENAI_API_KEY</span></td>
+          <td><span class="pill pill-red">required</span></td>
+          <td>OpenAI API key for GPT-4o-mini. Used by the AI vision fallback agent (vision.js) to analyze county search form screenshots and determine what to fill/click.</td>
         </tr>
         <tr>
-          <td>44.253.126.67 shows "502 Bad Gateway"</td>
-          <td>Nginx running but Docker container is stopped/crashed</td>
-          <td>SSH into EC2 → docker logs opus-one-app → fix the error → docker restart opus-one-app</td>
+          <td><span class="inline-code">OPENAI_MODEL</span></td>
+          <td><span class="inline-code">gpt-4o-mini</span></td>
+          <td>OpenAI model name. gpt-4o-mini provides the best cost/performance ratio for screenshot analysis — fast vision inference at low per-token cost.</td>
         </tr>
         <tr>
-          <td>Container keeps restarting</td>
-          <td>App crashes at startup — missing module or bad env var</td>
-          <td>docker logs opus-one-app → read the error message</td>
+          <td><span class="inline-code">PORT</span></td>
+          <td><span class="inline-code">3000</span></td>
+          <td>TCP port the Express HTTP server listens on inside the container. Exposed and mapped 3000:3000 in docker run.</td>
         </tr>
         <tr>
-          <td>Old version showing after deploy</td>
-          <td>Browser cache or old Docker image</td>
-          <td>Hard refresh (Ctrl+Shift+R). On EC2: docker pull &amp;&amp; docker restart</td>
+          <td><span class="inline-code">BROWSER_HEADLESS</span></td>
+          <td><span class="inline-code">true</span></td>
+          <td>Playwright headless mode. Must be true in production (no display server on EC2). Set to false only for local debugging with a visible browser window.</td>
         </tr>
         <tr>
-          <td>localhost:3000 not working</td>
-          <td>npm start not running, or missing .env file</td>
-          <td>Run npm start. Check .env file has OPENAI_API_KEY.</td>
+          <td><span class="inline-code">MAX_CONCURRENT_SEARCHES</span></td>
+          <td><span class="inline-code">3</span></td>
+          <td>Maximum number of Playwright browser sessions open at once. The concurrency gate in server.js queues requests beyond this limit. t3.medium RAM (4 GB) supports 3 concurrent Chromium instances comfortably.</td>
         </tr>
         <tr>
-          <td>Search times out</td>
-          <td>County website slow or Playwright crash</td>
-          <td>Try again. Check docker logs for Playwright errors. County site may be down.</td>
+          <td><span class="inline-code">SEARCH_TIMEOUT_MS</span></td>
+          <td><span class="inline-code">180000</span></td>
+          <td>Per-search timeout in milliseconds (3 minutes). If a county site fails to respond or a CAPTCHA cannot be solved within this window, the search is aborted and an error is returned.</td>
         </tr>
         <tr>
-          <td>MODULE_NOT_FOUND error</td>
-          <td>package.json missing a dependency</td>
-          <td>Add the package to package.json dependencies, commit and push to rebuild.</td>
+          <td><span class="inline-code">CACHE_TTL_HOURS</span></td>
+          <td><span class="inline-code">4</span></td>
+          <td>Lifetime of each LRU cache entry in hours. Cached results avoid redundant browser sessions for the same property lookup within the TTL window.</td>
+        </tr>
+        <tr>
+          <td><span class="inline-code">CACHE_MAX_SIZE</span></td>
+          <td><span class="inline-code">1000</span></td>
+          <td>Maximum number of entries the LRU cache holds before evicting the least recently used. 1000 entries at typical payload size stays well within available memory.</td>
+        </tr>
+        <tr style="background:#fff7ed">
+          <td>
+            <span class="inline-code">CAPSOLVER_API_KEY</span>
+            <span class="pill pill-orange" style="margin-left:6px;font-size:10px">NEW</span>
+          </td>
+          <td><span class="pill pill-yellow">optional</span></td>
+          <td>
+            CapSolver API credit key. If absent, Tier-2 CAPTCHA solving is disabled and the app falls back to returning an error for unsolvable Cloudflare challenges.
+            <div class="box box-orange" style="margin-top:8px;margin-bottom:0;font-size:13px">
+              Only used as Tier-2 last resort after Tier-1 free CAPTCHA bypass fails. Expected usage is less than 10% of CAPTCHA encounters.
+            </div>
+          </td>
         </tr>
       </table>
     </div>
   </div>
 
-  <!-- Cost summary -->
-  <div class="card" style="margin-top:16px">
-    <div class="card-header" style="background:#fef9c3"><span>💰</span><div class="card-title">Monthly AWS Cost (20 Users)</div></div>
-    <div class="card-body">
-      <table>
-        <tr><th>Resource</th><th>Type</th><th>Est. Monthly Cost</th></tr>
-        <tr><td>EC2 t3.medium (24/7)</td><td>Compute</td><td>~$30.00</td></tr>
-        <tr><td>EBS Storage 30GB gp3</td><td>Storage</td><td>~$2.40</td></tr>
-        <tr><td>Elastic IP (attached)</td><td>Networking</td><td>Free</td></tr>
-        <tr><td>ECR Storage (~1GB)</td><td>Registry</td><td>~$0.10</td></tr>
-        <tr><td>Data Transfer (light)</td><td>Networking</td><td>~$1.00</td></tr>
-        <tr><td>GitHub Actions (public repo)</td><td>CI/CD</td><td>Free</td></tr>
-        <tr style="background:#dcfce7"><td><strong>Total</strong></td><td></td><td><strong>~$33–35/month</strong></td></tr>
-      </table>
+  <div class="grid-2" style="margin-top:16px">
+    <div class="box box-blue">
+      <strong>Local development (.env file):</strong><br>
+      <span style="font-size:13px">When running locally with <span class="inline-code">npm start</span>, create a <span class="inline-code">.env</span> file in the repo root with these same variable names. The <span class="inline-code">dotenv</span> package loads them at startup. Never commit .env to git — it is in .gitignore.</span>
+    </div>
+    <div class="box box-green">
+      <strong>Production (docker run -e flags):</strong><br>
+      <span style="font-size:13px">In production, there is no .env file. All variables are injected directly via <span class="inline-code">-e KEY="VALUE"</span> arguments in the docker run command, which reads the values from GitHub Secrets at deploy time.</span>
     </div>
   </div>
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════ FOOTER -->
 <div style="background:var(--dark);color:#9ca3af;padding:32px;border-radius:12px;text-align:center;margin-top:16px">
-  <div style="font-size:24px;margin-bottom:8px">🏆</div>
-  <div style="font-weight:700;color:white;font-size:1.1rem;margin-bottom:8px">Opus One — Orchestrate-Mortgage Title &amp; Tax Search</div>
-  <div style="font-size:13px">Live at http://44.253.126.67 &nbsp;|&nbsp; AWS us-west-2 &nbsp;|&nbsp; GitHub: Git-Opusone/Sriman-OpusRepo</div>
-  <div style="font-size:12px;margin-top:8px;opacity:0.6">CI/CD Tag: AWS-EC2-ECR-GitActions-CI/CD-Pipeline-AllWorkingGreat &nbsp;|&nbsp; May 2026</div>
+  <div style="font-weight:700;color:white;font-size:1.1rem;margin-bottom:8px">Opus One — CI/CD Pipeline & Architecture</div>
+  <div style="font-size:13px">V3.0 &middot; May 2026 &middot; Branch: claude/mortgage-search-microservice &middot; AWS us-west-2 (Oregon) &middot; Registry: Amazon ECR (opus-ecr)</div>
+  <div style="font-size:12px;margin-top:8px;opacity:0.6">V3.0 &middot; May 2026 &middot; Opus One CI/CD Architecture</div>
 </div>
 
 </div><!-- /container -->
 
 <script>
-  // Simple tab functionality if needed in future
   document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
       const parent = tab.closest('.card-body');
