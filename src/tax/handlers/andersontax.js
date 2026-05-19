@@ -537,45 +537,100 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
     const detail = await extractDetailData(page, propId);
 
     // ── 5b. Ensure "Property Details" (bill tables) view is active ──────────────
-    // Anderson County uses a "Page:" SELECT DROPDOWN (not tabs) to switch between
-    // "Property Details" (TAXING ENTITY tables, 2025 data) and "Payment History"
-    // (receipts only — no entity breakdown). We must land on "Property Details".
+    // Anderson County uses a "Page:" SELECT DROPDOWN (Kendo DropDownList) to
+    // switch between "Property Details" (TAXING ENTITY tables, all years) and
+    // "Payment History" (receipts only — no entity breakdown).
+    // We MUST land on "Property Details" before running extractBillData.
     onProgress('Loading bill history...');
     let clickedHistoryTab = false;
 
-    // Strategy 1: native <select> or Playwright-accessible Kendo select
-    try {
-      const selects = page.locator('select');
-      const selCount = await selects.count({ timeout: 3000 }).catch(() => 0);
-      for (let si = 0; si < selCount && !clickedHistoryTab; si++) {
-        const sel = selects.nth(si);
-        if (!await sel.isVisible({ timeout: 1000 }).catch(() => false)) continue;
-        const opts = await sel.locator('option').allInnerTexts().catch(() => []);
-        console.log(`[andersontax] select[${si}] options: ${opts.join(', ')}`);
-        const detailsOpt = opts.find(o => /property\s+details/i.test(o) || /billing/i.test(o));
-        if (detailsOpt) {
-          await sel.selectOption({ label: detailsOpt });
-          await page.waitForTimeout(2500);
-          console.log(`[andersontax] Page dropdown → "${detailsOpt}"`);
-          clickedHistoryTab = true;
-        }
-      }
-    } catch (_) {}
+    // Strategy 0: Kendo JavaScript API — most reliable, bypasses all UI issues
+    // Works even when the native <select> is hidden and has no <option> elements.
+    clickedHistoryTab = await page.evaluate(() => {
+      try {
+        const selEls = Array.from(document.querySelectorAll('select, [data-role="dropdownlist"]'));
+        for (const el of selEls) {
+          let ddl = null;
+          if (typeof kendo !== 'undefined') {
+            ddl = kendo.widgetInstance ? kendo.widgetInstance(el) : null;
+          }
+          if (!ddl && typeof jQuery !== 'undefined') {
+            ddl = jQuery(el).data('kendoDropDownList');
+          }
+          if (!ddl || typeof ddl.dataSource === 'undefined') continue;
 
-    // Strategy 2: Kendo DropDownList widget (visible wrapper, hidden native select)
+          const items = Array.from(ddl.dataSource.data ? ddl.dataSource.data() : []);
+          console.log('[andersontax] Kendo DDL items: ' + items.map(i => i.text || i.value || String(i)).join(', '));
+
+          const match = items.find(item => {
+            const t = String(item.text || item.Text || item.value || item.Value || item);
+            return /property\s*details/i.test(t) || /billing/i.test(t);
+          });
+          if (match) {
+            const val = match.value !== undefined ? match.value : (match.text || match.Text || match);
+            ddl.value(String(val));
+            ddl.trigger('change');
+            return true;
+          }
+          // If items list is empty, try selecting by index 0 or 1 looking for non-history
+          const currentText = String(ddl.text ? ddl.text() : '');
+          if (/payment\s*history/i.test(currentText) && typeof ddl.select === 'function') {
+            const size = items.length || 2;
+            for (let idx = 0; idx < size; idx++) {
+              ddl.select(idx);
+              const newText = String(ddl.text ? ddl.text() : '');
+              if (!/payment\s*history/i.test(newText)) {
+                ddl.trigger('change');
+                return true;
+              }
+            }
+          }
+        }
+      } catch (_) {}
+      return false;
+    }).catch(() => false);
+    if (clickedHistoryTab) {
+      await page.waitForTimeout(2500);
+      console.log('[andersontax] Page dropdown → Property Details via Kendo API');
+    }
+
+    // Strategy 1: Playwright selectOption with force (handles hidden Kendo-wrapped selects)
     if (!clickedHistoryTab) {
       try {
-        const kdl = page.locator('[data-role="dropdownlist"], .k-dropdown').first();
-        if (await kdl.count({ timeout: 2000 }) > 0 && await kdl.isVisible({ timeout: 2000 })) {
-          await kdl.click({ timeout: 3000 });
+        const selects = page.locator('select');
+        const selCount = await selects.count();
+        for (let si = 0; si < selCount && !clickedHistoryTab; si++) {
+          const sel = selects.nth(si);
+          // Read option text including from hidden selects (don't check isVisible)
+          const opts = await sel.locator('option').allInnerTexts().catch(() => []);
+          if (opts.length === 0) continue;
+          console.log(`[andersontax] select[${si}] options: ${opts.join(', ')}`);
+          const detailsOpt = opts.find(o => /property\s+details/i.test(o) || /billing/i.test(o));
+          if (detailsOpt) {
+            await sel.selectOption({ label: detailsOpt }, { force: true });
+            await page.waitForTimeout(2500);
+            console.log(`[andersontax] Page dropdown (force) → "${detailsOpt}"`);
+            clickedHistoryTab = true;
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Strategy 2: Click the visible Kendo DropDownList wrapper, pick "Property Details" from popup
+    if (!clickedHistoryTab) {
+      try {
+        // .k-dropdown is the visible wrapper span Kendo renders around the hidden <select>
+        const kdlWrap = page.locator('.k-dropdown, .k-dropdownlist, [data-role="dropdownlist"]').first();
+        if (await kdlWrap.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await kdlWrap.click({ timeout: 3000 });
           await page.waitForTimeout(600);
-          const detailItem = page.locator('.k-list-container li, .k-popup li, .k-list li')
-            .filter({ hasText: /property\s+details|billing/i }).first();
-          if (await detailItem.count({ timeout: 2000 }) > 0) {
+          const popup = page.locator('.k-list-container li, .k-popup li, .k-list li, .k-item');
+          const detailItem = popup.filter({ hasText: /property\s+details/i }).first();
+          if (await detailItem.count() > 0) {
             await detailItem.click({ timeout: 3000 });
             await page.waitForTimeout(2500);
             clickedHistoryTab = true;
-            console.log('[andersontax] Page dropdown → Property Details via Kendo widget');
+            console.log('[andersontax] Page dropdown → Property Details via Kendo popup click');
           } else {
             await page.keyboard.press('Escape').catch(() => {});
           }
@@ -583,7 +638,7 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
       } catch (_) {}
     }
 
-    // Strategy 3: Tab links (fallback for other TX county tax sites without dropdown)
+    // Strategy 3: Tab/link selectors (fallback for non-Kendo TX county tax sites)
     if (!clickedHistoryTab) {
       const TAB_SELECTORS = [
         'a:has-text("Property Details")',
@@ -596,14 +651,14 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
         '[href*="PaymentHistory"]',
         '[href*="payment-history"]',
       ];
-      for (const sel of TAB_SELECTORS) {
+      for (const tabSel of TAB_SELECTORS) {
         try {
-          const el = page.locator(sel).first();
-          if (await el.count({ timeout: 2000 }) > 0 && await el.isVisible({ timeout: 2000 })) {
+          const el = page.locator(tabSel).first();
+          if (await el.count() > 0 && await el.isVisible({ timeout: 2000 })) {
             await el.click({ timeout: 5000 });
             await page.waitForTimeout(2500);
             await handleDisclaimerIfPresent(page, 'history-tab');
-            console.log(`[andersontax] clicked tab via: ${sel}`);
+            console.log(`[andersontax] clicked tab via: ${tabSel}`);
             clickedHistoryTab = true;
             break;
           }
@@ -617,31 +672,28 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
       await page.waitForTimeout(1500);
     }
 
-    // Expand collapsed Kendo accordion year sections (2025 may be collapsed ">>>" by default)
+    // Expand ALL collapsed Kendo accordion sections (current year may be collapsed by default)
     try {
       await page.evaluate(async () => {
-        const YEAR_RX = /\b(19|20)\d{2}\b/;
-        // Expand aria-collapsed panels near year text
-        const collapsed = Array.from(document.querySelectorAll(
-          '[aria-expanded="false"], .k-i-arrow-e, [class*="collapsed"]'
-        ));
+        // Click every collapsed aria-expanded panel
+        const collapsed = Array.from(document.querySelectorAll('[aria-expanded="false"]'));
         for (const el of collapsed) {
-          const parent = el.closest('[class*="section"],[class*="panel"],[class*="accordion"],li,div') || el.parentElement;
-          if (parent && YEAR_RX.test(parent.innerText || '')) {
-            el.click();
-            await new Promise(r => setTimeout(r, 300));
-          }
+          try { el.click(); await new Promise(r => setTimeout(r, 250)); } catch (_) {}
         }
-        // Also click bare ">>>" toggle buttons adjacent to year headings
-        for (const el of Array.from(document.querySelectorAll('*'))) {
+        // Kendo collapse icons and ">>>" toggle spans
+        const toggles = Array.from(document.querySelectorAll(
+          '.k-i-arrow-e, .k-i-expand, [class*="expand"], [class*="toggle"]'
+        ));
+        for (const el of toggles) {
+          if (!el.offsetParent) continue; // skip hidden elements
+          try { el.click(); await new Promise(r => setTimeout(r, 250)); } catch (_) {}
+        }
+        // Bare text toggles: ">", ">>>", "▶", "+"
+        for (const el of Array.from(document.querySelectorAll('span,button,a,div'))) {
           if (el.children.length > 0) continue;
           const t = (el.textContent || '').trim();
-          if (t === '>>>' || t === '▶' || t === '+') {
-            const p = el.closest('div,li,section') || el.parentElement;
-            if (p && YEAR_RX.test(p.innerText || '')) {
-              el.click();
-              await new Promise(r => setTimeout(r, 300));
-            }
+          if (/^(>>>?|▶|\+)$/.test(t) && el.offsetParent) {
+            try { el.click(); await new Promise(r => setTimeout(r, 250)); } catch (_) {}
           }
         }
       });
@@ -649,9 +701,15 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
       console.log('[andersontax] accordion expansion done');
     } catch (_) {}
 
-    // Wait for bill tables — generous timeout for current-year lazy load
-    await page.waitForSelector('table', { timeout: 8000 }).catch(() => {});
-    await page.waitForTimeout(3000);
+    // Wait for a TAXING ENTITY table to appear (up to 12 s for lazy/AJAX load)
+    await page.waitForFunction(() => {
+      const tables = Array.from(document.querySelectorAll('table'));
+      return tables.some(t => /TAXING\s*ENTITY/i.test(t.innerText || t.textContent || ''));
+    }, { timeout: 12000 }).catch(async () => {
+      // Fallback: just wait for any table
+      await page.waitForSelector('table', { timeout: 4000 }).catch(() => {});
+    });
+    await page.waitForTimeout(2000);
 
     const bill = await extractBillData(page);
 
