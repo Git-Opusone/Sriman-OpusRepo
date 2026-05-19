@@ -225,6 +225,14 @@
     }
     .btn-clear:hover { background: var(--gray-200); }
 
+    .btn-rerun {
+      background: #d97706; color: #fff;
+      font-size: .85rem; padding: 8px 16px;
+      border: none; margin-top: 10px; width: 100%;
+    }
+    .btn-rerun:hover { background: #b45309; }
+    .btn-rerun:active { transform: scale(.98); }
+
     /* ── Status / Progress ── */
     #statusBox {
       display: none;
@@ -789,6 +797,9 @@
 
     <button class="btn btn-primary" id="searchBtn" onclick="startSearch()">
       <span>&#128269;</span> Search County Records
+    </button>
+    <button class="btn btn-rerun" id="rerunBtn" onclick="rerunSearch()" style="display:none" title="Bypass cache and scrape fresh data from the source website">
+      &#8635; Re-run Previous Order (Force Fresh)
     </button>
     <button class="btn btn-clear" onclick="clearAll()">Clear Form &amp; Results</button>
   </div>
@@ -1433,7 +1444,13 @@
 
   // ── Main search ──────────────────────────────────────────────────────────
 
-  function startSearch() {
+  // ── Re-run the last search, bypassing the API cache ─────────────────────────
+  function rerunSearch() {
+    document.getElementById('rerunBtn').style.display = 'none';
+    startSearch(true);
+  }
+
+  function startSearch(forceRefresh) {
     const state         = val('stateSelect');
     const county        = val('countySelect');
     const manualUrl     = val('manualUrl');
@@ -1463,6 +1480,7 @@
     // Reset UI
     _reportState = { appraisalData: null, taxData: null, state, county };
     document.getElementById('reportBtn').style.display = 'none';
+    document.getElementById('rerunBtn').style.display = 'none';
     hide('errorBox');
     hide('captchaBox');
     hide('resultsSection');
@@ -1502,6 +1520,7 @@
     if (useMulti) {
       params.set('state', state);
       params.set('county', county);
+      // multi/stream has no server cache; forceRefresh re-runs naturally
       endpoint = `/api/tax/search/multi/stream?${params.toString()}`;
     } else if (dual) {
       endpoint = `/api/tax/search/dual/stream?${params.toString()}`;
@@ -1509,6 +1528,7 @@
       if (url)    params.set('url', url);
       if (state)  params.set('state', state);
       if (county) params.set('county', county);
+      if (forceRefresh) params.set('forceRefresh', 'true');
       endpoint = `/api/tax/search/stream?${params.toString()}`;
     }
 
@@ -1600,6 +1620,8 @@
       if (_reportState.appraisalData || _reportState.taxData) {
         document.getElementById('reportBtn').style.display = '';
       }
+      // Always show Re-run button after any completed search
+      document.getElementById('rerunBtn').style.display = '';
     });
 
     evtSource.addEventListener('error', (e) => {
@@ -1618,6 +1640,7 @@
       evtSource.close();
       hide('statusBox');
       document.getElementById('searchBtn').disabled = false;
+      document.getElementById('rerunBtn').style.display = '';
       const box = document.getElementById('errorBox');
       box.textContent = '⚠ Connection lost or server busy — please try again in a moment.';
       show('errorBox');

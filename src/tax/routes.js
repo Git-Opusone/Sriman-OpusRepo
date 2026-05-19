@@ -190,11 +190,20 @@ router.get('/search/stream', async (req, res) => {
       }
     }
 
+    const forceRefresh = req.query.forceRefresh === 'true';
+
     const cacheParams = { url: searchUrl,
       firstName: firstName || '', lastName: lastName || '',
       fullName: fullName || '', accountNumber: accountNumber || '' };
     const cacheKey = _buildCacheKey(cacheParams);
-    const cached   = _cacheGet(cacheKey);
+
+    if (forceRefresh) {
+      // Evict any stale entry so a fresh browser scrape always runs
+      _searchCache.delete(cacheKey);
+      sendEvent('progress', { message: '🔄 Force-refresh: bypassing cache for a fresh scrape...' });
+    }
+
+    const cached = forceRefresh ? null : _cacheGet(cacheKey);
 
     if (cached) {
       sendEvent('progress', { message: '⚡ Cache hit — returning stored results instantly (no browser needed)' });
@@ -570,11 +579,17 @@ router.post('/search', async (req, res) => {
   metrics.activeSearchesGauge.set(activeSearches);
   console.log(`[tax] REST search started — active: ${activeSearches}/${MAX_CONCURRENT}`);
 
+  const forceRefreshRest = req.body.forceRefresh === true || req.body.forceRefresh === 'true';
   try {
     const cacheKey = _buildCacheKey({ url,
       firstName: firstName || '', lastName: lastName || '',
       fullName: fullName || '', accountNumber: accountNumber || '' });
-    const cached = _cacheGet(cacheKey);
+
+    if (forceRefreshRest) {
+      _searchCache.delete(cacheKey);
+    }
+
+    const cached = forceRefreshRest ? null : _cacheGet(cacheKey);
 
     if (cached) {
       if (cached.captchaBlocked) {
