@@ -33,7 +33,7 @@ const cheerio = require('cheerio');
 const fs      = require('fs');
 const path    = require('path');
 
-const { detectFromUrl } = require('../src/platformDetector');
+const { detectFromUrl } = require('../src/shared/platformDetector');
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
