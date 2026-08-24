@@ -4,7 +4,14 @@ const { detectCaptcha } = require('../../shared/captchaDetector');
 
 function normalizePropId(id) {
   const s = (id || '').trim();
-  return /^r/i.test(s) ? s.toUpperCase() : `R${s}`;
+  const withR = /^r/i.test(s) ? s.toUpperCase() : `R${s}`;
+  // The CAD side (publicportal.js) cross-references this property via
+  // taxOfficeRef/refId, which it zero-pads to a fixed width (e.g. "R0068855"
+  // for a property whose real Tax Office ID is "R68855"). Passed through
+  // verbatim, the padded ID matches nothing on tax.co.anderson.tx.us and the
+  // search silently returns zero results. Strip padding zeros between "R"
+  // and the first non-zero digit — the Tax Office site itself never pads.
+  return withR.replace(/^R0+(?=\d)/, 'R');
 }
 
 function countyFromUrl(url) {
