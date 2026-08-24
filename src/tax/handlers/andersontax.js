@@ -415,12 +415,23 @@ async function extractBillData(page) {
       );
       if (!hasTaxingEntityHeader || !hasDollarAmounts) continue;
 
+      // Reject rows that are really a whole accordion panel's text dumped
+      // into one oversized cell (page nav, photo/sketch placeholders, etc.)
+      // rather than a real bill-history row — such rows still pass the two
+      // checks above because that huge blob happens to contain "TAXING
+      // ENTITY" and a dollar amount somewhere inside it. A real header or
+      // data row never has more than a handful of cells. Filter row-by-row
+      // (not the whole table) so one malformed row doesn't discard
+      // otherwise-good rows sitting in the same table.
+      const sane = flat.filter(r => r.length <= 10);
+      if (sane.length < 2) continue; // nothing usable left in this table
+
       // Filter out Kendo Grid expansion sub-rows (Levy, P&I, Att.Fee, Credits/Disc.)
       // Also filter rows where the first cell (entity name) is clearly UI navigation text.
       const SUB_ROW_RX = /^(Levy|P&I|Att\.?\s*Fee|Credits\s*\/?\s*Disc|Discount)\b/i;
       const cleanFlat = [
-        flat[0], // keep header row
-        ...flat.slice(1).filter(r => {
+        sane[0], // keep header row
+        ...sane.slice(1).filter(r => {
           const first = (r[0] || '').trim();
           if (SUB_ROW_RX.test(first)) return false;
           // skip concatenated single-cell summary row "Levy$40.76P&I$0.00..."

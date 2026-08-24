@@ -2159,9 +2159,13 @@
                       || (yearHeaders2.length ? Math.max(...yearHeaders2.map(y => parseInt(y)||0)).toString() : '')
                       || new Date().getFullYear().toString();
 
+    // ap.landMarketValue/improvementValue/netAppraisedValue come from older CAD
+    // handlers; the current Public Portal (Aumentum) handler instead reports
+    // marketValue/appraisedValue as a single combined figure — check both.
     const landVal  = ap.landMarketValue  || ap.landValue   || tx['Land Value']        || tx['Land Market Value']  || tx['Land Market']  || tx['Ag Valuation'] || '';
     const bldgVal  = ap.improvementValue || ap.bldgValue   || tx['Improvement Value'] || tx['Building Value']     || tx['Improvements'] || '';
-    const totalVal = ap.netAppraisedValue || ap.totalValue || tx['Assessed Value']    || tx['Total Value']        || tx['Market Value'] || tx['Assessed']     || tx['Appraised Value'] || tx['netAppraisedValue'] || '';
+    const totalVal = ap.netAppraisedValue || ap.totalValue || ap.marketValue || ap.appraisedValue
+                  || tx['Assessed Value']    || tx['Total Value']        || tx['Market Value'] || tx['Assessed']     || tx['Appraised Value'] || tx['netAppraisedValue'] || '';
 
     const propStatus  = tx['Property Status'] || taxRec.paymentStatus || '';
     const currentDue  = tx['Current Due']     || '';
