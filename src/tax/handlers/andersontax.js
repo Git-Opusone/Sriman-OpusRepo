@@ -422,6 +422,18 @@ async function extractBillData(page) {
       );
       if (!hasTaxingEntityHeader || !hasDollarAmounts) continue;
 
+      // Reject tables that are really an outer wrapper nesting every other
+      // bill-history table inside it — document.querySelectorAll('table')
+      // matches both the wrapper and each nested table independently, so the
+      // wrapper's flattened row count balloons far past any genuine
+      // single-year table (a handful of taxing entities plus a totals row,
+      // rarely more than ~20-30 rows even with per-entity Levy/P&I/Fee
+      // sub-rows). Left unfiltered, the wrapper gets processed first and its
+      // garbled, single-year-labeled entries steal the entity+year dedup
+      // keys that the real nested tables need (this is what caused the most
+      // recent tax year to go missing/garbled for Hays).
+      if (flat.length > 40) continue;
+
       // Reject rows that are really a whole accordion panel's text dumped
       // into one oversized cell (page nav, photo/sketch placeholders, etc.)
       // rather than a real bill-history row — such rows still pass the two

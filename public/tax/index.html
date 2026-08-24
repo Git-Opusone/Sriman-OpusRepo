@@ -1975,30 +1975,13 @@
 
     const seenKeys = new Set();
 
-    billTables.forEach((tableRows, ti) => {
-      if (!Array.isArray(tableRows) || tableRows.length === 0) return;
-      const year = String((yearHeaders || [])[ti] || '').replace(/\D/g, '').slice(0, 4) || '';
-
-      // Scan ALL rows (no limit) to find the header row with "TAXING ENTITY"
-      let hdrIdx = -1;
-      for (let i = 0; i < tableRows.length; i++) {
-        const r = tableRows[i];
-        if (!Array.isArray(r)) continue;
-        const flat = r.join(' ').toUpperCase();
-        if (flat.includes('TAXING ENTITY') || (flat.includes('ENTITY') && flat.includes('DUE'))) {
-          hdrIdx = i;
-          break;
-        }
-      }
-      if (hdrIdx < 0) hdrIdx = 0;
-
-      const hdr = (Array.isArray(tableRows[hdrIdx]) ? tableRows[hdrIdx] : [])
-        .map(h => stripLbl(h).toLowerCase().trim());
+    const buildColumnMap = (hdrRow) => {
+      const hdr = (Array.isArray(hdrRow) ? hdrRow : []).map(h => stripLbl(h).toLowerCase().trim());
       const ci = (kws) => {
         const i = hdr.findIndex(h => kws.some(k => h.includes(k)));
         return i >= 0 ? i : -1;
       };
-      const C = {
+      return {
         entity:   ci(['taxing entity', 'entity', 'tax unit']),
         status:   ci(['status']),
         base:     ci(['base amount', 'base tax']),
@@ -2009,10 +1992,55 @@
         paidDate: ci(['date paid', 'paid date', 'good thru', 'thru']),
         balance:  ci(['balance']),
       };
+    };
 
-      const dataRows = tableRows.slice(hdrIdx + 1);
-      dataRows.forEach(row => {
+    // A row qualifies as a genuine bill-history header (not the rates/
+    // exemptions table, which also contains "TAXING ENTITY" but has entirely
+    // different columns, and NOT a data row that merely echoes those same
+    // words as part of its own "LABEL: value" cells) only if:
+    //  (a) it has a due/paid/balance-style column, AND
+    //  (b) none of its cells carry an embedded "LABEL: value" pair — a real
+    //      header's cells are short plain labels, while every data row's
+    //      cells look like "TAXING ENTITY: Some District", which would
+    //      otherwise also match check (a) and get mistaken for a header.
+    const looksLikeBillHeader = (row) => {
+      const hasEmbeddedLabel = row.some(c => /^[A-Z][A-Z\s\/&]+:\s*/i.test((c || '').toString().trim()));
+      if (hasEmbeddedLabel) return false;
+      const flatUp = row.join(' ').toUpperCase();
+      return (flatUp.includes('TAXING ENTITY') || (flatUp.includes('ENTITY') && flatUp.includes('DUE'))) &&
+        (flatUp.includes('DATE PAID') || flatUp.includes('AMOUNT PAID') ||
+         flatUp.includes('BALANCE') || flatUp.includes('TOTAL TAXES DUE') || flatUp.includes('TOTAL DUE'));
+    };
+
+    billTables.forEach((tableRows, ti) => {
+      if (!Array.isArray(tableRows) || tableRows.length === 0) return;
+      // Some counties (e.g. Anderson) render one <table> per year — this is
+      // the fallback/default year for the whole table. Others (e.g. Hays)
+      // bundle every year's bill history into ONE outer table with inline
+      // "2025 / Expand Details"-style marker rows between sections; those
+      // markers update `currentYear` as we walk the rows below.
+      let currentYear = String((yearHeaders || [])[ti] || '').replace(/\D/g, '').slice(0, 4) || '';
+      let C = null;
+
+      tableRows.forEach(row => {
         if (!Array.isArray(row) || row.length === 0) return;
+
+        // Inline year-section marker, e.g. ["2025","","Expand Details"] —
+        // switch the current year for rows that follow and move on.
+        const firstCellRaw = (row[0] || '').toString().trim();
+        if (/^(19|20)\d{2}$/.test(firstCellRaw) &&
+            row.filter(c => (c || '').toString().trim()).length <= 3) {
+          currentYear = firstCellRaw;
+          return;
+        }
+
+        if (looksLikeBillHeader(row)) {
+          C = buildColumnMap(row);
+          return; // header row itself, not data
+        }
+
+        if (!C) return; // haven't seen a real bill-history header yet — skip (rates table, page furniture, etc.)
+
         const g = (i) => (i >= 0 && i < row.length)
           ? stripLbl((row[i] || '').toString().trim())
           : '';
@@ -2057,12 +2085,12 @@
         const cleanPaidDate = (paidDate === '-' || paidDate === '—') ? '' : paidDate;
 
         // Deduplicate by entity+year
-        const key = `${entity.toLowerCase()}|${year}`;
+        const key = `${entity.toLowerCase()}|${currentYear}`;
         if (seenKeys.has(key)) return;
         seenKeys.add(key);
 
         rows.push({
-          entity, taxYear: year, status,
+          entity, taxYear: currentYear, status,
           base: g(C.base), pi: g(C.pi),
           totalDue, paid,
           dueDate: g(C.dueDate), paidDate: cleanPaidDate, balance,
