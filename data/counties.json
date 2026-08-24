@@ -23865,8 +23865,8 @@
         "platform": "generic",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/williamson",
-        "taxUrl": "https://tax.co.williamson.tx.us/",
-        "taxPlatform": "txcountytax"
+        "taxUrl": "https://tax.wilcotx.gov/",
+        "taxPlatform": "tyler"
       },
       "Wilson": {
         "url": "https://esearch.wilson-cad.org/",
