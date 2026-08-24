@@ -405,7 +405,10 @@ async function runBrowserAgent({
     // PLATFORM ROUTING: route to a dedicated handler before falling back to
     // the generic AI loop. Handlers return null to signal fallback needed.
     // -----------------------------------------------------------------------
-    let platform = detectFromUrl(url);
+    // Detect from the post-navigation URL, not the original input URL — some
+    // county sites (e.g. Hunt: hunt-cad.org → esearch.huntcad.org) redirect to
+    // a different host that reveals the real platform via its URL pattern.
+    let platform = detectFromUrl(page.url());
 
     // If URL alone wasn't enough, fingerprint the live page HTML.
     // This catches counties whose URLs don't match any known pattern but whose
@@ -614,8 +617,18 @@ async function runBrowserAgent({
           try {
             const tab = page.locator(sel).first();
             if (await tab.count() > 0) {
+              const beforeUrl = page.url();
               await tab.click({ timeout: 5000 });
               await page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+              const afterUrl = page.url();
+              // Loose text selectors like a:has-text("Parcel") can match an
+              // unrelated nav link (e.g. a "Parcel Map"/GIS link) instead of a
+              // search tab. Bail back if we landed on a map/GIS page.
+              if (afterUrl !== beforeUrl && /\/(maps?|gis)(\/|$|\?)/i.test(afterUrl)) {
+                console.log(`[agent] Tab "${sel}" led to a map page (${afterUrl}) — going back`);
+                await page.goBack({ timeout: 10000 }).catch(() => {});
+                continue;
+              }
               console.log(`[agent] Clicked tab: ${sel}`);
               break;
             }
@@ -632,90 +645,124 @@ async function runBrowserAgent({
           'input[placeholder*="Account" i]',
           'input[placeholder*="Parcel" i]',
         ];
-        let filled = false;
-        for (const sel of inputSelectors) {
-          try {
-            const input = page.locator(sel).first();
-            if (await input.count() > 0) {
-              await input.clear();
-              await input.fill(accountNumber, { timeout: 5000 });
-              console.log(`[agent] Filled input: ${sel} = ${accountNumber}`);
-              filled = true;
-              break;
-            }
-          } catch (_) {}
-        }
-
-        if (!filled) {
-          // Last resort: fill the first visible text/number input on the page
-          const anyInput = page.locator('input[type="text"], input[type="number"], input:not([type])').first();
-          if (await anyInput.count() > 0) {
-            await anyInput.clear();
-            await anyInput.fill(accountNumber, { timeout: 5000 });
-            console.log(`[agent] Filled fallback input with ${accountNumber}`);
-            filled = true;
-          }
-        }
-
-        if (filled) {
-          // Submit the form
-          const submitSelectors = [
-            'button:has-text("Search")', 'input[type="submit"]',
-            'button[type="submit"]', 'a:has-text("Search")',
-          ];
-          for (const sel of submitSelectors) {
+        // Fill the ID input, submit, and extract summary rows — wrapped as a
+        // helper so we can retry once with a normalized ID (e.g. R-prefix
+        // stripped) if the site uses a different ID format than we were given.
+        async function attemptIdSearch(idValue) {
+          let didFill = false;
+          for (const sel of inputSelectors) {
             try {
-              const btn = page.locator(sel).first();
-              if (await btn.count() > 0) {
-                await btn.click({ timeout: 5000 });
-                await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
-                console.log(`[agent] Clicked submit: ${sel}`);
-                formNavigated = true;
+              const input = page.locator(sel).first();
+              if (await input.count() > 0) {
+                await input.clear();
+                await input.fill(idValue, { timeout: 5000 });
+                console.log(`[agent] Filled input: ${sel} = ${idValue}`);
+                didFill = true;
                 break;
               }
             } catch (_) {}
           }
-          if (!formNavigated) {
-            // Try pressing Enter as fallback
-            await page.keyboard.press('Enter');
-            await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
-            formNavigated = true;
+
+          if (!didFill) {
+            // Last resort: fill the first visible text/number input on the page
+            const anyInput = page.locator('input[type="text"], input[type="number"], input:not([type])').first();
+            if (await anyInput.count() > 0) {
+              await anyInput.clear();
+              await anyInput.fill(idValue, { timeout: 5000 });
+              console.log(`[agent] Filled fallback input with ${idValue}`);
+              didFill = true;
+            }
+          }
+
+          let navigated = false;
+          if (didFill) {
+            // Submit the form
+            const submitSelectors = [
+              'button:has-text("Search")', 'input[type="submit"]',
+              'button[type="submit"]', 'a:has-text("Search")',
+            ];
+            for (const sel of submitSelectors) {
+              try {
+                const btn = page.locator(sel).first();
+                if (await btn.count() > 0) {
+                  await btn.click({ timeout: 5000 });
+                  await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
+                  console.log(`[agent] Clicked submit: ${sel}`);
+                  navigated = true;
+                  break;
+                }
+              } catch (_) {}
+            }
+            if (!navigated) {
+              // Try pressing Enter as fallback
+              await page.keyboard.press('Enter');
+              await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
+              navigated = true;
+            }
+          }
+
+          console.log(`[agent] After form nav, URL: ${page.url()}`);
+          onProgress(`Loaded: ${page.url()}`);
+
+          // Wait for the results table to finish rendering (some sites use JS/AJAX)
+          try {
+            await page.waitForSelector('table tbody tr, table tr:nth-child(2)', { timeout: 12000 });
+            console.log('[agent] Results table detected in DOM');
+          } catch (_) {
+            console.log('[agent] No table detected — waiting 3s for JS rendering');
+            await page.waitForTimeout(3000);
+          }
+
+          // Log actual page text so we can see what the browser shows
+          const pageBodyText = await page.evaluate(() => document.body.innerText.substring(0, 2000));
+          console.log(`[agent] Page body text:\n${pageBodyText}\n---`);
+
+          // ── Extract summary rows from the results table ──────────────────
+          const extract = await page.evaluate(() => {
+            const allRows = Array.from(document.querySelectorAll('table tr'));
+            if (allRows.length < 2) return null;
+            const headers = Array.from(allRows[0].querySelectorAll('th, td')).map(el => el.innerText.trim());
+            // A genuine results table has 2+ columns; a lone single-cell first
+            // row is usually a section title (e.g. "Property Information") on
+            // a single-property detail page, not a header for a row list.
+            if (headers.length < 2) return null;
+            const dataRows = allRows.slice(1)
+              .map(row => ({
+                cells: Array.from(row.querySelectorAll('td')).map(td => td.innerText.trim()),
+                // Capture first link href in the row (usually the property detail link)
+                href: row.querySelector('a')?.getAttribute('href') || null,
+              }))
+              // Require 2+ non-empty cells — single-cell rows are section
+              // titles/labels bleeding in from other tables on the page, not
+              // real property rows (fixes taxnetusa.com-style detail pages
+              // being misread as multi-row search results).
+              .filter(r => r.cells.filter(c => c.length > 0).length >= 2);
+            if (dataRows.length === 0) return null;
+            return { headers, rows: dataRows };
+          });
+
+          console.log('[agent] summaryExtract:', JSON.stringify(extract || null).substring(0, 600));
+          return { navigated, extract };
+        }
+
+        const firstAttempt = await attemptIdSearch(accountNumber);
+        formNavigated = firstAttempt.navigated;
+        let summaryExtract = firstAttempt.extract;
+
+        // Some CAD sites store a numeric account number distinct from the
+        // lettered parcel ID shown elsewhere (e.g. "R000074943" real property
+        // vs "P000055353" personal property vs the bare numeric account) —
+        // retry once with the leading letter(s) stripped before giving up.
+        if ((!summaryExtract || summaryExtract.rows.length === 0) && /^[A-Za-z]+\d+$/.test(accountNumber)) {
+          const strippedId = accountNumber.replace(/^[A-Za-z]+/, '');
+          console.log(`[agent] No rows for "${accountNumber}" — retrying with stripped ID "${strippedId}"`);
+          onProgress(`No results for ${accountNumber} — retrying as ${strippedId}...`);
+          const retryAttempt = await attemptIdSearch(strippedId);
+          if (retryAttempt.extract && retryAttempt.extract.rows.length > 0) {
+            summaryExtract = retryAttempt.extract;
+            formNavigated = formNavigated || retryAttempt.navigated;
           }
         }
-
-        console.log(`[agent] After form nav, URL: ${page.url()}`);
-        onProgress(`Loaded: ${page.url()}`);
-
-        // Wait for the results table to finish rendering (some sites use JS/AJAX)
-        try {
-          await page.waitForSelector('table tbody tr, table tr:nth-child(2)', { timeout: 12000 });
-          console.log('[agent] Results table detected in DOM');
-        } catch (_) {
-          console.log('[agent] No table detected — waiting 3s for JS rendering');
-          await page.waitForTimeout(3000);
-        }
-
-        // Log actual page text so we can see what the browser shows
-        const pageBodyText = await page.evaluate(() => document.body.innerText.substring(0, 2000));
-        console.log(`[agent] Page body text:\n${pageBodyText}\n---`);
-
-        // ── Step 1: Extract summary rows from results table ─────────────────
-        const summaryExtract = await page.evaluate(() => {
-          const allRows = Array.from(document.querySelectorAll('table tr'));
-          if (allRows.length < 2) return null;
-          const headers = Array.from(allRows[0].querySelectorAll('th, td')).map(el => el.innerText.trim());
-          const dataRows = allRows.slice(1)
-            .map(row => ({
-              cells: Array.from(row.querySelectorAll('td')).map(td => td.innerText.trim()),
-              // Capture first link href in the row (usually the property detail link)
-              href: row.querySelector('a')?.getAttribute('href') || null,
-            }))
-            .filter(r => r.cells.some(c => c.length > 0));
-          if (dataRows.length === 0) return null;
-          return { headers, rows: dataRows };
-        });
-
-        console.log('[agent] summaryExtract:', JSON.stringify(summaryExtract || null).substring(0, 600));
 
         if (summaryExtract && summaryExtract.rows.length > 0) {
           const { headers, rows } = summaryExtract;

@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "lastUpdated": "2026-05-16",
+  "lastUpdated": "2026-08-24",
   "states": {
     "AL": {
       "Autauga": {
@@ -22487,7 +22487,7 @@
       "Fannin": {
         "url": "http://www.fannincad.org/",
         "platform": "generic",
-        "lastVerified": "2026-05-14",
+        "lastVerified": "2026-08-24",
         "netronlinePath": "/state/TX/county/fannin",
         "taxUrl": "https://fannincountytax.com/search",
         "taxPlatform": "generic"
@@ -22671,7 +22671,7 @@
       "Hamilton": {
         "url": "http://www.hamiltoncad.org/",
         "platform": "generic",
-        "lastVerified": "2026-05-15",
+        "lastVerified": "2026-08-24",
         "netronlinePath": "/state/TX/county/hamilton",
         "taxUrl": "https://hamilton.propertytaxpayments.net/search",
         "taxPlatform": "propertytaxpayments"

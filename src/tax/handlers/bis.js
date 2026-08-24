@@ -576,6 +576,17 @@ async function search(page, {
     if (clicked) console.log(`[bis] Activated owner tab via: ${clicked}`);
   }
 
+  // The tab selectors above are loose text matches ("Account", "Owner") and
+  // can catch an unrelated outbound link (e.g. a third-party "Pay Your
+  // Account" link) instead of a real search tab, navigating off the BIS
+  // domain entirely. Re-validate before continuing rather than plowing ahead
+  // on the wrong site (this is what previously sent Hunt's account search to
+  // taxpayer.justappraised.com instead of esearch.huntcad.org).
+  if (!isBisDomain(page.url())) {
+    console.log(`[bis] Left BIS domain after tab click: ${page.url()} — falling back`);
+    return null;
+  }
+
   // ── 3. Fill the search input ─────────────────────────────────────────────────
   let filledSelector = null;
 
@@ -623,6 +634,13 @@ async function search(page, {
     await page.waitForLoadState('load', { timeout: 15000 }).catch(() => {});
   }
   console.log(`[bis] After submit URL: ${page.url()}`);
+
+  // Same off-domain guard as after the tab click — a "Search" text match
+  // could also land on an unrelated page.
+  if (!isBisDomain(page.url())) {
+    console.log(`[bis] Left BIS domain after submit: ${page.url()} — falling back`);
+    return null;
+  }
 
   // ── 5. Wait for results ──────────────────────────────────────────────────────
   onProgress('Waiting for results...');
