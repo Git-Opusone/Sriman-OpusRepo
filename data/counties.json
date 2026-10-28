@@ -22013,9 +22013,9 @@
         "taxPlatform": "propertytaxpayments"
       },
       "Bexar": {
-        "url": "https://bcad.org/",
+        "url": "https://hgo.harrisgovern.com/bexar/property/search",
         "platform": "generic",
-        "lastVerified": "2026-05-14",
+        "lastVerified": "2026-10-28",
         "netronlinePath": "/state/TX/county/bexar",
         "taxUrl": "https://bexar.acttax.com/act_webdev/bexar/index.jsp",
         "taxPlatform": "actweb"

@@ -27,6 +27,7 @@ const actwebHandler           = require('../tax/handlers/actweb');
 const go2govHandler           = require('../tax/handlers/go2gov');
 const ptaxproHandler          = require('../tax/handlers/ptaxpro');
 const ptpHandler              = require('../tax/handlers/propertytaxpayments');
+const dallasCadHandler        = require('../tax/handlers/dallascad');
 const { detectCaptcha }       = require('./captchaDetector');
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -237,13 +238,14 @@ async function executeTool(page, toolName, input) {
           value: el.value || null,
           options:
             el.tagName === 'SELECT'
-              ? Array.from(el.options).map((o) => ({ value: o.value, text: o.text }))
+              // Subdivision/street dropdowns can hold thousands of options
+              ? Array.from(el.options).slice(0, 50).map((o) => ({ value: o.value, text: o.text }))
               : undefined,
-        }));
+        })).slice(0, 80);
 
         const buttons = Array.from(
           document.querySelectorAll('button, input[type="submit"], input[type="button"], a[class*="btn"]')
-        ).map((el) => ({
+        ).slice(0, 80).map((el) => ({
           tag: el.tagName.toLowerCase(),
           text: (el.innerText || el.value || '').trim().substring(0, 80),
           id: el.id || null,
@@ -507,6 +509,20 @@ async function runBrowserAgent({
       } catch (handlerErr) {
         console.log(`[agent] BIS handler error: ${handlerErr.message} — continuing with AI`);
         onProgress('BIS handler error — falling back to AI agent...');
+      }
+    }
+
+    if (platform === 'dallascad') {
+      onProgress('Detected Dallas CAD — using dedicated handler...');
+      try {
+        const handlerResult = await dallasCadHandler.search(page, {
+          accountNumber, firstName, lastName, fullName, onProgress,
+        });
+        if (handlerResult) return handlerResult;
+        onProgress('Dallas CAD handler fell back — continuing with AI agent...');
+      } catch (handlerErr) {
+        console.log(`[agent] Dallas CAD handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('Dallas CAD handler error — falling back to AI agent...');
       }
     }
 
@@ -1092,10 +1108,12 @@ Search criteria: ${criteria.join(', ')}`;
             content: 'Screenshot captured. See the image in the next message for visual analysis.',
           });
         } else {
+          // Hard cap so one oversized page can't blow the model's 128k context
+          const content = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
           toolMessages.push({
             role: 'tool',
             tool_call_id: toolCall.id,
-            content: typeof result === 'string' ? result : JSON.stringify(result, null, 2),
+            content: content.length > 30000 ? content.substring(0, 30000) + '\n…[truncated]' : content,
           });
         }
       }
