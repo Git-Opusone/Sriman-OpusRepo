@@ -53,6 +53,8 @@ const PLATFORM_RULES = [
   { platform: 'taxweb',       test: u => /taxpayer\.[a-z]+county\.com\/taxweb/i.test(u) },
   // Houston County Tax Office uses BIS platform under a non-standard domain
   { platform: 'bis',          test: u => /houstoncountytaxoffice\.com/i.test(u)        },
+  // Southwest Data Solutions legacy webindex portals (~15 TX CADs)
+  { platform: 'isw',          test: u => /iswdataclient\.azurewebsites\.net|southwestdatasolution\.com\/web/i.test(u) },
   // Dallas CAD — county-specific ASP.NET site
   { platform: 'dallascad',    test: u => /dallascad\.org/i.test(u)                     },
   // Public Portal (Aumentum Technologies) — {county}cad.net / {county}cad.org domains
@@ -139,6 +141,7 @@ function platformLabel(platform) {
     taxweb:              'TaxWeb County Portal',
     ptaxpro:      'PTaxPro / whoownsit.com',
     dallascad:    'Dallas CAD',
+    isw:          'Southwest Data Solutions',
     bis:          'BIS Consultants',
     qpublic:      'qPublic',
     tyler:        'Tyler iasWorld',

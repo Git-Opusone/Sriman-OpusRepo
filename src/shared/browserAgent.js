@@ -28,6 +28,7 @@ const go2govHandler           = require('../tax/handlers/go2gov');
 const ptaxproHandler          = require('../tax/handlers/ptaxpro');
 const ptpHandler              = require('../tax/handlers/propertytaxpayments');
 const dallasCadHandler        = require('../tax/handlers/dallascad');
+const iswHandler              = require('../tax/handlers/isw');
 const { detectCaptcha }       = require('./captchaDetector');
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -509,6 +510,20 @@ async function runBrowserAgent({
       } catch (handlerErr) {
         console.log(`[agent] BIS handler error: ${handlerErr.message} — continuing with AI`);
         onProgress('BIS handler error — falling back to AI agent...');
+      }
+    }
+
+    if (platform === 'isw') {
+      onProgress('Detected Southwest Data Solutions — using dedicated handler...');
+      try {
+        const handlerResult = await iswHandler.search(page, {
+          accountNumber, firstName, lastName, fullName, onProgress,
+        });
+        if (handlerResult) return handlerResult;
+        onProgress('Southwest Data Solutions handler fell back — continuing with AI agent...');
+      } catch (handlerErr) {
+        console.log(`[agent] Southwest Data Solutions handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('Southwest Data Solutions handler error — falling back to AI agent...');
       }
     }
 

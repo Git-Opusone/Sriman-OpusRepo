@@ -21989,8 +21989,8 @@
         "taxPlatform": "propertytaxpayments"
       },
       "Baylor": {
-        "url": "https://baylorcad.southwestdatasolutions.com/",
-        "platform": "generic",
+        "url": "https://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=BAYLORCAD",
+        "platform": "isw",
         "lastVerified": "2026-10-28",
         "netronlinePath": "/state/TX/county/baylor",
         "taxUrl": "https://baylor.propertytaxpayments.net/search",
@@ -22789,8 +22789,8 @@
         "taxPlatform": "propertytaxpayments"
       },
       "Hopkins": {
-        "url": "https://hopkinscad.southwestdatasolutions.com/",
-        "platform": "generic",
+        "url": "https://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=HOPKINSCAD",
+        "platform": "isw",
         "lastVerified": "2026-10-28",
         "netronlinePath": "/state/TX/county/hopkins",
         "taxUrl": "https://hopkins.propertytaxpayments.net/search",
@@ -23349,8 +23349,8 @@
         "taxPlatform": "propertytaxpayments"
       },
       "Palo Pinto": {
-        "url": "https://palopintocad.southwestdatasolutions.com/",
-        "platform": "generic",
+        "url": "https://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=PALOPINTOCAD",
+        "platform": "isw",
         "lastVerified": "2026-10-28",
         "netronlinePath": "/state/TX/county/palo_pinto",
         "taxUrl": "https://palopinto.propertytaxpayments.net/search",
@@ -23469,8 +23469,8 @@
         "taxPlatform": "actweb"
       },
       "Roberts": {
-        "url": "https://robertscad.southwestdatasolutions.com/",
-        "platform": "generic",
+        "url": "https://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=ROBERTSCAD",
+        "platform": "isw",
         "lastVerified": "2026-10-28",
         "netronlinePath": "/state/TX/county/roberts",
         "taxUrl": "https://roberts.propertytaxpayments.net/search",
@@ -23701,8 +23701,8 @@
         "taxPlatform": "propertytaxpayments"
       },
       "Tom Green": {
-        "url": "https://tomgreencad.southwestdatasolutions.com/",
-        "platform": "generic",
+        "url": "https://iswdataclient.azurewebsites.net/webindex.aspx?dbkey=TOMGREENCAD",
+        "platform": "isw",
         "lastVerified": "2026-10-28",
         "netronlinePath": "/state/TX/county/tom_green",
         "taxUrl": "https://tomgreen.propertytaxpayments.net/search",
