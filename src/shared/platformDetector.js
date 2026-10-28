@@ -53,6 +53,8 @@ const PLATFORM_RULES = [
   { platform: 'taxweb',       test: u => /taxpayer\.[a-z]+county\.com\/taxweb/i.test(u) },
   // Houston County Tax Office uses BIS platform under a non-standard domain
   { platform: 'bis',          test: u => /houstoncountytaxoffice\.com/i.test(u)        },
+  // Tyler PublicAccess CAD search (DNN + Kendo), e.g. Williamson CAD
+  { platform: 'tylerpa',      test: u => /search\.wcad\.org/i.test(u)                  },
   // Southwest Data Solutions legacy webindex portals (~15 TX CADs)
   { platform: 'isw',          test: u => /iswdataclient\.azurewebsites\.net|southwestdatasolution\.com\/web/i.test(u) },
   // Dallas CAD — county-specific ASP.NET site
@@ -142,6 +144,7 @@ function platformLabel(platform) {
     ptaxpro:      'PTaxPro / whoownsit.com',
     dallascad:    'Dallas CAD',
     isw:          'Southwest Data Solutions',
+    tylerpa:      'Tyler PublicAccess',
     bis:          'BIS Consultants',
     qpublic:      'qPublic',
     tyler:        'Tyler iasWorld',

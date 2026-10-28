@@ -29,6 +29,7 @@ const ptaxproHandler          = require('../tax/handlers/ptaxpro');
 const ptpHandler              = require('../tax/handlers/propertytaxpayments');
 const dallasCadHandler        = require('../tax/handlers/dallascad');
 const iswHandler              = require('../tax/handlers/isw');
+const tylerPaHandler          = require('../tax/handlers/tylerpa');
 const { detectCaptcha }       = require('./captchaDetector');
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -510,6 +511,20 @@ async function runBrowserAgent({
       } catch (handlerErr) {
         console.log(`[agent] BIS handler error: ${handlerErr.message} — continuing with AI`);
         onProgress('BIS handler error — falling back to AI agent...');
+      }
+    }
+
+    if (platform === 'tylerpa') {
+      onProgress('Detected Tyler PublicAccess — using dedicated handler...');
+      try {
+        const handlerResult = await tylerPaHandler.search(page, {
+          accountNumber, firstName, lastName, fullName, onProgress,
+        });
+        if (handlerResult) return handlerResult;
+        onProgress('Tyler PublicAccess handler fell back — continuing with AI agent...');
+      } catch (handlerErr) {
+        console.log(`[agent] Tyler PublicAccess handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('Tyler PublicAccess handler error — falling back to AI agent...');
       }
     }
 

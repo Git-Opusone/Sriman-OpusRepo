@@ -209,8 +209,8 @@ function mapApiItem(item) {
 
   const apprVal = item.appraisedValue;
   const taxAmountDue = apprVal != null
-    ? `$${Number(apprVal).toLocaleString()}`
-    : (item.marketValue != null ? `$${Number(item.marketValue).toLocaleString()}` : '');
+    ? `$${Number(apprVal).toLocaleString('en-US')}`
+    : (item.marketValue != null ? `$${Number(item.marketValue).toLocaleString('en-US')}` : '');
 
   return {
     parcelId:         String(item.pid || ''),
@@ -336,7 +336,7 @@ function mapDetailApiResponse(data) {
   // Scalar value fields from the primary property record
   // Use nullish coalescing to pick the first non-null/undefined value (preserves numeric 0)
   const pickVal = (...vs) => { for (const v of vs) { if (v != null) return v; } return undefined; };
-  const dollar  = v => (v != null && v !== '') ? `$${Number(v).toLocaleString()}` : undefined;
+  const dollar  = v => (v != null && v !== '') ? `$${Number(v).toLocaleString('en-US')}` : undefined;
   result.netAppraisedValue = dollar(pickVal(prop.netAppraisedValue, prop.netAppraised,  prop.totalAppraisedValue,  prop.appraisedValue));
   result.landMarketValue   = dollar(pickVal(prop.landMarketValue,   prop.landValue,     prop.landMktVal));
   result.improvementValue  = dollar(pickVal(prop.improvementValue,  prop.improvementMarketValue, prop.imprValue, prop.imprMktVal));

@@ -23709,9 +23709,9 @@
         "taxPlatform": "propertytaxpayments"
       },
       "Travis": {
-        "url": "https://www.traviscad.org/propertysearch",
-        "platform": "generic",
-        "lastVerified": "2026-05-15",
+        "url": "https://travis.prodigycad.com/property-search",
+        "platform": "publicportal",
+        "lastVerified": "2026-10-28",
         "netronlinePath": "/state/TX/county/travis",
         "taxUrl": "https://tax-office.traviscountytx.gov/properties/taxes/account-search",
         "taxPlatform": "generic"
