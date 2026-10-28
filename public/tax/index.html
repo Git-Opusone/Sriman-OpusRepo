@@ -2187,11 +2187,11 @@
                       || taxRec.legalDescription || taxRec.legalDesc  || '';
     const locationAddr = aprRec.propertyAddress  || taxRec.propertyAddress
                       || tx['Property Address']  || tx['Situs Address'] || '';
-    const mailingAddr  = ap.mailingAddress || locationAddr;
+    const mailingAddr  = (ap.mailingAddress || ap['Mailing Address'] || locationAddr || '').replace(/\s*\n\s*/g, ', ');
 
-    let acres = ap.legalAcreage || ap.acres || tx['Effective Acres'] || tx['Acres'] || tx['acres'] || '';
+    let acres = ap.legalAcreage || ap.acres || ap['Legal Acreage'] || ap['Acreage'] || tx['Effective Acres'] || tx['Acres'] || tx['acres'] || '';
     if (!acres && legalDesc) {
-      const m = legalDesc.match(/(\d+\.?\d*)\s*ACRES?/i);
+      const m = legalDesc.match(/(\d+\.?\d*)\s*ACRES?\b/i) || legalDesc.match(/\bACRES?\s*(\d+\.?\d*)/i);
       if (m) acres = m[1] + ' ac';
     }
 

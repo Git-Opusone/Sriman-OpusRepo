@@ -161,7 +161,8 @@ async function extractResultsList(page) {
         if (addrCol >= 0)  siteAddress = ct[addrCol] || '';
         if (!ownerName && ct.length > 1) ownerName = ct[1] || '';
 
-        const key = detailUrl || acctNum;
+        // Only rows linking to an account detail page are real results
+        const key = /showdetail|account-details|can=/i.test(detailUrl) ? detailUrl : '';
         if (key && !seen.has(key)) {
           seen.add(key);
           results.push({ acctNum, detailUrl, ownerName, siteAddress });
@@ -313,7 +314,7 @@ async function search(page, { accountNumber = '', altAccountNumbers = [], firstN
       const submitted = await submitSearch(page, actBase, value, searchType);
       if (!submitted) return;
       const pageText = await page.evaluate(() => document.body.innerText || '').catch(() => '');
-      if (!/no\s+records?\s+found|no\s+results|0\s+record/i.test(pageText)) {
+      if (!/no\s+records?\s+found|no\s+results|0\s+record|there\s+are\s+0\s+match/i.test(pageText)) {
         resultsList = await extractResultsList(page);
         if (resultsList.length) console.log(`[actweb] found ${resultsList.length} results via ${label}`);
       }
@@ -430,7 +431,10 @@ async function search(page, { accountNumber = '', altAccountNumbers = [], firstN
       }
     }
 
-    if (!records.length) return null;
+    // The AI fallback only scrapes the instructions page here — report "none" instead
+    if (!records.length) {
+      return { records: [], totalFound: 0, summary: `No account details could be read in ${county} County.`, searchedUrl: page.url() };
+    }
 
     return {
       records,

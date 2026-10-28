@@ -76,7 +76,8 @@ async function readDetail(page) {
       .map(r => ({ code: r[0], name: r[1], taxableValue: r[2], ratePer100: r[3], estimatedTax: r[5] })) : [];
 
     return {
-      propertyId: grab(/Property ID:\s*(\S+)/),
+      // Unknown IDs render an empty card ("Property ID: Geo ID: …") — require a digit
+      propertyId: grab(/Property ID:\s*(\S*\d\S*)/),
       // Blank on many accounts — then the next label ("Property …") follows directly
       geoId:      grab(/Geo ID:\s*(\S*\d\S*)/),
       year:       grab(/Property Year\s+(\d{4})/),
