@@ -440,8 +440,9 @@ router.get('/search/multi/stream', async (req, res) => {
     metrics.activeSearchesGauge.set(activeSearches);
     console.log(`[tax] multi search started (${startedCount} sources) — active: ${activeSearches}/${MAX_CONCURRENT}`);
 
-    // CAD (appraisal) portals use plain numeric IDs — strip any "R" prefix the
-    // caller may have included (e.g. Anderson County "R60110" → "60110").
+    // Most CAD (appraisal) portals use plain numeric IDs — strip any "R" prefix the
+    // caller may have included (e.g. Anderson County "R60110" → "60110"); the CAD
+    // search below retries with the original ID if the stripped one finds nothing.
     const cadRawAccountNumber = (accountNumber || '').replace(/^[rR]/, '');
     const baseParams = {
       firstName: firstName || '', lastName: lastName || '',
@@ -466,10 +467,19 @@ router.get('/search/multi/stream', async (req, res) => {
     if (cadSrc) {
       sendEvent('source_progress', { id: cadSrc.id, message: `Starting search at ${cadSrc.name}...` });
       try {
-        const cadResult = await runBrowserAgentWithTimeout({
+        let cadResult = await runBrowserAgentWithTimeout({
           url: cadSrc.url, ...cadBaseParams,
           onProgress: (msg) => sendEvent('source_progress', { id: cadSrc.id, message: msg }),
         });
+        // Some CADs keep the "R" as part of the ID (Tom Green R000063140, Williamson
+        // R024017) — if the stripped ID found nothing, retry with the ID as typed.
+        if (!cadResult.records?.length && !cadResult.captchaBlocked && cadRawAccountNumber !== (accountNumber || '')) {
+          console.log(`[tax] CAD found nothing for "${cadRawAccountNumber}" — retrying as "${accountNumber}"`);
+          cadResult = await runBrowserAgentWithTimeout({
+            url: cadSrc.url, ...baseParams,
+            onProgress: (msg) => sendEvent('source_progress', { id: cadSrc.id, message: msg }),
+          });
+        }
         sendEvent('source_result', { id: cadSrc.id, name: cadSrc.name, type: cadSrc.type, url: cadSrc.url, ...cadResult });
         metrics.searchesTotal.inc({ endpoint: 'multi', status: cadResult.error ? 'error' : 'success' });
 
