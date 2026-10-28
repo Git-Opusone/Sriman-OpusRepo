@@ -48,6 +48,8 @@ const ACCOUNT_TAB_SELECTORS = [
   '.nav-tabs a:has-text("Account")',
   'a:has-text("Account Number")',
   'a:has-text("Property ID")',
+  // 2025+ BIS layout: "By Owner | By Address | By ID" pill tabs → #PropertyId
+  'a:text-is("By ID")',
   'button:has-text("Account Number")',
   'button:has-text("Property ID")',
   '#account-tab',
@@ -69,6 +71,7 @@ const OWNER_INPUT_SELECTORS = [
 
 // Account / Property ID input
 const ACCOUNT_INPUT_SELECTORS = [
+  'input#PropertyId:visible',
   'input[placeholder="Account Number"]',
   'input[placeholder*="Account Number" i]',
   'input[placeholder="Property ID"]',
@@ -290,6 +293,30 @@ async function extractResultsTable(page) {
   });
 }
 
+async function loadDetailFields(page, detailUrl) {
+  const open = async (u) => {
+    await page.goto(u, { waitUntil: 'load', timeout: 15000 });
+    await page.waitForTimeout(600);
+    await page.waitForSelector('table tr, [class*="detail" i], h1, h2', { timeout: 8000 }).catch(() => {});
+    return extractDetailFields(page);
+  };
+  const hasRates = t => Array.isArray(t) && t.slice(1).some(r => r.slice(2).some(c => /\d/.test(c || '')));
+  const fields = await open(detailUrl);
+  if (hasRates(fields.__taxingUnits) || !fields.__prelimYear || !fields['Tax Year']) return fields;
+  // Detail opened on a preliminary year with no values/taxing units — reload the
+  // latest year that has them.
+  try {
+    const u = new URL(page.url());
+    u.searchParams.set('year', fields['Tax Year']);
+    console.log(`[bis] ${fields.__prelimYear} is preliminary — reloading detail for ${fields['Tax Year']}`);
+    const certified = await open(u.toString());
+    if (hasRates(certified.__taxingUnits) || certified.__assessed) return certified;
+  } catch (err) {
+    console.log(`[bis] certified-year reload failed: ${err.message}`);
+  }
+  return fields;
+}
+
 async function extractDetailFields(page) {
   return page.evaluate(() => {
     const data = {};
@@ -375,7 +402,12 @@ async function extractDetailFields(page) {
 
           const sortedDesc = Object.keys(yearValues).sort((a, b) => Number(b) - Number(a));
           if (sortedDesc.length > 0) {
-            const latestYr = sortedDesc[0];
+            // Preliminary years (e.g. Nueces 2027) show "N/A" everywhere — use the
+            // most recent year that has real figures, and flag the skip so the
+            // caller can reload that year's page for its taxing-unit table.
+            const hasFigures = yr => Object.values(yearValues[yr]).some(v => /\d/.test(v || ''));
+            const latestYr = sortedDesc.find(hasFigures) || sortedDesc[0];
+            if (latestYr !== sortedDesc[0]) data.__prelimYear = sortedDesc[0];
             data['Tax Year'] = latestYr;
 
             // Named scalar fields from the most recent year
@@ -707,10 +739,7 @@ async function search(page, {
       try {
         onProgress(`Loading property card ${i + 1}/${capped.length}...`);
         console.log(`[bis] Detail URL: ${detailUrl}`);
-        await page.goto(detailUrl, { waitUntil: 'load', timeout: 15000 });
-        await page.waitForTimeout(600);
-        await page.waitForSelector('table tr, [class*="detail" i], h1, h2', { timeout: 8000 }).catch(() => {});
-        fields = await extractDetailFields(page);
+        fields = await loadDetailFields(page, detailUrl);
         console.log(`[bis] Detail fields (${Object.keys(fields).length})`);
       } catch (err) {
         console.log(`[bis] Detail error for ${item.propertyId}: ${err.message}`);
@@ -827,10 +856,7 @@ async function search(page, {
       if (detailUrl) {
         onProgress(`Loading detail for ${parcelId || 'record ' + (i + 1)}...`);
         console.log(`[bis] Detail URL: ${detailUrl}`);
-        await page.goto(detailUrl, { waitUntil: 'load', timeout: 15000 });
-        await page.waitForTimeout(600);
-        await page.waitForSelector('table tr, [class*="detail" i], h1, h2', { timeout: 8000 }).catch(() => {});
-        detailFields = await extractDetailFields(page);
+        detailFields = await loadDetailFields(page, detailUrl);
         console.log(`[bis] Detail fields (${Object.keys(detailFields).length}):`, JSON.stringify(detailFields).substring(0, 400));
         onProgress(`Extracted ${Object.keys(detailFields).length} fields.`);
       }

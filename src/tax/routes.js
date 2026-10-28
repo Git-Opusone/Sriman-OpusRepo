@@ -113,6 +113,58 @@ function extractTaxAccountId(cadResult, originalId) {
   return originalId;
 }
 
+function parseDetails(rec) {
+  const d = rec && rec.additionalDetails;
+  if (!d) return {};
+  if (typeof d !== 'string') return d;
+  try { return JSON.parse(d); } catch (_) { return {}; }
+}
+
+/**
+ * Every ID the CAD record carries for the property (property ID, geographic ID,
+ * …). Tax offices key accounts on different ones, so their handlers try each.
+ */
+function cadAlternateIds(cadResult) {
+  const rec = cadResult && cadResult.records && cadResult.records[0];
+  if (!rec) return [];
+  const d = parseDetails(rec);
+  return [...new Set([
+    rec.parcelId, d.propId, d.propertyId, d['Property ID'],
+    d.geoId, d['Geo ID'], d['Geographic ID'], d.taxOfficeRef, d.refId,
+  ].map(v => (v == null ? '' : String(v).trim()))
+   .filter(v => v && v.length < 40 && /\d/.test(v)))];
+}
+
+/**
+ * Name searches at the tax office can return several properties for the same
+ * owner — put the one that matches the CAD record (same geo/property ID digits,
+ * situs address or legal description) first, since the report uses records[0].
+ */
+function rankTaxRecordsByCad(taxResult, cadResult) {
+  const cad = cadResult && cadResult.records && cadResult.records[0];
+  if (!cad || !taxResult || !Array.isArray(taxResult.records) || taxResult.records.length < 2) return;
+  const digits = s => String(s || '').replace(/\D/g, '');
+  const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const cadIds = cadAlternateIds(cadResult).map(digits).filter(x => x.length >= 3);
+  const cadAddr = norm((cad.propertyAddress || '').split(',')[0]);
+  const cadLegal = norm(cad.legalDescription);
+  const score = (rec) => {
+    const d = parseDetails(rec);
+    const ids = [rec.parcelId, d['Account Number'], d['CAD Reference No']].map(digits).filter(Boolean);
+    let s = 0;
+    if (ids.some(id => cadIds.includes(id))) s += 4;
+    const addr = norm(rec.propertyAddress);
+    if (cadAddr && addr && (cadAddr.startsWith(addr) || addr.startsWith(cadAddr))) s += 2;
+    const legal = norm(rec.legalDescription || d['Legal Description']);
+    if (cadLegal && legal && legal === cadLegal) s += 2;
+    return s;
+  };
+  taxResult.records = taxResult.records
+    .map((rec, i) => ({ rec, i, s: score(rec) }))
+    .sort((a, b) => b.s - a.s || a.i - b.i)
+    .map(x => x.rec);
+}
+
 function classifyNetronlineSource(name, url) {
   const n = (name || '').toLowerCase();
   const u = (url  || '').toLowerCase();
@@ -462,6 +514,7 @@ router.get('/search/multi/stream', async (req, res) => {
 
     let cadAccountNumber  = accountNumber || '';  // best account ID discovered from CAD
     let cadOwnerLastName  = lastName      || '';  // owner name from CAD result for Tax Office name-search fallback
+    let cadResultForTax   = null;                 // CAD result, to pick the matching tax record
 
     // Run CAD source first (if present)
     if (cadSrc) {
@@ -484,6 +537,7 @@ router.get('/search/multi/stream', async (req, res) => {
         metrics.searchesTotal.inc({ endpoint: 'multi', status: cadResult.error ? 'error' : 'success' });
 
         // Extract the best account number from the CAD result to use for the Tax Office search
+        cadResultForTax  = cadResult;
         cadAccountNumber = extractTaxAccountId(cadResult, accountNumber || '');
         if (cadAccountNumber !== (accountNumber || '')) {
           console.log(`[tax] CAD account ID resolved: "${accountNumber}" → "${cadAccountNumber}"`);
@@ -512,13 +566,16 @@ router.get('/search/multi/stream', async (req, res) => {
       // If no name was supplied by the caller but we extracted one from CAD, use it as fallback
       const taxNameFallback = (!lastName && !fullName && cadOwnerLastName)
         ? { lastName: cadOwnerLastName } : {};
-      const taxParams = { ...baseParams, accountNumber: cadAccountNumber, ...taxNameFallback };
+      const altAccountNumbers = [...cadAlternateIds(cadResultForTax), accountNumber || '']
+        .filter(id => id && id !== cadAccountNumber);
+      const taxParams = { ...baseParams, accountNumber: cadAccountNumber, altAccountNumbers, ...taxNameFallback };
       sendEvent('source_progress', { id: taxSrc.id, message: `Starting search at ${taxSrc.name}...` });
       try {
         const taxResult = await runBrowserAgentWithTimeout({
           url: taxSrc.url, ...taxParams,
           onProgress: (msg) => sendEvent('source_progress', { id: taxSrc.id, message: msg }),
         });
+        rankTaxRecordsByCad(taxResult, cadResultForTax);
         sendEvent('source_result', { id: taxSrc.id, name: taxSrc.name, type: taxSrc.type, url: taxSrc.url, ...taxResult });
         metrics.searchesTotal.inc({ endpoint: 'multi', status: taxResult.error ? 'error' : 'success' });
       } catch (err) {
@@ -535,6 +592,15 @@ router.get('/search/multi/stream', async (req, res) => {
           url: src.url, ...baseParams,
           onProgress: (msg) => sendEvent('source_progress', { id: src.id, message: msg }),
         });
+        // The AI agent sometimes reads a date-picker as records (owner "30", parcel "27")
+        if (Array.isArray(result.records)) {
+          const junk = r => /^\d{0,3}$/.test((r.ownerName || '').trim()) && /^\d{0,3}$/.test((r.parcelId || '').trim());
+          const kept = result.records.filter(r => !junk(r));
+          if (kept.length !== result.records.length) {
+            result.totalFound = kept.length;
+            result.records = kept;
+          }
+        }
         sendEvent('source_result', { id: src.id, name: src.name, type: src.type, url: src.url, ...result });
         metrics.searchesTotal.inc({ endpoint: 'multi', status: result.error ? 'error' : 'success' });
       } catch (err) {

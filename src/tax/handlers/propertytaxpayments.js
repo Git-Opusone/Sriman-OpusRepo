@@ -221,7 +221,7 @@ async function extractDetail(page) {
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 
-async function search(page, { accountNumber = '', firstName = '', lastName = '', fullName = '', onProgress = () => {} }) {
+async function search(page, { accountNumber = '', altAccountNumbers = [], firstName = '', lastName = '', fullName = '', onProgress = () => {} }) {
   const county     = countyFromUrl(page.url());
   const searchBase = baseFromUrl(page.url());
 
@@ -247,9 +247,20 @@ async function search(page, { accountNumber = '', firstName = '', lastName = '',
     if (submitResult.captchaBlocked) return { ...submitResult, searchedUrl: page.url() };
     if (submitResult.noInput) return null;
 
-    // Check for no results; retry with name if account search found nothing
+    // Check for no results; retry with the CAD's other IDs, then with name
+    const NO_RESULTS = /no\s+(?:results?|records?)\s*found|0\s+results?|not\s+found/i;
     let bodyText = await page.evaluate(() => document.body.innerText || '').catch(() => '');
-    if (/no\s+(?:results?|records?)\s*found|0\s+results?|not\s+found/i.test(bodyText) && hasAcct && hasName) {
+    if (hasAcct) {
+      for (const id of [...new Set(altAccountNumbers.map(s => (s || '').trim()))]) {
+        if (!id || id === searchValue || !NO_RESULTS.test(bodyText)) continue;
+        console.log(`[ptp] account search empty — retrying with "${id}"`);
+        submitResult = await submitSearch(page, searchBase + '/search', id, SEARCH_FIELD.account);
+        if (submitResult.captchaBlocked) return { ...submitResult, searchedUrl: page.url() };
+        bodyText = await page.evaluate(() => document.body.innerText || '').catch(() => '');
+        searchValue = id;
+      }
+    }
+    if (NO_RESULTS.test(bodyText) && hasAcct && hasName) {
       const nameFallback = (lastName || fullName || firstName || '').trim().toUpperCase();
       console.log(`[ptp] account search empty — retrying with name: "${nameFallback}"`);
       onProgress(`PropertyTaxPayments: retrying with name "${nameFallback}"...`);

@@ -351,6 +351,7 @@ async function runBrowserAgent({
   lastName,
   fullName,
   accountNumber,
+  altAccountNumbers = [],   // other IDs for the same property (CAD property/geo IDs) — tax-office handlers try these too
   onProgress = () => {},
 }) {
   const headless = process.env.BROWSER_HEADLESS !== 'false';
@@ -588,7 +589,7 @@ async function runBrowserAgent({
       onProgress('Detected ACTweb tax portal — using dedicated handler...');
       try {
         const handlerResult = await actwebHandler.search(page, {
-          accountNumber, firstName, lastName, fullName, onProgress,
+          accountNumber, altAccountNumbers, firstName, lastName, fullName, onProgress,
         });
         if (handlerResult) return handlerResult;
         onProgress('ACTweb handler fell back — continuing with AI agent...');
@@ -644,7 +645,7 @@ async function runBrowserAgent({
       onProgress('Detected PropertyTaxPayments.net — using dedicated handler...');
       try {
         const handlerResult = await ptpHandler.search(page, {
-          accountNumber, firstName, lastName, fullName, onProgress,
+          accountNumber, altAccountNumbers, firstName, lastName, fullName, onProgress,
         });
         if (handlerResult) return handlerResult;
         onProgress('PropertyTaxPayments handler fell back — continuing with AI agent...');

@@ -77,7 +77,8 @@ async function readDetail(page) {
 
     return {
       propertyId: grab(/Property ID:\s*(\S+)/),
-      geoId:      grab(/Geo ID:\s*(\S+)/),
+      // Blank on many accounts — then the next label ("Property …") follows directly
+      geoId:      grab(/Geo ID:\s*(\S*\d\S*)/),
       year:       grab(/Property Year\s+(\d{4})/),
       ownerName:  own[1] || '',
       mailing:    own.slice(2).filter(s => !/^Ownership Interest/i.test(s)).join(', '),

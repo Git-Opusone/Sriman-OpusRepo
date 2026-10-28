@@ -925,7 +925,7 @@
   }
 
   function escHtml(str) {
-    return str
+    return String(str == null ? '' : str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
@@ -984,9 +984,22 @@
     return html ? `<div class="property-detail-grid">${html}</div>` : '';
   }
 
-  function renderApprDetailTable(title, tableData) {
-    if (!tableData || tableData.length < 2) return '';
-    const [headers, ...rows] = tableData;
+  // Handlers emit CAD tables in three shapes: [[header…], [row…]] (BIS, Public
+  // Portal), [{col: value}] (Southwest Data Solutions, CAD website template) and
+  // ['A01- NAME'] (Tyler PublicAccess taxing units). Normalise to header + rows.
+  function _tableAsRows(tableData) {
+    if (!Array.isArray(tableData) || !tableData.length) return null;
+    if (Array.isArray(tableData[0])) return tableData.length > 1 ? tableData : null;
+    if (typeof tableData[0] !== 'object') return [['Value'], ...tableData.map(v => [v])];
+    const keys = [...new Set(tableData.flatMap(o => Object.keys(o || {})))];
+    const label = k => k.replace(/([a-z])([A-Z0-9])/g, '$1 $2').replace(/^./, c => c.toUpperCase());
+    return [keys.map(label), ...tableData.map(o => keys.map(k => (o || {})[k]))];
+  }
+
+  function renderApprDetailTable(title, rawTable) {
+    const tableData = _tableAsRows(rawTable);
+    if (!tableData) return '';
+    const [headers, ...rows] = tableData.map(r => r.map(c => (c == null ? '' : String(c))));
     let html = `<div class="appr-detail-section">
       <div class="appr-detail-title">${escHtml(title)}</div>
       <table class="appr-detail-table"><thead><tr>`;
@@ -1589,10 +1602,17 @@
     // per-source results
     evtSource.addEventListener('source_result', (e) => {
       const data = JSON.parse(e.data);
-      renderSourceResult(data);
-      // Capture for report generation
-      if (data.type === 'appraisal' && !_reportState.appraisalData) _reportState.appraisalData = data;
-      if (data.type === 'tax'       && !_reportState.taxData)       _reportState.taxData = data;
+      // Capture for report generation first — a rendering problem must not lose the data
+      if (data.type === 'appraisal' && !_reportState.appraisalData && (data.records || []).length) _reportState.appraisalData = data;
+      if (data.type === 'tax'       && !_reportState.taxData       && (data.records || []).length) _reportState.taxData = data;
+      try {
+        renderSourceResult(data);
+      } catch (err) {
+        console.error('renderSourceResult failed', err);
+        const recordsEl = document.getElementById(`dynRecords_${data.id}`);
+        if (recordsEl) recordsEl.innerHTML =
+          `<div class="no-results"><div class="icon">⚠️</div><p>Records were found but could not be displayed (${escHtml(err.message)}). They are still included in the tax report.</p></div>`;
+      }
     });
 
     // link-only source (e.g. Historic Aerials)
@@ -1857,9 +1877,11 @@
   function _classifyEntity(name, county) {
     const n = (name || '').toLowerCase();
     const cL = (county || '').toLowerCase();
+    // Specific kinds first — "MIDLAND ISD" / "MIDLAND HOSPITAL" contain the county name
+    if (n.includes('school') || /\bi\.?\s?s\.?\s?d\b/.test(n) || n.includes('college')) return 'school';
+    if (/\b(city|town|village)\b/.test(n) || n.includes('muni')) return 'city';
+    if (/hosp|water|drain|util|fire|emerg|esd|flood|naviga|nav dist|conserv|\bmud\b|wcid|levee|\bport\b/.test(n)) return 'utility';
     if (n.includes('county') || (cL && n.includes(cL))) return 'county';
-    if (n.includes('city') || n.includes('muni') || n.includes('municipal')) return 'city';
-    if (n.includes('school') || n.includes('isd') || n.includes('college')) return 'school';
     return 'utility';
   }
 
@@ -2183,22 +2205,67 @@
 
     const propType     = ap.propertyType  || tx['Property Type'] || '';
     const yearHeaders2 = tx['Year Headers'] || [];
-    const taxYear      = aprRec.taxYear
+    const taxYear      = String(aprRec.taxYear
                       || (yearHeaders2.length ? Math.max(...yearHeaders2.map(y => parseInt(y)||0)).toString() : '')
-                      || new Date().getFullYear().toString();
+                      || new Date().getFullYear().toString());
+
+    // ── CAD value history + taxing units, whatever shape the handler used ───
+    const _val = v => {
+      if (v == null) return '';
+      if (typeof v === 'number') return '$' + v.toLocaleString('en-US');
+      const s = String(v).trim();
+      return /^n\/?a$/i.test(s) ? '' : s;
+    };
+    const _rowObjs = (raw) => {
+      const t = _tableAsRows(raw);
+      if (!t) return [];
+      const hdr = t[0].map(h => String(h || '').toLowerCase().replace(/\s+/g, ' ').trim());
+      return t.slice(1).map(r => { const o = {}; hdr.forEach((h, i) => { o[h] = r[i]; }); return o; });
+    };
+    const _pick = (o, ...keys) => { for (const k of keys) { const v = _val(o[k]); if (v) return v; } return ''; };
+
+    const valueHistory = _rowObjs(ap.valueHistory).map(o => ({
+      year:     String(_pick(o, 'year')),
+      land:     _pick(o, 'land market', 'land', 'land value', 'land market value'),
+      impr:     _pick(o, 'improvements', 'improvement', 'improvement value'),
+      market:   _pick(o, 'market value', 'appraised', 'appraised value', 'total', 'total value'),
+      assessed: _pick(o, 'assessed', 'assessed value', 'net appraised', 'appraised', 'market value'),
+    })).filter(r => /^\d{4}$/.test(r.year) && (r.land || r.impr || r.market));
+    const curVh = valueHistory.find(r => r.year === taxYear)
+               || valueHistory.slice().sort((a, b) => b.year - a.year)[0] || {};
+
+    const taxingUnits = _rowObjs(ap.taxingUnits).map(o => ({
+      name:    _pick(o, 'name', 'description', 'entity name', 'taxing entity', 'taxing unit', 'value', 'entity'),
+      rate:    _pick(o, 'rate per 100', 'tax rate', 'rate'),
+      taxable: _pick(o, 'taxable value', 'taxable'),
+      est:     _pick(o, 'estimated tax', 'estimated', 'tax'),
+    })).filter(u => u.name && !/^total/i.test(u.name)).map(u => ({
+      ...u,
+      rate:    u.rate.replace(/^\$/, ''),
+      taxable: /^[\d,]+(\.\d+)?$/.test(u.taxable) ? '$' + u.taxable : u.taxable,
+    }));
+    const _num = s => parseFloat(String(s || '').replace(/[^0-9.]/g, '')) || 0;
+    const rateSum  = taxingUnits.reduce((s, u) => s + _num(u.rate), 0);
+    const taxRate  = rateSum > 0 ? rateSum.toFixed(6) + ' per $100' : '';
+    const estTotal = taxingUnits.reduce((s, u) => s + _num(u.est), 0);
+    const countyUnit = taxingUnits.find(u => _classifyEntity(u.name, county) === 'county');
 
     // ap.landMarketValue/improvementValue/netAppraisedValue come from older CAD
     // handlers; the current Public Portal (Aumentum) handler instead reports
     // marketValue/appraisedValue as a single combined figure — check both.
-    const landVal  = ap.landMarketValue  || ap.landValue   || tx['Land Value']        || tx['Land Market Value']  || tx['Land Market']  || tx['Ag Valuation'] || '';
-    const bldgVal  = ap.improvementValue || ap.bldgValue   || tx['Improvement Value'] || tx['Building Value']     || tx['Improvements'] || '';
-    const totalVal = ap.netAppraisedValue || ap.totalValue || ap.marketValue || ap.appraisedValue
-                  || tx['Assessed Value']    || tx['Total Value']        || tx['Market Value'] || tx['Assessed']     || tx['Appraised Value'] || tx['netAppraisedValue'] || '';
+    const landVal  = _val(ap.landMarketValue)  || _val(ap.landValue) || curVh.land || tx['Land Value'] || tx['Land Market Value'] || tx['Land Market'] || tx['Ag Valuation'] || '';
+    const bldgVal  = _val(ap.improvementValue) || _val(ap.bldgValue) || curVh.impr || tx['Improvement Value'] || tx['Building Value'] || tx['Improvements'] || '';
+    const marketVal = _val(ap.marketValue) || curVh.market || _val(ap.totalValue) || _val(ap.appraisedValue)
+                  || tx['Market Value'] || tx['Gross Value'] || tx['Total Value'] || '';
+    const totalVal = _val(ap.netAppraisedValue) || curVh.assessed || _val(ap.appraisedValue) || marketVal
+                  || tx['Assessed Value'] || tx['Assessed'] || tx['Appraised Value'] || tx['netAppraisedValue'] || '';
+    const taxableVal = countyUnit ? countyUnit.taxable : '';
+    const exemptions = (ap.exemptions || ap['Exemptions'] || '').toString().replace(/For privacy reasons.*$/is, '').replace(/\s+/g, ' ').trim();
 
     const propStatus  = tx['Property Status'] || taxRec.paymentStatus || '';
-    const currentDue  = tx['Current Due']     || '';
-    const pastDue     = tx['Past Years Due']  || '';
-    const totalTaxDue = tx['Total Taxes Due'] || '';
+    const currentDue  = tx['Current Due']     || tx['Current Amount Due'] || tx['Current Year Due'] || '';
+    const pastDue     = tx['Past Years Due']  || tx['Prior Year Due']     || '';
+    const totalTaxDue = tx['Total Taxes Due'] || tx['Total Amount Due']   || (taxData ? taxRec.taxAmountDue : '') || '';
 
     // ── Bill table rows ─────────────────────────────────────────────────────
     const billTables  = tx['Bill Tables']  || [];
@@ -2236,27 +2303,32 @@
     const collector  = KNOWN_COLLECTOR[countyKey] || {};
 
     // ── Pre-compute value history rows ──────────────────────────────────────
-    const valueHistoryRows = (() => {
-      const vh = Array.isArray(ap.valueHistory) ? ap.valueHistory : [];
-      return vh.slice(0, 5).map(function(row) {
-        const yr = Array.isArray(row) ? row[0] : (row.year || '');
-        const lv = Array.isArray(row) ? row[1] : (row.land || '');
-        const bv = Array.isArray(row) ? row[2] : (row.improvement || '');
-        const tv = Array.isArray(row) ? row[3] : (row.total || '');
-        if (!yr || yr === taxYear) return '';
+    const valueHistoryRows = valueHistory
+      .filter(r => r.year !== taxYear)
+      .sort((a, b) => b.year - a.year)
+      .slice(0, 4)
+      .map(function(r) {
         return '<tr style="background:#fafafa;color:#555;">' +
-          '<td class="ct">' + _re(yr) + '</td>' +
-          '<td class="amt">' + _re(lv) + '</td>' +
-          '<td class="amt">' + _re(bv) + '</td>' +
-          '<td class="amt">' + _re(tv) + '</td>' +
-          '<td class="amt">' + _re(lv) + '</td>' +
-          '<td class="amt">' + _re(bv) + '</td>' +
-          '<td class="amt">' + _re(tv) + '</td>' +
+          '<td class="ct">' + _re(r.year) + '</td>' +
+          '<td class="amt">' + _re(r.land) + '</td>' +
+          '<td class="amt">' + _re(r.impr) + '</td>' +
+          '<td class="amt">' + _re(r.market) + '</td>' +
+          '<td class="amt">' + _re(r.land) + '</td>' +
+          '<td class="amt">' + _re(r.impr) + '</td>' +
+          '<td class="amt">' + _re(r.assessed) + '</td>' +
           '<td class="amt"><span style="color:#bbb;">—</span></td>' +
           '<td><span style="color:#bbb;">—</span></td>' +
           '</tr>';
       }).join('');
-    })();
+
+    // Estimated taxes from the CAD's taxing-unit rates — shown when the tax
+    // office returned no bill history (or wasn't reachable)
+    const estimateTableHtml = taxingUnits.length ? (
+      '<table><thead><tr><th>TAXING ENTITY</th><th>TAX RATE (PER $100)</th><th>TAXABLE VALUE</th><th>ESTIMATED TAX</th></tr></thead><tbody>' +
+      taxingUnits.map(u => '<tr><td>' + _re(u.name) + '</td><td class="ct">' + _re(u.rate) + '</td><td class="amt">' + _re(u.taxable) + '</td><td class="amt">' + _re(u.est) + '</td></tr>').join('') +
+      (estTotal > 0 ? '<tr style="font-weight:bold;background:#f3f6fb;"><td>TOTAL (ESTIMATED, ' + escHtml(taxYear) + ')</td><td class="ct">' + _re(rateSum.toFixed(6)) + '</td><td></td><td class="amt">$' + estTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td></tr>' : '') +
+      '</tbody></table>'
+    ) : '';
 
     // ── Pre-compute per-entity section blocks ───────────────────────────────
     const entityBlocksHtml = (() => {
@@ -2272,13 +2344,17 @@
           .map(r => r.taxYear);
         const uniquePaidYears = paidEYears.filter(function(y,i) { return paidEYears.indexOf(y) === i; }).sort().reverse();
 
+        const taxAcct = taxRec.parcelId || tx['Account Number'] || '';
         const entAutoComment = [
           uniquePaidYears.length ? 'Paid years: ' + uniquePaidYears.slice(0,5).join(', ') + '.' : '',
           eRows.length ? eRows.length + ' tax record(s) retrieved for this entity.' : '',
+          !ent && taxAcct ? 'Tax office account ' + taxAcct + (totalTaxDue ? ': total due ' + totalTaxDue : '') + (propStatus ? ' (' + propStatus + ')' : '') + '.' : '',
+          !ent && !eRows.length && estTotal > 0 ? 'Taxes shown are estimates from ' + taxYear + ' CAD rates' + (taxAcct ? '' : '; tax office balance not retrieved') + '.' : '',
         ].filter(Boolean).join(' ');
+        const balanceDue = /balance|due|delinq/i.test(propStatus) && _toDollars(totalTaxDue) > 0;
         const entCritComment = hasDelinq
           ? 'DELINQUENT taxes on record' + (entPastDue > 0 ? ' (past due: $' + entPastDue.toFixed(2) + ')' : '') + '.'
-          : '';
+          : (!ent && balanceDue ? 'Balance due at tax office: ' + totalTaxDue + '.' : '');
 
         // Total due / balance for this entity
         const entTotalDue = eRows.reduce(function(s,r){ return s + _toDollars(r.totalDue); }, 0);
@@ -2298,16 +2374,16 @@
           ['EMAIL ID',             collector.email   || ''],
           ['CURRENT AMOUNT DUE',   entTotalDue > 0 ? '$' + entTotalDue.toFixed(2) : (currentDue || totalTaxDue || '')],
           ['PAST YEARS DUE',       entPastDue  > 0 ? '$' + entPastDue.toFixed(2)  : (pastDue || '')],
-          ['TOTAL DUE',            entBalance  > 0 ? '$' + entBalance.toFixed(2)  : (entTotalDue > 0 ? '$' + entTotalDue.toFixed(2) : '')],
+          ['TOTAL DUE',            entBalance  > 0 ? '$' + entBalance.toFixed(2)  : (entTotalDue > 0 ? '$' + entTotalDue.toFixed(2) : (ent ? '' : totalTaxDue))],
         ];
         const disbHtml = '<div class="disb">' + disbRows.map(r => _dRow(r[0], r[1])).join('') + '</div>';
 
         return '<div class="entity-block">' +
           '<div class="entity-block-title">&#9670; ENTITY: ' + escHtml(ent || 'All Entities') + '</div>' +
           '<div class="sec">COLLECTING ENTITIES</div>' +
-          _entityListHtml(ent, entityOrder, county) +
+          _entityListHtml(ent, entityOrder.length ? entityOrder : taxingUnits.map(u => u.name), county) +
           '<div class="sec">TAX INFORMATION</div>' +
-          _taxTableHtml(eRows, true) +
+          (eRows.length || !estimateTableHtml ? _taxTableHtml(eRows, true) : estimateTableHtml) +
           '<div class="cmts">' +
             '<div class="cbox"><div class="cl">COMMENTS:</div><div class="cv">' +
               (entAutoComment ? escHtml(entAutoComment) : '&nbsp;') +
@@ -2409,7 +2485,7 @@ tr.paid-r td{color:#14532d;background:#f0fdf4;} tr.due-r td{color:#991b1b;backgr
   ${_pRow('MAILING ADDRESS', mailingAddr)}
   ${_pRow('ACRES', acres)}
   ${_pRow('LOCATION ADDRESS', locationAddr)}
-  ${_pRow('TAX RATE', '')}
+  ${_pRow('TAX RATE', taxRate)}
   ${_pRow('COUNTY NAME', county)}
   ${_pRow('STATE', state)}
 </div>
@@ -2430,12 +2506,12 @@ tr.paid-r td{color:#14532d;background:#f0fdf4;} tr.due-r td{color:#991b1b;backgr
       <td class="ct">${_re(taxYear)}</td>
       <td class="amt">${_re(landVal)}</td>
       <td class="amt">${_re(bldgVal)}</td>
-      <td class="amt">${_re(totalVal)}</td>
+      <td class="amt">${_re(marketVal || totalVal)}</td>
       <td class="amt">${_re(landVal)}</td>
       <td class="amt">${_re(bldgVal)}</td>
       <td class="amt">${_re(totalVal)}</td>
-      <td class="amt"><span style="color:#bbb;">&#8212;</span></td>
-      <td><span style="color:#bbb;">&#8212;</span></td>
+      <td class="amt">${_re(taxableVal)}</td>
+      <td>${_re(exemptions)}</td>
     </tr>
     ${valueHistoryRows}
   </tbody>

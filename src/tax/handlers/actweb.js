@@ -41,10 +41,21 @@ function cleanNameForActweb(name) {
 
 // ─── Submit search form on index.jsp ─────────────────────────────────────────
 //
-// searchType: 'name' | 'account' | 'cadref'
-// We find the right radio button by matching its label text rather than using
-// hardcoded numeric values — actweb instances vary per county.
-// 'name' leaves the default radio untouched (Owner Name is always the default).
+// searchType: 'name' | 'account' | 'long' | 'cadref'
+// The search-by choice is matched by its label text rather than hardcoded
+// values — actweb instances vary per county. Two layouts exist:
+//   legacy  (act_webdev/<county>/index.jsp): input[name=searchby] radios, each
+//           labelled by <label for> / the text node that follows it
+//   current (<county>/<county>/index.jsp):   select#search-type
+// 'name' leaves the default (Owner Name) untouched. If the requested type is not
+// offered by this county, the search is skipped rather than silently run as an
+// owner-name search.
+
+const SEARCH_TYPE_LABEL = {
+  cadref:  /cad\s+reference/i,
+  account: /^account\s+no/i,
+  long:    /long\s+account/i,
+};
 
 async function submitSearch(page, actBase, searchValue, searchType) {
   const indexUrl = `${actBase}/index.jsp`;
@@ -59,26 +70,34 @@ async function submitSearch(page, actBase, searchValue, searchType) {
     return false;
   }
 
-  // Select the right radio button by label text — don't hardcode numeric values
   if (searchType !== 'name') {
-    const keyword = searchType === 'cadref' ? 'cad reference' : 'account no';
-    const selected = await page.evaluate((kw) => {
-      const radios = Array.from(document.querySelectorAll('input[name="searchby"]'));
-      for (const radio of radios) {
-        const container = radio.closest('td, tr, div, label, span') || radio.parentElement;
-        const txt = (container?.innerText || container?.textContent || '').toLowerCase();
-        if (txt.includes(kw)) { radio.click(); return radio.value; }
+    const re = SEARCH_TYPE_LABEL[searchType];
+    const selected = await page.evaluate(({ src, flags }) => {
+      const re = new RegExp(src, flags);
+      const sel = document.querySelector('select#search-type, select[name="search-type"]');
+      if (sel) {
+        const opt = Array.from(sel.options).find(o => re.test(o.text.trim()));
+        if (!opt) return null;
+        sel.value = opt.value;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+        return opt.value;
+      }
+      for (const radio of Array.from(document.querySelectorAll('input[name="searchby"]'))) {
+        let txt = (document.querySelector(`label[for="${radio.id}"]`) || {}).innerText || '';
+        for (let s = radio.nextSibling; s && !txt.trim() && s.nodeName !== 'INPUT'; s = s.nextSibling) txt = s.textContent || '';
+        if (re.test(txt.trim())) { radio.click(); return radio.value; }
       }
       return null;
-    }, keyword);
-    console.log(`[actweb] radio "${keyword}" → value=${selected}`);
+    }, { src: re.source, flags: re.flags });
+    console.log(`[actweb] search-by "${searchType}" → value=${selected}`);
+    if (!selected) return false;
   }
-  // For 'name', the default (Owner Name) radio is already selected — don't touch it
 
   try {
     await Promise.all([
       page.waitForNavigation({ waitUntil: 'networkidle', timeout: 45000 }).catch(() => {}),
-      page.click('input[type="submit"], button[type="submit"]', { timeout: 5000 }),
+      // Current layout has modal "Okay" submit buttons ahead of the real one
+      page.click('input[type="submit"][value*="search" i], button[type="submit"]:has-text("Search")', { timeout: 5000 }),
     ]);
     await page.waitForTimeout(2000);
   } catch (e) {
@@ -95,9 +114,12 @@ async function submitSearch(page, actBase, searchValue, searchType) {
 async function extractResultsList(page) {
   return page.evaluate(() => {
     const results = [];
-    const tables = Array.from(document.querySelectorAll('table'));
+    const seen = new Set();
+    // Legacy pages nest the results table inside layout tables — only leaf
+    // tables hold the real rows (outer ones yield "Your Search Results" junk)
+    const tables = Array.from(document.querySelectorAll('table')).filter(t => !t.querySelector('table'));
     for (const tbl of tables) {
-      const rows = Array.from(tbl.querySelectorAll('tr'));
+      const rows = Array.from(tbl.rows);
       if (rows.length < 2) continue;
 
       const headerRow = rows.find(r => {
@@ -139,7 +161,9 @@ async function extractResultsList(page) {
         if (addrCol >= 0)  siteAddress = ct[addrCol] || '';
         if (!ownerName && ct.length > 1) ownerName = ct[1] || '';
 
-        if (acctNum || detailUrl) {
+        const key = detailUrl || acctNum;
+        if (key && !seen.has(key)) {
+          seen.add(key);
           results.push({ acctNum, detailUrl, ownerName, siteAddress });
         }
       }
@@ -265,7 +289,7 @@ async function extractDetailPage(page) {
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 
-async function search(page, { accountNumber = '', firstName = '', lastName = '', fullName = '', onProgress = () => {} }) {
+async function search(page, { accountNumber = '', altAccountNumbers = [], firstName = '', lastName = '', fullName = '', onProgress = () => {} }) {
   const actBase  = baseFromUrl(page.url());
   const county   = countyFromUrl(page.url());
   const hasAcct  = !!(accountNumber || '').trim();
@@ -295,14 +319,21 @@ async function search(page, { accountNumber = '', firstName = '', lastName = '',
       }
     }
 
-    // Strategy 1: CAD Reference No. search (TX CAD parcel IDs are CAD refs on actweb)
-    if (hasAcct) {
-      await trySearch('CAD reference', (accountNumber || '').trim(), 'cadref');
-    }
-
-    // Strategy 2: Account No. search (some counties use actweb account numbers directly)
-    if (hasAcct) {
-      await trySearch('account number', (accountNumber || '').trim(), 'account');
+    // Strategies 1–2 for each known ID (the order's ID plus the CAD's property
+    // and geographic IDs): CAD Reference No., then Account No. Counties differ —
+    // Nueces accepts the CAD property ID as a CAD reference, Galveston has no CAD
+    // reference option but its accounts are "R" + property ID, and many use the
+    // Geo ID digits as the (long) account number.
+    const ids = [...new Set([accountNumber, ...altAccountNumbers].map(s => (s || '').trim()).filter(Boolean))];
+    for (const id of ids) {
+      await trySearch('CAD reference', id, 'cadref');
+      await trySearch('account number', id, 'account');
+      if (/^\d+$/.test(id)) await trySearch('account number', `R${id}`, 'account');
+      const digits = id.replace(/\D/g, '');
+      if (digits !== id && digits.length >= 6) {
+        await trySearch('account number', digits, 'account');
+        await trySearch('long account number', digits, 'long');
+      }
     }
 
     // Strategy 3: Full cleaned owner name (strips & — actweb stores "SMITH DENNIS A NORMA A")
