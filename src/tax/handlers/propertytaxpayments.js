@@ -35,7 +35,10 @@ async function safeGoto(page, url, timeout = 35000) {
 
 // ─── Search form interaction ──────────────────────────────────────────────────
 
-async function submitSearch(page, searchBase, searchValue) {
+// "Search By" dropdown (#search-by / Query.SearchField) values on the site
+const SEARCH_FIELD = { account: '1', owner: '2' };
+
+async function submitSearch(page, searchBase, searchValue, searchField = SEARCH_FIELD.account) {
   const searchUrl = searchBase.replace(/\/search\/?$/, '') + '/search';
   console.log(`[ptp] navigating to ${searchUrl}`);
   await safeGoto(page, searchUrl, 30000);
@@ -75,6 +78,10 @@ async function submitSearch(page, searchBase, searchValue) {
     console.log('[ptp] could not find search input');
     return { noInput: true };
   }
+
+  // Defaults to Account Number — an owner name searched that way always returns 0 rows
+  await page.selectOption('select[name="Query.SearchField"], #search-by', searchField, { timeout: 3000 })
+    .catch(() => console.log('[ptp] search-by dropdown not found'));
 
   // Submit via Enter or button
   try {
@@ -118,7 +125,9 @@ async function extractResults(page) {
         .map(c => (c.innerText || '').trim().toLowerCase());
       const acctIdx  = headers.findIndex(h => h.includes('account'));
       const ownerIdx = headers.findIndex(h => h.includes('owner') || h.includes('name'));
-      const addrIdx  = headers.findIndex(h => h.includes('address') || h.includes('situs'));
+      const addrIdx  = headers.findIndex(h => h.includes('address') || h.includes('situs') || h.includes('location'));
+      const dueIdx   = headers.findIndex(h => h.includes('due'));
+      const legalIdx = headers.findIndex(h => h.includes('legal'));
 
       for (const row of rows) {
         if (row === headerRow) continue;
@@ -131,10 +140,12 @@ async function extractResults(page) {
         const acctNum   = acctIdx  >= 0 ? ct[acctIdx]  || '' : (link ? (link.innerText || '').trim() : '');
         const ownerName = ownerIdx >= 0 ? ct[ownerIdx] || '' : '';
         const siteAddr  = addrIdx  >= 0 ? ct[addrIdx]  || '' : '';
+        const totalDue  = dueIdx   >= 0 ? ct[dueIdx]   || '' : '';
+        const legalDesc = legalIdx >= 0 ? ct[legalIdx] || '' : '';
         const detailUrl = link ? link.href : '';
 
         if (acctNum || detailUrl) {
-          results.push({ acctNum, detailUrl, ownerName, siteAddr });
+          results.push({ acctNum, detailUrl, ownerName, siteAddr, totalDue, legalDesc });
         }
       }
       if (results.length) break;
@@ -231,7 +242,8 @@ async function search(page, { accountNumber = '', firstName = '', lastName = '',
       ? (accountNumber || '').trim()
       : (lastName || fullName || firstName || '').trim().toUpperCase();
 
-    let submitResult = await submitSearch(page, searchBase + '/search', searchValue);
+    let submitResult = await submitSearch(page, searchBase + '/search', searchValue,
+      hasAcct ? SEARCH_FIELD.account : SEARCH_FIELD.owner);
     if (submitResult.captchaBlocked) return { ...submitResult, searchedUrl: page.url() };
     if (submitResult.noInput) return null;
 
@@ -241,7 +253,7 @@ async function search(page, { accountNumber = '', firstName = '', lastName = '',
       const nameFallback = (lastName || fullName || firstName || '').trim().toUpperCase();
       console.log(`[ptp] account search empty — retrying with name: "${nameFallback}"`);
       onProgress(`PropertyTaxPayments: retrying with name "${nameFallback}"...`);
-      submitResult = await submitSearch(page, searchBase + '/search', nameFallback);
+      submitResult = await submitSearch(page, searchBase + '/search', nameFallback, SEARCH_FIELD.owner);
       if (submitResult.captchaBlocked) return { ...submitResult, searchedUrl: page.url() };
       bodyText = await page.evaluate(() => document.body.innerText || '').catch(() => '');
     }
@@ -272,7 +284,7 @@ async function search(page, { accountNumber = '', firstName = '', lastName = '',
         const ownerName   = detail.ownerName   || item.ownerName   || '';
         const siteAddress = detail.siteAddress  || item.siteAddr   || '';
         const acctNum     = detail.acctNum      || item.acctNum    || '';
-        const totalDue    = detail.totalDue     || '';
+        const totalDue    = detail.totalDue     || item.totalDue   || '';
         const assessed    = detail.assessedVal  || '';
 
         let paymentStatus = '';
@@ -294,7 +306,7 @@ async function search(page, { accountNumber = '', firstName = '', lastName = '',
             'Assessed Value':    assessed,
             'Total Taxes Due':   totalDue,
             'Current Year Due':  detail.currentDue || '',
-            'Legal Description': detail.legalDesc || '',
+            'Legal Description': detail.legalDesc || item.legalDesc || '',
             'Source':            `${county} County Tax Office (PropertyTaxPayments.net)`,
             'Detail URL':        detail.detailUrl || item.detailUrl,
             'Bill Tables':       detail.billTables  || [],

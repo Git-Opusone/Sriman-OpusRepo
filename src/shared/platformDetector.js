@@ -35,6 +35,8 @@ const PLATFORM_RULES = [
   { platform: 'vision',       test: u => /vgsi\.com/i.test(u)                           },
   // BIS rules MUST come before publicportal — esearch.fallscad.net is BIS, not Public Portal
   { platform: 'bis',          test: u => /esearch\.[a-z]+cad\.(org|net)/i.test(u)       },
+  // Other BIS esearch hosts: waller-cad.org, comalad.org, bosquecad.com, scurrytex.com …
+  { platform: 'bis',          test: u => /\/\/esearch\.[a-z0-9-]+\.(org|net|com)\//i.test(u) },
   { platform: 'bis',          test: u => /bisconsultants\.com/i.test(u)                 },
   { platform: 'bis',          test: u => /cadcentral\.com/i.test(u)                     },
   // BIS installations under county govt domains (esearch.co.{county}.tx.us or esearch.{county}-tax.com)

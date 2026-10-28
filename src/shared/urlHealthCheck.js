@@ -13,7 +13,6 @@
  */
 
 const axios   = require('axios');
-const { updateCountyUrl } = require('./countyDirectory');
 
 const NETRONLINE_BASE = 'https://publicrecords.netronline.com';
 const TIMEOUT_ALIVE   = 8000;   // ms for health check
@@ -39,12 +38,6 @@ const SKIP_HREF = [
   'state.al.us','state.ak.us','state.ar.us','state.mn.us',
 ];
 
-// Domains that might return 403 due to bot detection but are NOT dead URLs
-const KNOWN_PLATFORM_DOMAINS = [
-  'schneidercorp.com', 'tylerhost.net', 'tylertech.com',
-  'patriotproperties.com', 'vgsi.com', 'visionappraisal.com',
-  'bisconsultants.com', 'cadcentral.com',
-];
 const SKIP_TEXT = ['clerk','recorder','gis','mapping','aerial','vital','ucc','corporation'];
 
 function detectPlatform(url) {
@@ -90,17 +83,27 @@ async function checkUrlHealth(url) {
     try {
       res = await tryRequest('HEAD');
     } catch (_) {
-      res = await tryRequest('GET');
+      res = null;
     }
+    // Many county sites reject HEAD (403/405) but serve GET fine — retry with GET
+    if (!res || res.status >= 400) res = await tryRequest('GET');
 
     const status    = res.status;
     const finalUrl  = res.request?.res?.responseUrl || url;
     const finalDomain = baseDomain(finalUrl);
 
-    // For known platforms, a 403 means bot-blocked not dead — treat as alive
-    if (status === 403 && KNOWN_PLATFORM_DOMAINS.some(d => originalDomain.includes(d.split('.')[0]))) {
-      return 'alive';
-    }
+    // Expired domains bounce to registrar parking hosts (ww17.example.org, ww38.…)
+    try {
+      if (/^ww\d+\./i.test(new URL(finalUrl).hostname)) {
+        console.log(`[healthCheck] ${url} → dead (parked domain ${finalUrl})`);
+        return 'dead';
+      }
+    } catch (_) {}
+
+    // 401/403/429 mean the server is up but bot-filtering us (Cloudflare challenge,
+    // rate limit). The Playwright browser often gets through, so this is not "dead".
+    if ([401, 403, 429].includes(status)) return 'alive';
+
     // Dead if 4xx/5xx or redirected to a completely different domain
     if (status >= 400) return 'dead';
     if (finalDomain && originalDomain && finalDomain !== originalDomain) {
@@ -118,7 +121,7 @@ async function checkUrlHealth(url) {
 
 /**
  * Scrape netronline for the current property search URL of a county.
- * Updates countyDirectory if a new URL is found.
+ * Does not persist the result (see note in body).
  * Returns the new URL or null.
  */
 async function findLiveUrl(stateCode, countyName) {
@@ -160,8 +163,8 @@ async function findLiveUrl(stateCode, countyName) {
 
     if (bestUrl) {
       if (isValidPropertyUrl(bestUrl)) {
-        const platform = detectPlatform(bestUrl);
-        updateCountyUrl(stateCode, countyName, bestUrl, platform);
+        // Not persisted: netronline usually lists the CAD homepage, and saving it
+        // would silently replace a deeper search-page URL in counties.json.
         console.log(`[urlHealthCheck] Found new URL for ${stateCode}/${countyName}: ${bestUrl}`);
       } else {
         console.log(`[urlHealthCheck] Rejected netronline URL (not a valid property search site): ${bestUrl}`);
@@ -213,7 +216,18 @@ function isValidPropertyUrl(url) {
  * Master function: checks stored URL, refreshes via netronline if dead.
  * Returns { url, status: 'alive'|'refreshed'|'dead', message }
  */
+const RESOLVE_TTL_MS = 30 * 60 * 1000;
+const _resolveCache  = new Map();   // storedUrl → { at, result }
+
 async function resolveCountyUrl(storedUrl, stateCode, countyName) {
+  const cached = _resolveCache.get(storedUrl);
+  if (cached && Date.now() - cached.at < RESOLVE_TTL_MS) return cached.result;
+  const result = await _resolveCountyUrl(storedUrl, stateCode, countyName);
+  _resolveCache.set(storedUrl, { at: Date.now(), result });
+  return result;
+}
+
+async function _resolveCountyUrl(storedUrl, stateCode, countyName) {
   // Known-platform URLs (Beacon, Tyler, qPublic, etc.) are maintained by national vendors.
   // An IP block or bot-detect from this machine doesn't mean the URL is dead — skip check.
   const isKnownPlatform = TRUSTED_PLATFORM_DOMAINS.some(d => (storedUrl || '').toLowerCase().includes(d));
