@@ -30,6 +30,7 @@ const ptpHandler              = require('../tax/handlers/propertytaxpayments');
 const dallasCadHandler        = require('../tax/handlers/dallascad');
 const iswHandler              = require('../tax/handlers/isw');
 const tylerPaHandler          = require('../tax/handlers/tylerpa');
+const dataChamberHandler      = require('../tax/handlers/datachamber');
 const { detectCaptcha }       = require('./captchaDetector');
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -511,6 +512,19 @@ async function runBrowserAgent({
       } catch (handlerErr) {
         console.log(`[agent] BIS handler error: ${handlerErr.message} — continuing with AI`);
         onProgress('BIS handler error — falling back to AI agent...');
+      }
+    }
+
+    if (platform === 'datachamber') {
+      try {
+        const handlerResult = await dataChamberHandler.search(page, {
+          accountNumber, firstName, lastName, fullName, onProgress,
+        });
+        if (handlerResult) return handlerResult;
+        onProgress('CAD website handler fell back — continuing with AI agent...');
+      } catch (handlerErr) {
+        console.log(`[agent] CAD website handler error: ${handlerErr.message} — continuing with AI`);
+        onProgress('CAD website handler error — falling back to AI agent...');
       }
     }
 

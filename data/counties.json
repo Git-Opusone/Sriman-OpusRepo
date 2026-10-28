@@ -21934,7 +21934,7 @@
       },
       "Archer": {
         "url": "https://www.archercad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/archer",
         "taxUrl": "https://archer.propertytaxpayments.net/search",
@@ -21942,7 +21942,7 @@
       },
       "Armstrong": {
         "url": "http://armstrongcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/armstrong",
         "taxUrl": "https://armstrong.propertytaxpayments.net/search",
@@ -22158,7 +22158,7 @@
       },
       "Carson": {
         "url": "http://www.carsoncad.org",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/carson",
         "taxUrl": "https://carson.propertytaxpayments.net/search",
@@ -22182,7 +22182,7 @@
       },
       "Chambers": {
         "url": "http://www.chamberscad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/chambers",
         "taxUrl": "https://www.chamberstax.com/",
@@ -22198,7 +22198,7 @@
       },
       "Childress": {
         "url": "http://www.childresscad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/childress",
         "taxUrl": "https://childress.propertytaxpayments.net/search",
@@ -22206,7 +22206,7 @@
       },
       "Clay": {
         "url": "http://www.claycad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/clay",
         "taxUrl": "https://clay.propertytaxpayments.net/search",
@@ -22222,7 +22222,7 @@
       },
       "Coke": {
         "url": "http://www.cokecad.org",
-        "platform": "bis",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/coke",
         "taxUrl": "https://coke.propertytaxpayments.net/search",
@@ -22246,7 +22246,7 @@
       },
       "Collingsworth": {
         "url": "http://www.collingsworthcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/collingsworth",
         "taxUrl": "https://collingsworth.propertytaxpayments.net/search",
@@ -22302,7 +22302,7 @@
       },
       "Cottle": {
         "url": "http://www.cottlecad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/cottle",
         "taxUrl": "https://cottle.propertytaxpayments.net/search",
@@ -22310,7 +22310,7 @@
       },
       "Crane": {
         "url": "https://www.cranecad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": "2026-05-14",
         "netronlinePath": "/state/TX/county/crane",
         "taxUrl": "https://crane.propertytaxpayments.net/search",
@@ -22318,7 +22318,7 @@
       },
       "Crockett": {
         "url": "http://crockettcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/crockett",
         "taxUrl": "https://crockett.propertytaxpayments.net/search",
@@ -22334,7 +22334,7 @@
       },
       "Culberson": {
         "url": "http://culbersoncad.org",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/culberson",
         "taxUrl": "https://culberson.propertytaxpayments.net/search",
@@ -22358,7 +22358,7 @@
       },
       "Dawson": {
         "url": "http://www.dawsoncad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/dawson",
         "taxUrl": "https://dawsoncountytax.com/search",
@@ -22390,7 +22390,7 @@
       },
       "DeWitt": {
         "url": "https://www.dewittcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": "2026-10-28",
         "netronlinePath": "/state/TX/county/dewitt",
         "taxUrl": "https://dewitt.propertytaxpayments.net/search",
@@ -22398,7 +22398,7 @@
       },
       "Dickens": {
         "url": "http://www.dickenscad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/dickens",
         "taxUrl": "https://dickens.propertytaxpayments.net/search",
@@ -22414,7 +22414,7 @@
       },
       "Donley": {
         "url": "https://donleycad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/donley",
         "taxUrl": "https://donley.propertytaxpayments.net/search",
@@ -22430,7 +22430,7 @@
       },
       "Eastland": {
         "url": "http://eastlandcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/eastland",
         "taxUrl": "https://eastland.propertytaxpayments.net/search",
@@ -22502,7 +22502,7 @@
       },
       "Fisher": {
         "url": "http://www.fishercad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/fisher",
         "taxUrl": "https://fisher.propertytaxpayments.net/search",
@@ -22518,7 +22518,7 @@
       },
       "Foard": {
         "url": "http://www.foardcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/foard",
         "taxUrl": "https://foard.propertytaxpayments.net/search",
@@ -22534,7 +22534,7 @@
       },
       "Franklin": {
         "url": "https://franklin-cad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": "2026-05-14",
         "netronlinePath": "/state/TX/county/franklin",
         "taxUrl": "https://franklin.propertytaxpayments.net/search",
@@ -22542,7 +22542,7 @@
       },
       "Freestone": {
         "url": "http://www.freestonecad.org",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/freestone",
         "taxUrl": "https://freestone.propertytaxpayments.net/search",
@@ -22550,7 +22550,7 @@
       },
       "Frio": {
         "url": "https://www.friocad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": "2026-05-14",
         "netronlinePath": "/state/TX/county/frio",
         "taxUrl": "https://frio.propertytaxpayments.net/search",
@@ -22590,7 +22590,7 @@
       },
       "Glasscock": {
         "url": "http://glasscockcad.org",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/glasscock",
         "taxUrl": "https://tax.co.glasscock.tx.us/",
@@ -22598,7 +22598,7 @@
       },
       "Goliad": {
         "url": "http://www.goliadcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/goliad",
         "taxUrl": "https://goliad.propertytaxpayments.net/search",
@@ -22606,7 +22606,7 @@
       },
       "Gonzales": {
         "url": "http://www.gonzalescad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/gonzales",
         "taxUrl": "https://gonzales.propertytaxpayments.net/search",
@@ -22662,7 +22662,7 @@
       },
       "Hall": {
         "url": "http://www.hallcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/hall",
         "taxUrl": "https://hall.propertytaxpayments.net/search",
@@ -22678,7 +22678,7 @@
       },
       "Hansford": {
         "url": "https://www.hansfordcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": "2026-05-14",
         "netronlinePath": "/state/TX/county/hansford",
         "taxUrl": "https://hansford.propertytaxpayments.net/search",
@@ -22686,7 +22686,7 @@
       },
       "Hardeman": {
         "url": "http://www.hardemancad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/hardeman",
         "taxUrl": "https://hardeman.propertytaxpayments.net/search",
@@ -22726,7 +22726,7 @@
       },
       "Haskell": {
         "url": "https://www.haskellcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": "2026-05-14",
         "netronlinePath": "/state/TX/county/haskell",
         "taxUrl": "https://haskell.propertytaxpayments.net/search",
@@ -22742,7 +22742,7 @@
       },
       "Hemphill": {
         "url": "http://www.hemphillcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/hemphill",
         "taxUrl": "https://hemphill.propertytaxpayments.net/search",
@@ -22798,7 +22798,7 @@
       },
       "Houston": {
         "url": "http://www.houstoncad.org/",
-        "platform": "bis",
+        "platform": "datachamber",
         "lastVerified": "2026-05-16",
         "netronlinePath": "/state/TX/county/houston",
         "taxUrl": "https://esearch.houstoncountytaxoffice.com/",
@@ -22830,7 +22830,7 @@
       },
       "Hutchinson": {
         "url": "http://www.hutchinsoncad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/hutchinson",
         "taxUrl": "https://hutchinson.propertytaxpayments.net/search",
@@ -22846,7 +22846,7 @@
       },
       "Jack": {
         "url": "https://www.jackcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/jack",
         "taxUrl": "https://jack.propertytaxpayments.net/search",
@@ -22870,7 +22870,7 @@
       },
       "Jeff Davis": {
         "url": "http://www.jeffdaviscad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/jeff_davis",
         "taxUrl": "https://jeffdavis.propertytaxpayments.net/search",
@@ -22886,7 +22886,7 @@
       },
       "Jim Hogg": {
         "url": "http://jimhogg-cad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/jim_hogg",
         "taxUrl": "https://jimhogg.propertytaxpayments.net/search",
@@ -22910,7 +22910,7 @@
       },
       "Jones": {
         "url": "http://www.jonescad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/jones",
         "taxUrl": "https://jones.propertytaxpayments.net/search",
@@ -22918,7 +22918,7 @@
       },
       "Karnes": {
         "url": "http://www.karnescad.org",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/karnes",
         "taxUrl": "https://karnes.propertytaxpayments.net/search",
@@ -22950,7 +22950,7 @@
       },
       "Kent": {
         "url": "http://www.kentcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/kent",
         "taxUrl": "https://kent.propertytaxpayments.net/search",
@@ -22974,7 +22974,7 @@
       },
       "King": {
         "url": "http://kingcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/king",
         "taxUrl": "https://king.propertytaxpayments.net/search",
@@ -23054,7 +23054,7 @@
       },
       "Leon": {
         "url": "http://leoncad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/leon",
         "taxUrl": "https://leon.propertytaxpayments.net/search",
@@ -23086,7 +23086,7 @@
       },
       "Live Oak": {
         "url": "http://liveoakappraisal.com/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/live_oak",
         "taxUrl": "https://liveoak.propertytaxpayments.net/search",
@@ -23102,7 +23102,7 @@
       },
       "Loving": {
         "url": "http://lovingcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/loving",
         "taxUrl": "https://loving.propertytaxpayments.net/search",
@@ -23118,7 +23118,7 @@
       },
       "Lynn": {
         "url": "http://www.lynncad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/lynn",
         "taxUrl": "https://lynn.propertytaxpayments.net/search",
@@ -23134,7 +23134,7 @@
       },
       "Marion": {
         "url": "https://www.marioncad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": "2026-10-28",
         "netronlinePath": "/state/TX/county/marion",
         "taxUrl": "https://marioncountytax.com/search",
@@ -23142,7 +23142,7 @@
       },
       "Martin": {
         "url": "http://www.martincad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/martin",
         "taxUrl": "https://martin.propertytaxpayments.net/search",
@@ -23174,7 +23174,7 @@
       },
       "McCulloch": {
         "url": "http://www.mccullochcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/mcculloch",
         "taxUrl": "https://mcculloch.propertytaxpayments.net/search",
@@ -23206,7 +23206,7 @@
       },
       "Menard": {
         "url": "http://menardcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/menard",
         "taxUrl": "https://menard.propertytaxpayments.net/search",
@@ -23270,7 +23270,7 @@
       },
       "Morris": {
         "url": "http://morriscad.com/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/morris",
         "taxUrl": "https://morris.propertytaxpayments.net/search",
@@ -23294,7 +23294,7 @@
       },
       "Navarro": {
         "url": "http://navarrocad.com/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/navarro",
         "taxUrl": "https://actweb.acttax.com/act_webdev/navarro/index.jsp",
@@ -23310,7 +23310,7 @@
       },
       "Nolan": {
         "url": "http://www.nolan-cad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/nolan",
         "taxUrl": "https://nolan.propertytaxpayments.net/search",
@@ -23326,7 +23326,7 @@
       },
       "Ochiltree": {
         "url": "https://www.ochiltreecad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/ochiltree",
         "taxUrl": "https://ochiltree.propertytaxpayments.net/search",
@@ -23358,7 +23358,7 @@
       },
       "Panola": {
         "url": "http://panolacad.org",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/panola",
         "taxUrl": "https://panola.propertytaxpayments.net/search",
@@ -23382,7 +23382,7 @@
       },
       "Pecos": {
         "url": "http://www.pecoscad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/pecos",
         "taxUrl": "https://pecos.propertytaxpayments.net/search",
@@ -23430,7 +23430,7 @@
       },
       "Reagan": {
         "url": "http://www.reagancad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/reagan",
         "taxUrl": "https://reagan.propertytaxpayments.net/search",
@@ -23462,7 +23462,7 @@
       },
       "Refugio": {
         "url": "http://www.refugiocad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/refugio",
         "taxUrl": "https://actweb.acttax.com/act_webdev/refugio/index.jsp",
@@ -23502,7 +23502,7 @@
       },
       "Rusk": {
         "url": "http://www.ruskcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/rusk",
         "taxUrl": "https://ruskcountytax.com/",
@@ -23518,7 +23518,7 @@
       },
       "San Augustine": {
         "url": "http://www.sanaugustinecad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/san_augustine",
         "taxUrl": "https://sanaugustine.propertytaxpayments.net/search",
@@ -23542,7 +23542,7 @@
       },
       "San Saba": {
         "url": "https://www.sansabacad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/san_saba",
         "taxUrl": "https://sansaba.propertytaxpayments.net/search",
@@ -23582,7 +23582,7 @@
       },
       "Sherman": {
         "url": "http://www.shermancad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/sherman",
         "taxUrl": "https://sherman.propertytaxpayments.net/search",
@@ -23622,7 +23622,7 @@
       },
       "Sterling": {
         "url": "http://www.sterlingcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/sterling",
         "taxUrl": "https://sterling.propertytaxpayments.net/search",
@@ -23630,7 +23630,7 @@
       },
       "Stonewall": {
         "url": "http://www.stonewallcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/stonewall",
         "taxUrl": "https://stonewall.propertytaxpayments.net/search",
@@ -23686,7 +23686,7 @@
       },
       "Throckmorton": {
         "url": "https://www.throckmortoncad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": "2026-10-28",
         "netronlinePath": "/state/TX/county/throckmorton",
         "taxUrl": "https://throckmorton.propertytaxpayments.net/search",
@@ -23742,7 +23742,7 @@
       },
       "Upton": {
         "url": "http://uptoncad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/upton",
         "taxUrl": "https://upton.propertytaxpayments.net/search",
@@ -23798,7 +23798,7 @@
       },
       "Ward": {
         "url": "http://www.wardcad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/ward",
         "taxUrl": "https://ward.propertytaxpayments.net/search",
@@ -23830,7 +23830,7 @@
       },
       "Wheeler": {
         "url": "http://www.wheelercad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/wheeler",
         "taxUrl": "https://wheeler.propertytaxpayments.net/search",
@@ -23878,7 +23878,7 @@
       },
       "Winkler": {
         "url": "https://winklercad.org/",
-        "platform": "generic",
+        "platform": "datachamber",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/winkler",
         "taxUrl": "http://tax.co.winkler.tx.us",

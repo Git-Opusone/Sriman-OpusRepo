@@ -115,6 +115,9 @@ function detectFromHtml(html) {
   // Aumentum React SPA public portals: title is exactly "Public Portal" but no CAD name in static HTML
   if (h.includes('<title>public portal</title>') && h.includes('/static/js/'))
                                                                           return 'publicportal';
+  // Shared CAD website template used by ~66 small TX appraisal districts
+  if (h.includes('data_chamber_table') ||
+      (h.includes('action="/home/search"') && h.includes('name="searchoption"'))) return 'datachamber';
   // PTaxPro / whoownsit.com county aggregator template
   if (h.includes('name-addr-acctno') || h.includes('whoownsit.com'))     return 'ptaxpro';
 
@@ -145,6 +148,7 @@ function platformLabel(platform) {
     dallascad:    'Dallas CAD',
     isw:          'Southwest Data Solutions',
     tylerpa:      'Tyler PublicAccess',
+    datachamber:  'TX CAD Website (shared template)',
     bis:          'BIS Consultants',
     qpublic:      'qPublic',
     tyler:        'Tyler iasWorld',
