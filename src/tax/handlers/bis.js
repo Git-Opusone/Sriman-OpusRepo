@@ -131,6 +131,22 @@ function isBisDomain(url) {
 }
 
 /**
+ * On a CAD homepage (e.g. aransascad.org), follow its link to the CAD's own
+ * esearch host (esearch.aransascad.org). Only same-domain esearch links count,
+ * so an unrelated outbound link can't pull us onto another county's site.
+ */
+async function followEsearchLink(page) {
+  const baseOf = u => { try { return new URL(u).hostname.split('.').slice(-2).join('.'); } catch (_) { return ''; } };
+  const base = baseOf(page.url());
+  const hrefs = await page.$$eval('a[href*="esearch."]', as => as.map(a => a.href)).catch(() => []);
+  const target = hrefs.find(h => isBisDomain(h) && baseOf(h) === base);
+  if (!target) return false;
+  console.log(`[bis] following homepage link to search portal: ${target}`);
+  await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 30000 }).catch(() => {});
+  return isBisDomain(page.url());
+}
+
+/**
  * Wait for the page to be a usable search form.
  * SPAs may take a moment to mount; also handles ASP.NET disclaimer pages.
  */
@@ -138,7 +154,7 @@ async function ensureSearchPage(page) {
   // Bail out immediately if we've been redirected to a non-BIS domain
   // (e.g., esearch.austincad.org → austincad.org WordPress site)
   const currentUrl = page.url();
-  if (!isBisDomain(currentUrl)) {
+  if (!isBisDomain(currentUrl) && !(await followEsearchLink(page))) {
     console.log(`[bis] ensureSearchPage: non-BIS domain after redirect: ${currentUrl}`);
     return false;
   }
