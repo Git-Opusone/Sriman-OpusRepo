@@ -89,9 +89,18 @@ function extractTaxAccountId(cadResult, originalId) {
       if (typeof details === 'string') {
         try { details = JSON.parse(details); } catch (_) { details = {}; }
       }
+      // publicportal.js / prodigycad — Tax Office cross-reference (highest priority)
+      for (const key of ['taxOfficeRef', 'refId']) {
+        if (details[key] && typeof details[key] === 'string' && details[key].trim()) return details[key].trim();
+      }
+      // Then the CAD property ID: most TX tax offices key on it (Waller finds
+      // 45536 but not its geo ID R307400-026-000-100). Geo IDs still reach the
+      // tax-office handlers as alternates (cadAlternateIds).
+      if (rec.parcelId && /\d/.test(rec.parcelId) && !/motor\s*vehicle|renewal/i.test(rec.parcelId)) {
+        return rec.parcelId.trim();
+      }
       const ACCT_KEYS = [
-        // publicportal.js / prodigycad — Tax Office cross-reference (highest priority)
-        'taxOfficeRef', 'refId', 'geoId', 'propId',
+        'propId', 'geoId',
         // Common label variants
         'Account Number', 'Account No', 'Account', 'Account #', 'Acct',
         'Property ID', 'Parcel ID', 'Parcel Number', 'Tax Account', 'CAD ID',

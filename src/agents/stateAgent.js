@@ -161,21 +161,33 @@ async function tryRepair(baseUrl, state, county, entry, runId) {
  * @param {boolean}  [opts.repair]      attempt URL repairs (default true)
  * @param {string}   [opts.trigger]     'schedule' | 'manual'
  */
-async function runStateAgent({ state, baseUrl, counties, concurrency = 2, aiMax = 40, repair = true, trigger = 'manual' }) {
+async function runStateAgent({ state, baseUrl, counties, concurrency = 2, aiMax = 40, repair = true, trigger = 'manual', resume = null }) {
   state = state.toUpperCase();
-  const list = counties && counties.length ? counties : getCountiesForState(state);
-  const prev = store.latestRun(state, { finishedOnly: true, fullOnly: true });
-  const run = {
-    id: `${state}-${new Date().toISOString().replace(/[:.]/g, '-').replace(/-\d{3}Z$/, 'Z')}`,
-    state, trigger, startedAt: new Date().toISOString(), finishedAt: null,
-    previousRunId: prev ? prev.id : null,
-    partial: !!(counties && counties.length),
-    total: list.length, counties: {}, summary: {}, regressions: [], repairs: [],
-  };
+  let run, list;
+  if (resume) {
+    // Continue a run cut off by a restart/deploy with the counties it hadn't reached
+    run = resume;
+    const all = run.countyList || getCountiesForState(state);
+    list = all.filter(c => !run.counties[c]);
+    run.resumedAt = [...(run.resumedAt || []), new Date().toISOString()];
+  } else {
+    list = counties && counties.length ? counties : getCountiesForState(state);
+    run = {
+      id: `${state}-${new Date().toISOString().replace(/[:.]/g, '-').replace(/-\d{3}Z$/, 'Z')}`,
+      state, trigger, startedAt: new Date().toISOString(), finishedAt: null,
+      partial: !!(counties && counties.length),
+      countyList: list,
+      total: list.length, counties: {}, summary: {}, regressions: [], repairs: [],
+    };
+  }
+  const prev = run.previousRunId
+    ? store.loadRun(run.previousRunId)
+    : store.latestRun(state, { finishedOnly: true, fullOnly: true });
+  run.previousRunId = prev ? prev.id : null;
   store.saveRun(run);
-  console.log(`[agents] ${run.id}: starting ${list.length} counties (${trigger})`);
+  console.log(`[agents] ${run.id}: ${resume ? 'resuming' : 'starting'} ${list.length} counties (${trigger})`);
 
-  let next = 0, aiUsed = 0;
+  let next = 0, aiUsed = run.aiDiagnoses || 0;
   const worker = async () => {
     while (next < list.length) {
       const county = list[next++];
@@ -211,6 +223,7 @@ async function runStateAgent({ state, baseUrl, counties, concurrency = 2, aiMax 
       run.counties[county] = r;
       run.summary[r.category] = (run.summary[r.category] || 0) + 1;
       run.done = Object.keys(run.counties).length;
+      run.aiDiagnoses = aiUsed;
       store.saveRun(run);
       console.log(`[agents] ${state}/${county}: ${r.category} (${r.probe?.status || '-'}, ${r.probe?.secs ?? '-'}s)`);
     }

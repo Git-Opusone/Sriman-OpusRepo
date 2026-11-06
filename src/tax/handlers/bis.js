@@ -345,6 +345,11 @@ async function extractDetailFields(page) {
     ]);
     const isEntityCol = s => ENTITY_COLS.has(s.toLowerCase().trim());
 
+    const isColumnTable = t => {
+      const first = t && t.rows[0] ? Array.from(t.rows[0].cells) : [];
+      return first.length >= 3 && first.every(c => c.tagName === 'TH');
+    };
+
     // Pattern A: tables — structured detection first, adjacent-cell extraction last
     document.querySelectorAll('table').forEach(tbl => {
       const rows = Array.from(tbl.querySelectorAll('tr'));
@@ -431,6 +436,10 @@ async function extractDetailFields(page) {
         }
 
         // ── 3. Standard adjacent-cell extraction ───────────────────────────────
+        // Only for label/value tables. Column tables (improvements, land, deed
+        // history — header row of ≥3 <th>) would pair neighbouring columns into
+        // garbage like "Type":"Description" / "Acreage":"Sqft".
+        if (isColumnTable(rows[ri].closest('table'))) continue;
         // Skip cells that look like structured table headers or raw values to
         // avoid creating garbage key-value pairs (e.g. "Year":"Improvements").
         for (let i = 0; i < cells.length - 1; i++) {

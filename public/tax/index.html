@@ -2123,6 +2123,13 @@
 
     // Sort year DESC
     rows.sort((a, b) => (parseInt(b.taxYear) || 0) - (parseInt(a.taxYear) || 0));
+
+    // Texas bills become delinquent on Feb 1 of the following year — an unpaid
+    // latest-year bill before then is simply "Due", not delinquent
+    const latestYr = Math.max(0, ...rows.map(r => parseInt(r.taxYear) || 0));
+    if (latestYr && new Date() < new Date(latestYr + 1, 1, 1)) {
+      rows.forEach(r => { if (parseInt(r.taxYear) === latestYr && /delinq/i.test(r.status)) r.status = 'Due'; });
+    }
     return rows;
   }
 
@@ -2159,7 +2166,7 @@
         lastYear = r.taxYear;
       }
       const st  = (r.status || '').toLowerCase();
-      const isDue  = /delinq|past\s*due|unpaid/i.test(st);
+      const isDue  = /delinq|past\s*due|unpaid|^due$/i.test(st.trim());
       const isPaid = /^paid$/i.test(st.trim());
       const cls    = isDue ? 'due-r' : isPaid ? 'paid-r' : '';
       tbody += `<tr class="${cls}">${COLS.map(c => `<td class="${c.cls}">${_re(r[c.key])}</td>`).join('')}</tr>`;
@@ -2218,6 +2225,11 @@
       const s = String(v).trim();
       return /^n\/?a$/i.test(s) ? '' : s;
     };
+    // Bare figures ("5446", "202,530") → "$5,446"
+    const _money = v => {
+      const s = _val(v);
+      return /^\d[\d,]*(\.\d+)?$/.test(s) ? '$' + Number(s.replace(/,/g, '')).toLocaleString('en-US') : s;
+    };
     const _rowObjs = (raw) => {
       const t = _tableAsRows(raw);
       if (!t) return [];
@@ -2267,7 +2279,10 @@
     const propStatus  = tx['Property Status'] || taxRec.paymentStatus || '';
     const currentDue  = tx['Current Due']     || tx['Current Amount Due'] || tx['Current Year Due'] || '';
     const pastDue     = tx['Past Years Due']  || tx['Prior Year Due']     || '';
-    const totalTaxDue = tx['Total Taxes Due'] || tx['Total Amount Due']   || (taxData ? taxRec.taxAmountDue : '') || '';
+    // taxRec.taxAmountDue is only a due amount when the handler has no explicit
+    // due field — the TX county-tax handler falls back to the assessed value there
+    const hasDueField = ['Total Taxes Due', 'Total Amount Due'].some(k => k in tx);
+    const totalTaxDue = tx['Total Taxes Due'] || tx['Total Amount Due'] || (taxData && !hasDueField ? taxRec.taxAmountDue : '') || '';
 
     // ── Bill table rows ─────────────────────────────────────────────────────
     const billTables  = tx['Bill Tables']  || [];
@@ -2338,9 +2353,13 @@
       return ents.map(function(ent) {
         const eRows       = ent ? (entityRowsMap[ent] || []) : taxRows;
         const hasDelinq   = eRows.some(r => /delinq|past\s*due|unpaid/i.test(r.status));
-        const entPastDue  = eRows
-          .filter(r => /delinq|unpaid|past\s*due/i.test(r.status))
-          .reduce(function(s, r) { return s + _toDollars(r.balance || r.totalDue); }, 0);
+        // Amount still owed on a bill: its balance, else (unpaid bills without a
+        // balance column) its total due
+        const owed = r => /^paid$/i.test((r.status || '').trim()) ? 0 : (_toDollars(r.balance) || _toDollars(r.totalDue));
+        const entLatestYr = Math.max(0, ...eRows.map(r => parseInt(r.taxYear) || 0));
+        const entCurrent  = eRows.filter(r => (parseInt(r.taxYear) || 0) === entLatestYr).reduce((s, r) => s + owed(r), 0);
+        const entPastDue  = eRows.filter(r => (parseInt(r.taxYear) || 0) <  entLatestYr).reduce((s, r) => s + owed(r), 0);
+        const _usd = n => '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const paidEYears  = eRows
           .filter(r => /^paid$/i.test((r.status||'').trim()))
           .map(r => r.taxYear);
@@ -2350,17 +2369,16 @@
         const entAutoComment = [
           uniquePaidYears.length ? 'Paid years: ' + uniquePaidYears.slice(0,5).join(', ') + '.' : '',
           eRows.length ? eRows.length + ' tax record(s) retrieved for this entity.' : '',
+          entCurrent > 0 && eRows.some(r => r.status === 'Due')
+            ? entLatestYr + ' taxes due ' + _usd(entCurrent) + ' (delinquent if unpaid after Jan 31, ' + (entLatestYr + 1) + ').' : '',
           !ent && taxAcct ? 'Tax office account ' + taxAcct + (totalTaxDue ? ': total due ' + totalTaxDue : '') + (propStatus ? ' (' + propStatus + ')' : '') + '.' : '',
           !ent && !eRows.length && estTotal > 0 ? 'Taxes shown are estimates from ' + taxYear + ' CAD rates' + (taxAcct ? '' : '; tax office balance not retrieved') + '.' : '',
         ].filter(Boolean).join(' ');
         const balanceDue = /balance|due|delinq/i.test(propStatus) && _toDollars(totalTaxDue) > 0;
         const entCritComment = hasDelinq
-          ? 'DELINQUENT taxes on record' + (entPastDue > 0 ? ' (past due: $' + entPastDue.toFixed(2) + ')' : '') + '.'
+          ? 'DELINQUENT taxes on record' + (entPastDue > 0 ? ' (past years due: ' + _usd(entPastDue) + ')' : '') + '.'
           : (!ent && balanceDue ? 'Balance due at tax office: ' + totalTaxDue + '.' : '');
 
-        // Total due / balance for this entity
-        const entTotalDue = eRows.reduce(function(s,r){ return s + _toDollars(r.totalDue); }, 0);
-        const entBalance  = eRows.reduce(function(s,r){ return s + _toDollars(r.balance);  }, 0);
 
         const disbRows = [
           ['ENTITY NAME',          ent || (county + ' Tax Office')],
@@ -2374,9 +2392,9 @@
           ['FAX #',                collector.fax     || ''],
           ['SOURCE',               'NETR Online / County Website'],
           ['EMAIL ID',             collector.email   || ''],
-          ['CURRENT AMOUNT DUE',   entTotalDue > 0 ? '$' + entTotalDue.toFixed(2) : (currentDue || totalTaxDue || '')],
-          ['PAST YEARS DUE',       entPastDue  > 0 ? '$' + entPastDue.toFixed(2)  : (pastDue || '')],
-          ['TOTAL DUE',            entBalance  > 0 ? '$' + entBalance.toFixed(2)  : (entTotalDue > 0 ? '$' + entTotalDue.toFixed(2) : (ent ? '' : totalTaxDue))],
+          ['CURRENT AMOUNT DUE',   eRows.length ? _usd(entCurrent) : (currentDue || totalTaxDue || '')],
+          ['PAST YEARS DUE',       eRows.length ? _usd(entPastDue) : (pastDue || '')],
+          ['TOTAL DUE',            eRows.length ? _usd(entCurrent + entPastDue) : (ent ? '' : totalTaxDue)],
         ];
         const disbHtml = '<div class="disb">' + disbRows.map(r => _dRow(r[0], r[1])).join('') + '</div>';
 
@@ -2506,13 +2524,13 @@ tr.paid-r td{color:#14532d;background:#f0fdf4;} tr.due-r td{color:#991b1b;backgr
   <tbody>
     <tr>
       <td class="ct">${_re(taxYear)}</td>
-      <td class="amt">${_re(landVal)}</td>
-      <td class="amt">${_re(bldgVal)}</td>
-      <td class="amt">${_re(marketVal || totalVal)}</td>
-      <td class="amt">${_re(landVal)}</td>
-      <td class="amt">${_re(bldgVal)}</td>
-      <td class="amt">${_re(totalVal)}</td>
-      <td class="amt">${_re(taxableVal)}</td>
+      <td class="amt">${_re(_money(landVal))}</td>
+      <td class="amt">${_re(_money(bldgVal))}</td>
+      <td class="amt">${_re(_money(marketVal || totalVal))}</td>
+      <td class="amt">${_re(_money(landVal))}</td>
+      <td class="amt">${_re(_money(bldgVal))}</td>
+      <td class="amt">${_re(_money(totalVal))}</td>
+      <td class="amt">${_re(_money(taxableVal))}</td>
       <td>${_re(exemptions)}</td>
     </tr>
     ${valueHistoryRows}

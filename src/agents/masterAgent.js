@@ -34,7 +34,7 @@ function enabledStates() {
  * Run the given states (default: all enabled) sequentially. Returns the runs,
  * or null if another run holds the lock.
  */
-async function runAgents({ states, counties, trigger = 'manual', baseUrl } = {}) {
+async function runAgents({ states, counties, trigger = 'manual', baseUrl, resume = {} } = {}) {
   if (current) return null;
   const list = (states && states.length ? states : enabledStates()).map(s => s.toUpperCase()).filter(s => REGISTRY[s]);
   const origin = baseUrl || `http://127.0.0.1:${process.env.PORT || 3000}`;
@@ -43,7 +43,7 @@ async function runAgents({ states, counties, trigger = 'manual', baseUrl } = {})
     for (const state of list) {
       current = { state, startedAt: new Date().toISOString() };
       runs.push(await runStateAgent({
-        state, counties, trigger, baseUrl: origin,
+        state, counties, trigger, baseUrl: origin, resume: resume[state] || null,
         // Manual runs happen in working hours: one probe at a time leaves room for a
         // user's multi-source search (up to 4 sources) within the slot budget
         concurrency: trigger === 'schedule' ? Number(process.env.AGENT_CONCURRENCY || 2) : 1,
@@ -85,6 +85,17 @@ function startScheduler() {
   };
   setInterval(tick, 10 * 60 * 1000).unref();
   setTimeout(tick, 60 * 1000).unref();
+
+  // A deploy/restart mid-run leaves an unfinished run — pick it up where it stopped
+  setTimeout(async () => {
+    for (const state of enabledStates()) {
+      const run = store.latestRun(state);
+      if (!run || run.finishedAt || current) continue;
+      console.log(`[agents] resuming interrupted run ${run.id} (${run.done || 0}/${run.total})`);
+      try { await runAgents({ states: [state], trigger: run.trigger, resume: { [state]: run } }); }
+      catch (err) { console.error(`[agents] resume failed: ${err.message}`); }
+    }
+  }, 2 * 60 * 1000).unref();
   console.log(`[agents] scheduler on — ${enabledStates().join(', ')} nightly at ${hour}:00 ${tz}`);
 }
 
