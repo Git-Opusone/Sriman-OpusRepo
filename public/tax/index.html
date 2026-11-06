@@ -2200,7 +2200,9 @@
     let acres = [ap.legalAcreage, ap.acres, ap['Legal Acreage'], ap['Acreage'], tx['Effective Acres'], tx['Acres'], tx['acres']]
       .map(v => (v == null ? '' : String(v).trim())).find(v => /\d/.test(v)) || '';
     if (!acres && legalDesc) {
-      const m = legalDesc.match(/(\d+\.?\d*)\s*ACRES?\b/i) || legalDesc.match(/\bACRES?\s*(\d+\.?\d*)/i);
+      // Decimal figures first: "TRACT 26 & 27 ACRES 20.756" is 20.756 ac, not 27
+      const m = legalDesc.match(/\bACRES?\s*(\d+\.\d+)/i) || legalDesc.match(/(\d+\.\d+)\s*ACRES?\b/i)
+             || legalDesc.match(/(\d+)\s*ACRES?\b/i) || legalDesc.match(/\bACRES?\s*(\d+)/i);
       if (m) acres = m[1] + ' ac';
     }
 
