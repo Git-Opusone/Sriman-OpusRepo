@@ -21,6 +21,9 @@ RUN rm -rf .env.example scripts .vscode .claude
 
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Agent state dir — mounted as the named volume "opus-agent-data", which takes
+# this directory's ownership on first creation
+RUN mkdir -p /app/agent-data
 RUN chown -R appuser:appuser /app
 USER appuser
 

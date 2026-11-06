@@ -9,3 +9,6 @@ scripts/report-tester/reports/
 
 # Claude scheduled tasks lock
 .claude/scheduled_tasks.lock
+
+# Agent run state (production uses the opus-agent-data volume)
+agent-data/

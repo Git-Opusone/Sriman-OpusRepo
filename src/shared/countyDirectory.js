@@ -14,6 +14,7 @@
 const fs   = require('fs');
 const path = require('path');
 const axios = require('axios');
+const { getUrlOverride } = require('../agents/store');
 
 const DB_PATH = path.join(__dirname, '../../data/counties.json');
 
@@ -96,6 +97,19 @@ function getCountyUrl(stateCode, countyName) {
   const found = findCountyEntry(db, stateCode, countyName);
   if (!found || !found.entry.url) {
     return { url: null, platform: 'unknown', source: 'not_found' };
+  }
+  // URL repairs verified by the maintenance agent (src/agents) take precedence
+  const override = getUrlOverride(stateCode, found.key);
+  if (override) {
+    return {
+      url: override.url,
+      platform: override.platform || found.entry.platform || 'generic',
+      taxUrl: found.entry.taxUrl || null,
+      taxPlatform: found.entry.taxPlatform || 'generic',
+      source: 'agent_override',
+      override: true,
+      directoryUrl: found.entry.url,
+    };
   }
   return {
     url: found.entry.url,

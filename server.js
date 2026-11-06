@@ -29,6 +29,8 @@ const metrics                                             = require('./src/share
 // ─── Namespaced route modules ─────────────────────────────────────────────────
 const taxRoutes   = require('./src/tax/routes');
 const titleRoutes = require('./src/title/routes');
+const agentRoutes = require('./src/agents/routes');
+const agents      = require('./src/agents/masterAgent');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -164,6 +166,7 @@ app.get('/api/county-sources', async (req, res) => {
 // ─── Namespaced search routes ─────────────────────────────────────────────────
 app.use('/api/tax',   taxRoutes);    // → /api/tax/search/stream, /api/tax/search/dual/stream, etc.
 app.use('/api/title', titleRoutes);  // → /api/title/search/stream, /api/title/health, etc.
+app.use('/api/agents', agentRoutes); // → county-maintenance agents status (/agents/ page)
 
 // ─── Serve docs ───────────────────────────────────────────────────────────────
 app.get('/docs/*', (req, res, next) => {
@@ -192,6 +195,7 @@ app.listen(PORT, () => {
   console.log(`   Title API:   /api/title/search/stream`);
   console.log(`   Concurrency: max ${taxRoutes.MAX_CONCURRENT} simultaneous searches`);
   console.log(`   Counties DB: ${fs.existsSync('./data/counties.json') ? '✅ loaded' : '⚠️  not built yet — run: node scripts/buildCountyDirectory.js'}\n`);
+  agents.startScheduler();
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`\n❌  Port ${PORT} is already in use by another process.\n`);

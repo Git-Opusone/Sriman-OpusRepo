@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>County Agents — Orchestrate</title>
+  <style>
+    :root {
+      --blue: #1a56db; --blue-light: #ebf3ff;
+      --green: #057a55; --green-light: #f0fdf4;
+      --amber: #b45309; --amber-light: #fffbeb;
+      --red: #c81e1e; --red-light: #fff5f5;
+      --violet: #6d28d9; --violet-light: #f5f3ff;
+      --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb; --gray-400: #9ca3af;
+      --gray-500: #6b7280; --gray-600: #4b5563; --gray-700: #374151; --gray-900: #111827;
+      --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,.1), 0 1px 2px rgba(0,0,0,.06);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--gray-50); color: var(--gray-900); }
+    header { background: #111827; color: #fff; padding: 10px 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .header-logo { height: 32px; width: auto; }
+    header nav a { color: rgba(255,255,255,.7); text-decoration: none; margin-left: 22px; font-size: .88rem; font-weight: 500; }
+    header nav a:hover, header nav a.active { color: #fff; }
+    main { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+    h1 { font-size: 1.4rem; margin-bottom: 4px; }
+    .sub { color: var(--gray-500); font-size: .88rem; margin-bottom: 18px; }
+    .card { background: #fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; margin-bottom: 18px; }
+    .card h2 { font-size: 1rem; margin-bottom: 12px; }
+    .running { display: none; align-items: center; gap: 10px; background: var(--blue-light); color: var(--blue); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 18px; font-size: .9rem; font-weight: 600; }
+    .bar { flex: 1; height: 8px; background: #fff; border-radius: 4px; overflow: hidden; }
+    .bar > div { height: 100%; background: var(--blue); }
+    .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+    .tile { border-radius: 8px; padding: 12px; cursor: pointer; border: 2px solid transparent; }
+    .tile.sel { border-color: var(--gray-900); }
+    .tile .n { font-size: 1.6rem; font-weight: 700; }
+    .tile .l { font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+    .tile .d { font-size: .72rem; opacity: .8; margin-top: 2px; }
+    .c-healthy { background: var(--green-light); color: var(--green); }
+    .c-degraded_ai { background: var(--amber-light); color: var(--amber); }
+    .c-repaired { background: var(--violet-light); color: var(--violet); }
+    .c-blocked { background: var(--gray-100); color: var(--gray-700); }
+    .c-site_down, .c-failing { background: var(--red-light); color: var(--red); }
+    .c-no_results { background: var(--blue-light); color: var(--blue); }
+    .pill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: .74rem; font-weight: 700; white-space: nowrap; }
+    .flag { display: inline-block; padding: 1px 6px; border-radius: 6px; font-size: .68rem; font-weight: 700; margin-left: 4px; background: var(--red); color: #fff; }
+    .flag.ov { background: var(--violet); }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .toolbar input { flex: 1; min-width: 180px; padding: 8px 12px; border: 1px solid var(--gray-200); border-radius: 8px; font-size: .88rem; }
+    .tbl-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    th { text-align: left; background: var(--gray-100); color: var(--gray-600); font-weight: 600; padding: 8px; position: sticky; top: 0; }
+    td { padding: 8px; border-top: 1px solid var(--gray-200); vertical-align: top; }
+    td.num { text-align: right; white-space: nowrap; }
+    td a { color: var(--blue); text-decoration: none; word-break: break-all; }
+    .muted { color: var(--gray-500); }
+    .diag { font-size: .78rem; color: var(--gray-700); }
+    .diag b { color: var(--gray-900); }
+    ul.plain { list-style: none; font-size: .86rem; }
+    ul.plain li { padding: 6px 0; border-top: 1px solid var(--gray-100); }
+    ul.plain li:first-child { border-top: 0; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    @media (max-width: 800px) { .grid2 { grid-template-columns: 1fr; } header { padding: 10px 16px; } header nav a { margin-left: 12px; } }
+    .empty { color: var(--gray-500); font-size: .88rem; padding: 8px 0; }
+  </style>
+</head>
+<body>
+<header>
+  <a href="/"><img src="/OpusOne-Svg.svg" alt="OpusOne" class="header-logo" /></a>
+  <nav>
+    <a href="/">Home</a>
+    <a href="/tax/">Tax Search</a>
+    <a href="/title/">Title Search</a>
+    <a href="/agents/" class="active">Agents</a>
+  </nav>
+</header>
+
+<main>
+  <h1>County Agents</h1>
+  <div class="sub" id="sched">Loading…</div>
+
+  <div class="running" id="running"><span id="runningText"></span><div class="bar"><div id="runningBar" style="width:0"></div></div></div>
+
+  <div class="card">
+    <h2 id="runTitle">Latest run</h2>
+    <div class="tiles" id="tiles"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card"><h2>Regressions <span class="muted" style="font-weight:400">— worked last run, broken now</span></h2><ul class="plain" id="regressions"></ul></div>
+    <div class="card"><h2>URL repairs <span class="muted" style="font-weight:400">— verified by a live search</span></h2><ul class="plain" id="repairs"></ul></div>
+  </div>
+
+  <div class="card">
+    <h2>Counties</h2>
+    <div class="toolbar"><input id="q" placeholder="Filter by county, platform or diagnosis…" /></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>County</th><th>Status</th><th>Platform / engine</th><th class="num">Records</th><th>Sample</th><th class="num">Time</th><th>Diagnosis</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card"><h2>Run history</h2><ul class="plain" id="history"></ul></div>
+</main>
+
+<script>
+  const CATS = [
+    ['healthy',     'Healthy',      'Handler returned records'],
+    ['degraded_ai', 'AI fallback',  'Works, but handler missed'],
+    ['repaired',    'Repaired',     'URL fixed this run'],
+    ['no_results',  'No results',   'Search ran, found nothing'],
+    ['blocked',     'Blocked',      'CAPTCHA / Cloudflare'],
+    ['site_down',   'Site down',    'Unreachable / 5xx'],
+    ['failing',     'Failing',      'Errors / unparsed'],
+  ];
+  const LABEL = Object.fromEntries(CATS.map(c => [c[0], c[1]]));
+  let data = null, filterCat = '', timer = null;
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const when = iso => iso ? new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '—';
+  const dur = (a, b) => { if (!a || !b) return ''; const m = Math.round((new Date(b) - new Date(a)) / 60000); return m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`; };
+
+  async function load() {
+    try {
+      data = await (await fetch('/api/agents/status')).json();
+      render();
+      const hist = await (await fetch('/api/agents/runs?state=TX')).json();
+      renderHistory(hist);
+    } catch (e) {
+      document.getElementById('sched').textContent = 'Could not load agent status: ' + e.message;
+    }
+    clearTimeout(timer);
+    timer = setTimeout(load, data && data.running ? 20000 : 120000);
+  }
+
+  function render() {
+    const s = data.schedule;
+    document.getElementById('sched').textContent =
+      `Texas agent probes every county's appraisal search through the live pipeline. ` +
+      (s.enabled ? `Runs nightly at ${s.hour}:00 (${s.tz}).` : 'Nightly schedule is off.') +
+      (s.lastRunDate ? ` Last scheduled run: ${s.lastRunDate}.` : '');
+
+    const st = data.states.find(x => x.code === 'TX') || data.states[0];
+    const run = st && st.latestRun;
+    const runningEl = document.getElementById('running');
+    if (data.running) {
+      runningEl.style.display = 'flex';
+      const full = run && !run.finishedAt;
+      document.getElementById('runningText').textContent = full ? `Run in progress — ${run.done}/${run.total} counties` : 'Re-checking selected counties…';
+      document.getElementById('runningBar').style.width = full ? `${Math.round(100 * run.done / Math.max(1, run.total))}%` : '100%';
+    } else runningEl.style.display = 'none';
+
+    if (!run) {
+      document.getElementById('runTitle').textContent = 'No runs yet';
+      document.getElementById('tiles').innerHTML = '<div class="empty">The first run will appear here.</div>';
+      ['regressions', 'repairs', 'rows'].forEach(id => document.getElementById(id).innerHTML = '');
+      return;
+    }
+    document.getElementById('runTitle').textContent =
+      `${run.partial ? 'Re-check' : 'Latest full run'} — ${when(run.startedAt)}${run.finishedAt ? ` · ${dur(run.startedAt, run.finishedAt)}` : ''} · ${run.trigger}` +
+      ((run.rechecks || []).length ? ` · ${run.rechecks.length} later re-check(s) applied` : '');
+
+    const sum = run.summary || {};
+    document.getElementById('tiles').innerHTML = CATS.map(([k, l, d]) =>
+      `<div class="tile c-${k}${filterCat === k ? ' sel' : ''}" data-cat="${k}"><div class="n">${sum[k] || 0}</div><div class="l">${l}</div><div class="d">${d}</div></div>`).join('');
+    document.querySelectorAll('.tile').forEach(t => t.onclick = () => { filterCat = filterCat === t.dataset.cat ? '' : t.dataset.cat; render(); });
+
+    const reg = run.regressions || [];
+    document.getElementById('regressions').innerHTML = reg.length
+      ? reg.map(r => `<li><b>${esc(r.county)}</b> <span class="pill c-${esc(r.from)}">${esc(LABEL[r.from] || r.from)}</span> → <span class="pill c-${esc(r.to)}">${esc(LABEL[r.to] || r.to)}</span></li>`).join('')
+      : '<li class="empty">None</li>';
+
+    const ov = Object.entries(data.urlOverrides || {}).filter(([k]) => k.startsWith('TX|'));
+    document.getElementById('repairs').innerHTML = ov.length
+      ? ov.map(([k, o]) => `<li><b>${esc(k.split('|')[1])}</b> — <a href="${esc(o.url)}" target="_blank" rel="noopener">${esc(o.url)}</a><div class="muted" style="font-size:.76rem">was ${esc(o.previousUrl)} · verified ${when(o.verifiedAt)} (${esc(o.sample?.records ?? 0)} records for "${esc(o.sample?.surname)}")</div></li>`).join('')
+      : '<li class="empty">None</li>';
+
+    renderRows(run);
+  }
+
+  function renderRows(run) {
+    const q = document.getElementById('q').value.trim().toLowerCase();
+    const rows = Object.values(run.counties || {})
+      .filter(r => !filterCat || r.category === filterCat)
+      .filter(r => !q || JSON.stringify([r.county, r.platform, r.probe?.engine, r.diagnosis, r.probe?.summary]).toLowerCase().includes(q))
+      .sort((a, b) => (b.regression ? 1 : 0) - (a.regression ? 1 : 0) || a.county.localeCompare(b.county));
+    document.getElementById('rows').innerHTML = rows.length ? rows.map(r => {
+      const p = r.probe || {};
+      const diag = r.repair && r.repair.repaired
+        ? `<div class="diag"><b>URL repaired</b> → <a href="${esc(r.repair.url)}" target="_blank" rel="noopener">${esc(r.repair.url)}</a></div>`
+        : r.diagnosis
+          ? `<div class="diag"><b>${esc(r.diagnosis.likelyCause)}</b><br>${esc(r.diagnosis.suggestedAction)}</div>`
+          : `<div class="diag muted">${esc(p.summary || r.error || '')}</div>`;
+      return `<tr>
+        <td><b>${esc(r.county)}</b>${r.regression ? '<span class="flag">REGRESSION</span>' : ''}${r.overridden ? '<span class="flag ov">URL OVERRIDE</span>' : ''}<br><a href="${esc(r.url)}" target="_blank" rel="noopener" class="muted" style="font-size:.74rem">${esc((r.url || '').replace(/^https?:\/\//, ''))}</a></td>
+        <td><span class="pill c-${esc(r.category)}">${esc(LABEL[r.category] || r.category)}</span></td>
+        <td>${esc(r.platform || '')}<br><span class="muted">${esc(p.engine === 'ai' ? 'AI fallback' : (p.engine || ''))}</span></td>
+        <td class="num">${esc(p.n ?? '')}</td>
+        <td>${esc(p.owner || '')}${p.id ? `<br><span class="muted">${esc(p.id)}</span>` : ''}</td>
+        <td class="num">${p.secs != null ? esc(p.secs) + 's' : ''}</td>
+        <td>${diag}</td>
+      </tr>`;
+    }).join('') : '<tr><td colspan="7" class="empty">No counties match.</td></tr>';
+  }
+
+  function renderHistory(hist) {
+    document.getElementById('history').innerHTML = hist.length ? hist.map(h => {
+      const s = h.summary || {};
+      return `<li><b>${when(h.startedAt)}</b> · ${esc(h.trigger)}${h.partial ? ` re-check (${h.total})` : ''} · ${h.finishedAt ? dur(h.startedAt, h.finishedAt) : `running ${h.done}/${h.total}`}
+        <span class="muted">— healthy ${s.healthy || 0}, AI ${s.degraded_ai || 0}, blocked ${s.blocked || 0}, failing ${(s.failing || 0) + (s.site_down || 0)}, regressions ${(h.regressions || []).length}, repairs ${(h.repairs || []).length}</span></li>`;
+    }).join('') : '<li class="empty">No runs yet</li>';
+  }
+
+  document.getElementById('q').addEventListener('input', () => data && render());
+  load();
+</script>
+</body>
+</html>

@@ -438,7 +438,7 @@ async function runBrowserAgent({
         const handlerResult = await qpublicHandler.search(page, {
           accountNumber, firstName, lastName, fullName, onProgress,
         });
-        if (handlerResult) return handlerResult;
+        if (handlerResult) return { ...handlerResult, engine: platform };
         onProgress('qPublic handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
         console.log(`[agent] qPublic handler error: ${handlerErr.message} — continuing with AI`);
@@ -452,7 +452,7 @@ async function runBrowserAgent({
         const handlerResult = await tylerHandler.search(page, {
           accountNumber, firstName, lastName, fullName, onProgress,
         });
-        if (handlerResult) return handlerResult;
+        if (handlerResult) return { ...handlerResult, engine: platform };
         onProgress('Tyler handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
         console.log(`[agent] Tyler handler error: ${handlerErr.message} — continuing with AI`);
@@ -466,7 +466,7 @@ async function runBrowserAgent({
         const handlerResult = await beaconHandler.search(page, {
           accountNumber, firstName, lastName, fullName, onProgress,
         });
-        if (handlerResult) return handlerResult;
+        if (handlerResult) return { ...handlerResult, engine: platform };
         onProgress('Beacon handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
         console.log(`[agent] Beacon handler error: ${handlerErr.message} — continuing with AI`);
@@ -480,7 +480,7 @@ async function runBrowserAgent({
         const handlerResult = await patriotHandler.search(page, {
           accountNumber, firstName, lastName, fullName, onProgress,
         });
-        if (handlerResult) return handlerResult;
+        if (handlerResult) return { ...handlerResult, engine: platform };
         onProgress('Patriot handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
         console.log(`[agent] Patriot handler error: ${handlerErr.message} — continuing with AI`);
@@ -494,7 +494,7 @@ async function runBrowserAgent({
         const handlerResult = await visionHandler.search(page, {
           accountNumber, firstName, lastName, fullName, onProgress,
         });
-        if (handlerResult) return handlerResult;
+        if (handlerResult) return { ...handlerResult, engine: platform };
         onProgress('Vision handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
         console.log(`[agent] Vision handler error: ${handlerErr.message} — continuing with AI`);
@@ -508,7 +508,7 @@ async function runBrowserAgent({
         const handlerResult = await bisHandler.search(page, {
           accountNumber, firstName, lastName, fullName, onProgress,
         });
-        if (handlerResult) return handlerResult;
+        if (handlerResult) return { ...handlerResult, engine: platform };
         onProgress('BIS handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
         console.log(`[agent] BIS handler error: ${handlerErr.message} — continuing with AI`);
@@ -521,7 +521,7 @@ async function runBrowserAgent({
         const handlerResult = await dataChamberHandler.search(page, {
           accountNumber, firstName, lastName, fullName, onProgress,
         });
-        if (handlerResult) return handlerResult;
+        if (handlerResult) return { ...handlerResult, engine: platform };
         onProgress('CAD website handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
         console.log(`[agent] CAD website handler error: ${handlerErr.message} — continuing with AI`);
@@ -535,7 +535,7 @@ async function runBrowserAgent({
         const handlerResult = await tylerPaHandler.search(page, {
           accountNumber, firstName, lastName, fullName, onProgress,
         });
-        if (handlerResult) return handlerResult;
+        if (handlerResult) return { ...handlerResult, engine: platform };
         onProgress('Tyler PublicAccess handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
         console.log(`[agent] Tyler PublicAccess handler error: ${handlerErr.message} — continuing with AI`);
@@ -549,7 +549,7 @@ async function runBrowserAgent({
         const handlerResult = await iswHandler.search(page, {
           accountNumber, firstName, lastName, fullName, onProgress,
         });
-        if (handlerResult) return handlerResult;
+        if (handlerResult) return { ...handlerResult, engine: platform };
         onProgress('Southwest Data Solutions handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
         console.log(`[agent] Southwest Data Solutions handler error: ${handlerErr.message} — continuing with AI`);
@@ -563,7 +563,7 @@ async function runBrowserAgent({
         const handlerResult = await dallasCadHandler.search(page, {
           accountNumber, firstName, lastName, fullName, onProgress,
         });
-        if (handlerResult) return handlerResult;
+        if (handlerResult) return { ...handlerResult, engine: platform };
         onProgress('Dallas CAD handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
         console.log(`[agent] Dallas CAD handler error: ${handlerErr.message} — continuing with AI`);
@@ -577,7 +577,7 @@ async function runBrowserAgent({
         const handlerResult = await publicPortalHandler.search(page, {
           accountNumber, firstName, lastName, fullName, onProgress,
         });
-        if (handlerResult) return handlerResult;
+        if (handlerResult) return { ...handlerResult, engine: platform };
         onProgress('Public Portal handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
         console.log(`[agent] Public Portal handler error: ${handlerErr.message} — continuing with AI`);
@@ -591,7 +591,7 @@ async function runBrowserAgent({
         const handlerResult = await actwebHandler.search(page, {
           accountNumber, altAccountNumbers, firstName, lastName, fullName, onProgress,
         });
-        if (handlerResult) return handlerResult;
+        if (handlerResult) return { ...handlerResult, engine: platform };
         onProgress('ACTweb handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
         console.log(`[agent] ACTweb handler error: ${handlerErr.message} — continuing with AI`);
@@ -605,7 +605,7 @@ async function runBrowserAgent({
         const handlerResult = await go2govHandler.search(page, {
           accountNumber, firstName, lastName, fullName, onProgress,
         });
-        if (handlerResult) return handlerResult;
+        if (handlerResult) return { ...handlerResult, engine: platform };
         onProgress('Go2Gov handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
         console.log(`[agent] Go2Gov handler error: ${handlerErr.message} — continuing with AI`);
@@ -619,7 +619,7 @@ async function runBrowserAgent({
         const handlerResult = await andersonTaxHandler.search(page, {
           accountNumber, firstName, lastName, fullName, onProgress,
         });
-        if (handlerResult) return handlerResult;
+        if (handlerResult) return { ...handlerResult, engine: platform };
         onProgress('TX County Tax handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
         console.log(`[agent] TX County Tax handler error: ${handlerErr.message} — continuing with AI`);
@@ -633,7 +633,7 @@ async function runBrowserAgent({
         const handlerResult = await ptaxproHandler.search(page, {
           accountNumber, firstName, lastName, fullName, onProgress,
         });
-        if (handlerResult) return handlerResult;
+        if (handlerResult) return { ...handlerResult, engine: platform };
         onProgress('PTaxPro handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
         console.log(`[agent] PTaxPro handler error: ${handlerErr.message} — continuing with AI`);
@@ -647,7 +647,7 @@ async function runBrowserAgent({
         const handlerResult = await ptpHandler.search(page, {
           accountNumber, altAccountNumbers, firstName, lastName, fullName, onProgress,
         });
-        if (handlerResult) return handlerResult;
+        if (handlerResult) return { ...handlerResult, engine: platform };
         onProgress('PropertyTaxPayments handler fell back — continuing with AI agent...');
       } catch (handlerErr) {
         console.log(`[agent] PropertyTaxPayments handler error: ${handlerErr.message} — continuing with AI`);

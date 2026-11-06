@@ -96,6 +96,12 @@ jobs:
               --restart unless-stopped \
               --network opus-monitoring \
               -p 3000:3000 \
+              -v opus-agent-data:/app/agent-data \
+              -e AGENT_DATA_DIR="/app/agent-data" \
+              -e AGENTS_ENABLED="true" \
+              -e AGENT_STATES="TX" \
+              -e AGENT_RUN_HOUR="2" \
+              -e AGENT_TZ="America/Chicago" \
               -e OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
               -e OPENAI_MODEL="gpt-4o-mini" \
               -e PORT="3000" \
