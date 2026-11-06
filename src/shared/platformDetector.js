@@ -22,6 +22,9 @@ const PLATFORM_RULES = [
   // ── URL hostname patterns ──────────────────────────────────────────────────
   // TX county tax offices (tax.co.{county}.tx.us) — must be checked before any generic rules
   { platform: 'txcountytax',  test: u => /tax\.co\.[a-z]+\.tx\.us/i.test(u)             },
+  // Same Tyler PublicAccess tax-office template on other hosts (opens on a disclaimer
+  // page, so the page check in browserAgent can't see the search box)
+  { platform: 'txcountytax',  test: u => /\/\/tax\.wilcotx\.gov/i.test(u)                },
   // qpublic MUST come before beacon — qpublic.schneidercorp.com is qPublic, not Beacon
   { platform: 'qpublic',      test: u => /qpublic\.net/i.test(u)                        },
   { platform: 'qpublic',      test: u => /qpublic\.schneidercorp\.com/i.test(u)         },
