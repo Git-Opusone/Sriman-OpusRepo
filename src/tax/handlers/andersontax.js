@@ -496,8 +496,10 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
   if (!accountNumber) return null;
 
   const taxBase  = new URL(page.url()).origin;
-  const propId   = normalizePropId(accountNumber);
-  const stripped = propId.replace(/^r/i, '').toUpperCase();
+  let propId   = normalizePropId(accountNumber);
+  let stripped = propId.replace(/^r/i, '').toUpperCase();
+  // Some offices (Williamson) keep the zero padding: R024017 is not R24017
+  const verbatim = (/^r/i.test(accountNumber.trim()) ? accountNumber.trim() : `R${accountNumber.trim()}`).toUpperCase();
   onProgress(`TX County Tax Office: searching ${propId}...`);
   console.log(`[andersontax] propId=${propId}`);
 
@@ -506,7 +508,7 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
     if (cap.detected) return { ...cap, searchedUrl: page.url() };
 
     // ── 1. Navigate directly to search URL (no home-page pre-visit) ───────────
-    const searchUrl = `${taxBase}/Property-Search-Result/searchtext/${encodeURIComponent(propId)}`;
+    let searchUrl = `${taxBase}/Property-Search-Result/searchtext/${encodeURIComponent(propId)}`;
     onProgress('Loading Tax Office search...');
     await safeGoto(page, searchUrl, 25000);
     await page.waitForTimeout(2000);
@@ -556,6 +558,20 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
     // If no results with R-prefix AND the grid exists (site IS loaded), retry with plain ID.
     // Skip the retry when grid is absent — it means the page is blocked/unreachable.
     const gridPresent = await page.locator('.k-grid, [data-role="grid"]').count().catch(() => 0) > 0;
+    if (!basic.ownerName && !basic.propertyLink && gridPresent && verbatim !== propId) {
+      const urlVerbatim = `${taxBase}/Property-Search-Result/searchtext/${encodeURIComponent(verbatim)}`;
+      console.log(`[andersontax] ${propId} not found — retrying with the ID as given (${verbatim})`);
+      await safeGoto(page, urlVerbatim, 20000);
+      await page.waitForTimeout(1500);
+      await handleDisclaimerIfPresent(page, 'search-verbatim');
+      await page.waitForFunction(id => Array.from(document.querySelectorAll('td')).some(td => (td.innerText || '').trim() === id),
+        verbatim, { timeout: 15000 }).catch(() => {});
+      const v = await extractFromSearchGrid(page, verbatim);
+      if (v.ownerName || v.propertyLink) {
+        basic = v; propId = verbatim; stripped = verbatim.replace(/^r/i, ''); searchUrl = urlVerbatim;
+        console.log(`[andersontax] grid (verbatim): owner="${basic.ownerName}" link="${basic.propertyLink}"`);
+      }
+    }
     if (!basic.ownerName && !basic.propertyLink && gridPresent) {
       const searchUrlStripped = `${taxBase}/Property-Search-Result/searchtext/${encodeURIComponent(stripped)}`;
       console.log(`[andersontax] R-prefix search empty (grid exists) — retrying with stripped ID`);
@@ -627,6 +643,13 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
     }
 
     console.log(`[andersontax] reachedDetail=${reachedDetail} url=${page.url()}`);
+
+    // Nothing in the grid and no detail page: the office has no such ID. Say so
+    // rather than scraping the empty results page into a record.
+    if (!reachedDetail && !basic.ownerName && !basic.propertyLink) {
+      return { records: [], totalFound: 0, searchedUrl: searchUrl,
+        summary: `No tax office record found for ${propId}${verbatim !== propId ? ` / ${verbatim}` : ''}.` };
+    }
 
     // ── 5. Extract all data ───────────────────────────────────────────────────
     onProgress('Extracting property data...');
@@ -857,8 +880,10 @@ async function search(page, { accountNumber = '', onProgress = () => {} }) {
         parcelId:        propId,
         ownerName,
         propertyAddress: situsAddress,
-        taxAmountDue:    totalDue || assessed,
-        taxYear:         '2025',
+        // An assessed value is never an amount due — leave it blank; the report
+        // works out dues from the bill tables
+        taxAmountDue:    totalDue || '',
+        taxYear:         String(Math.max(0, ...(bill.yearHeaders || []).map(y => parseInt(y, 10) || 0)) || ''),
         paymentStatus,
         county:          countyFromUrl(taxBase),
         state:           'TX',
