@@ -430,6 +430,25 @@ async function runBrowserAgent({
       } catch (_) {}
     }
 
+    // Several CADs moved from BIS esearch / Tyler iasWorld to Tyler PublicAccess
+    // (DNN, one "name, address, or property identifier" box) while keeping their
+    // URLs — e.g. esearch.hayscad.com, esearch.jacksoncad.org, lubbockcad.org.
+    // The page itself is the reliable signal.
+    if (!['tylerpa', 'txcountytax'].includes(platform) && !/propertytaxpayments|acttax|act_webdev/i.test(page.url())) {
+      const isPublicAccess = await page.evaluate(() => {
+        const box = document.querySelector('input#SearchText');
+        return !!box && /combination of name, address, or property identifier/i.test(box.placeholder || '')
+          && !!document.querySelector('[id^="dnn_"]');
+      }).catch(() => false);
+      if (isPublicAccess) {
+        // Same template serves county tax offices (bills) and CADs (appraisals)
+        let host = ''; try { host = new URL(page.url()).hostname; } catch (_) {}
+        const next = /tax/i.test(host) && !/cad|apprais/i.test(host) ? 'txcountytax' : 'tylerpa';
+        console.log(`[agent] ${platform} URL serves Tyler PublicAccess — switching to ${next}`);
+        platform = next;
+      }
+    }
+
     console.log(`[agent] platform=${platform}`);
 
     if (platform === 'qpublic') {

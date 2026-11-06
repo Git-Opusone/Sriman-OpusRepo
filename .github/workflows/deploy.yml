@@ -93,6 +93,7 @@ jobs:
             # ── Start app container (joined to monitoring network) ─────────────────
             docker run -d \
               --name ${{ env.CONTAINER_NAME }} \
+              --init \
               --restart unless-stopped \
               --network opus-monitoring \
               -p 3000:3000 \

@@ -22237,9 +22237,9 @@
         "taxPlatform": "propertytaxpayments"
       },
       "Collin": {
-        "url": "http://www.collincad.org/",
+        "url": "https://esearch.collincad.org/",
         "platform": "bis",
-        "lastVerified": "2026-05-15",
+        "lastVerified": "2026-11-06",
         "netronlinePath": "/state/TX/county/collin",
         "taxUrl": "https://taxpublic.collincountytx.gov/search",
         "taxPlatform": "generic"
@@ -22437,9 +22437,9 @@
         "taxPlatform": "propertytaxpayments"
       },
       "Ector": {
-        "url": "http://www.ectorcad.org/",
+        "url": "https://search.ectorcad.org/",
         "platform": "generic",
-        "lastVerified": null,
+        "lastVerified": "2026-11-06",
         "netronlinePath": "/state/TX/county/ector",
         "taxUrl": "https://ector.propertytaxpayments.net/search",
         "taxPlatform": "propertytaxpayments"
@@ -22621,9 +22621,9 @@
         "taxPlatform": "propertytaxpayments"
       },
       "Grayson": {
-        "url": "http://www.graysonappraisal.org/",
-        "platform": "generic",
-        "lastVerified": null,
+        "url": "https://esearch.graysonappraisal.org/",
+        "platform": "bis",
+        "lastVerified": "2026-11-06",
         "netronlinePath": "/state/TX/county/grayson",
         "taxUrl": "https://grayson.propertytaxpayments.net/search",
         "taxPlatform": "propertytaxpayments"
@@ -22734,7 +22734,7 @@
       },
       "Hays": {
         "url": "https://esearch.hayscad.com/",
-        "platform": "bis",
+        "platform": "tylerpa",
         "lastVerified": "2026-05-15",
         "netronlinePath": "/state/TX/county/hays",
         "taxUrl": "https://tax.co.hays.tx.us/",
@@ -22854,7 +22854,7 @@
       },
       "Jackson": {
         "url": "https://esearch.jacksoncad.org/",
-        "platform": "bis",
+        "platform": "tylerpa",
         "lastVerified": "2026-10-28",
         "netronlinePath": "/state/TX/county/jackson",
         "taxUrl": "https://jackson.propertytaxpayments.net/search",
@@ -23110,7 +23110,7 @@
       },
       "Lubbock": {
         "url": "https://lubbockcad.org/",
-        "platform": "generic",
+        "platform": "tylerpa",
         "lastVerified": null,
         "netronlinePath": "/state/TX/county/lubbock",
         "taxUrl": "https://lubbock.propertytaxpayments.net/search",

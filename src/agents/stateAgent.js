@@ -114,26 +114,66 @@ const sameUrl = (a, b) => String(a || '').replace(/^https?:\/\/(www\.)?/i, '').r
  * URLs. A candidate is only accepted after a real search through it returns
  * records; one served by a dedicated handler beats one that needed the AI fallback.
  */
+// Tax-collector / payment portals hold tax bills, not appraisal records — never
+// accept one as a county's appraisal URL (the Tax Office tab covers those)
+const TAX_SITE = /propertytaxpayments\.net|acttax\.com|act_webdev|taxpayment|tax-?office|taxoffice|\.tax\.|ptax/i;
+
+// Search portals linked from a CAD's homepage (e.g. collincad.org → esearch.collincad.org)
+const SEARCH_LINK = /\/\/(esearch|search|propaccess|prodigy|property)[.-]|property-?search|propertysearch|\/search\b/i;
+
+async function homepageSearchLinks(url) {
+  try {
+    const res = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(20000),
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36' } });
+    if (!res.ok) return [];
+    const html = await res.text();
+    const host = new URL(res.url).hostname.replace(/^www\./, '');
+    const root = host.split('.').slice(-2).join('.');
+    const links = [...html.matchAll(/href\s*=\s*["']([^"'#]+)["']/gi)]
+      .map(m => { try { return new URL(m[1], res.url).href; } catch (_) { return null; } })
+      .filter(u => u && /^https?:/i.test(u) && SEARCH_LINK.test(u) && !TAX_SITE.test(u)
+        // same organisation only: a subdomain of the CAD's own domain
+        && new URL(u).hostname.replace(/^www\./, '').endsWith(root)
+        && !/site-?search|\.pdf$|wp-content|\/help/i.test(u));
+    return [...new Set(links)].slice(0, 2);
+  } catch (_) { return []; }
+}
+
 async function tryRepair(baseUrl, state, county, entry, runId) {
   const currentUrl = entry.url;
   const sources = await getAllNetronlineSources(state, county).catch(() => []);
+  const netr = sources
+    .filter(s => s.onlineUrl && /apprais|assessor|\bcad\b/i.test(s.name) && !/netronline\.com/i.test(s.onlineUrl))
+    .map(s => s.onlineUrl);
+  const linked = (await Promise.all([currentUrl, entry.directoryUrl].filter(Boolean).map(homepageSearchLinks))).flat();
   const candidates = [
     ...(entry.override && entry.directoryUrl ? [entry.directoryUrl] : []),
-    ...sources
-      .filter(s => s.onlineUrl && /apprais|assessor|\bcad\b/i.test(s.name) && !/netronline\.com/i.test(s.onlineUrl))
-      .map(s => s.onlineUrl),
-  ].filter((u, i, a) => a.findIndex(x => sameUrl(x, u)) === i && !sameUrl(u, currentUrl)).slice(0, 3);
+    ...linked,
+    ...netr,
+  ].filter((u, i, a) => a.findIndex(x => sameUrl(x, u)) === i && !sameUrl(u, currentUrl) && !TAX_SITE.test(u)).slice(0, 4);
 
   const tried = [];
-  let best = null;
+  let best = null, blockedAt = null;
   for (const url of candidates) {
     const health = await checkUrlHealth(url).catch(() => 'dead');
     if (health === 'dead') { tried.push({ url, result: 'dead' }); continue; }
     const p = await probeCounty(baseUrl, state, county, url);
     tried.push({ url, result: p.status, engine: p.engine, n: p.n || 0 });
+    // The real search portal sits behind a CAPTCHA: the county is blocked, not broken
+    if (p.status === 'captcha' && !blockedAt) blockedAt = { url, summary: p.summary };
     if (p.status !== 'ok') continue;
     if (!best || (best.p.engine === 'ai' && p.engine !== 'ai')) best = { url, p };
     if (p.engine !== 'ai') break;
+  }
+  if (!best && blockedAt) {
+    // Point searches at the real portal so users get the CAPTCHA notice at once
+    // instead of an AI fallback wandering the CAD's homepage
+    store.setUrlOverride(state, county, {
+      url: blockedAt.url, platform: detectFromUrl(blockedAt.url), previousUrl: currentUrl,
+      verifiedAt: new Date().toISOString(), runId, blocked: true, sample: { note: blockedAt.summary },
+    });
+    console.log(`[agents] ${state}/${county}: search portal ${blockedAt.url} is CAPTCHA-protected`);
+    return { repaired: false, blocked: true, url: blockedAt.url, tried };
   }
   if (!best) return { repaired: false, tried };
 
@@ -202,6 +242,7 @@ async function runStateAgent({ state, baseUrl, counties, concurrency = 2, aiMax 
           if (repair && (r.category === 'site_down' || r.category === 'failing')) {
             r.repair = await tryRepair(baseUrl, state, county, entry, run.id);
             if (r.repair.repaired) { r.category = 'repaired'; run.repairs.push({ county, url: r.repair.url, previousUrl: entry.url }); }
+            else if (r.repair.blocked) r.category = 'blocked';
           }
           if (!GOOD.has(r.category) && !['blocked', 'repaired'].includes(r.category) && aiUsed < aiMax) {
             aiUsed++;
@@ -237,4 +278,4 @@ async function runStateAgent({ state, baseUrl, counties, concurrency = 2, aiMax 
   return run;
 }
 
-module.exports = { runStateAgent, probe };
+module.exports = { runStateAgent, probe, homepageSearchLinks };
